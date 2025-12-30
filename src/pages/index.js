@@ -1,78 +1,86 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+// pages/index.js
+import { useState } from "react";
+import { useRouter } from "next/router";
+import { checkAuthRedirect } from "@/utils/authRedirect";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+export async function getServerSideProps(context) {
+  const redirect = await checkAuthRedirect(context);
+  if (redirect) return redirect;
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  return { props: {} }; // Giriş ekranı gözükecek
+}
 
-export default function Home() {
+export default function LoginPage() {
+  const router = useRouter();
+
+  const [tel, setTel] = useState("");
+  const [sifre, setSifre] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!tel || !sifre) {
+      alert("Telefon ve şifre girin");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tel, sifre }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Giriş başarısız");
+        return;
+      }
+
+      // Rol bazlı yönlendirme SSR'da (checkAuthRedirect) yapılacak
+      router.push("/");
+    } catch (error) {
+      console.error("Login hata:", error);
+      alert("Hata oluştu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
-    >
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the index.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="max-w-2xl h-full m-auto mt-2">
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-gray-700 via-gray-800 to-black p-4">
+        <div className="bg-gray-600 rounded-2xl shadow-2xl p-8 w-full max-w-sm">
+          <h2 className="text-2xl font-bold text-center text-white mb-4">
+            Giriş Yap
+          </h2>
+
+          <div className="flex flex-col gap-4">
+            <input
+              type="tel"
+              placeholder="Telefon"
+              value={tel}
+              onChange={(e) => setTel(e.target.value)}
+              className="px-4 py-3 rounded-xl bg-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs/pages/getting-started?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <input
+              type="password"
+              placeholder="Şifre"
+              value={sifre}
+              onChange={(e) => setSifre(e.target.value)}
+              className="px-4 py-3 rounded-xl bg-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleLogin}
+              className="mt-2 py-3 bg-blue-600 text-white rounded-xl cursor-pointer hover:bg-blue-700 transition-all duration-300 disabled:opacity-60 flex justify-center items-center gap-2"
+              disabled={loading}
+            >
+              {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
+            </button>
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
