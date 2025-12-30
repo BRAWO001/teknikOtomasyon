@@ -12,8 +12,8 @@ import UploadedFilesSection from "./UploadedFilesSection";
 // Ortamına göre değiştir
 // const UPLOAD_URL = "https://pilotapisrc.com/api/HttpUpload/upload-ftp";
 // const SAVE_URL_BASE = "https://pilotapisrc.com/api/IsEmriDosyaEkle";
-const UPLOAD_URL = "https://localhost:7289/api/HttpUpload/upload-ftp";
-const SAVE_URL_BASE = "https://localhost:7289/api/IsEmriDosyaEkle";
+const UPLOAD_URL = "https://pilotapisrc.com/api/HttpUpload/upload-ftp";
+const SAVE_URL_BASE = "https://pilotapisrc.com/api/IsEmriDosyaEkle";
 
 export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }) {
   if (!isOpen) return null;
