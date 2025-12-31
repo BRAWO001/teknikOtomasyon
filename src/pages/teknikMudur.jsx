@@ -1,3 +1,8 @@
+
+
+
+
+
 // pages/teknikMudur.jsx
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -40,7 +45,6 @@ export default function TeknikMudurPage() {
 
   // Üst panel state'leri (cookie)
   const [personel, setPersonel] = useState(null); // 👈 direkt personel objesi
-  const [authToken, setAuthToken] = useState("");
 
   // Çıkış
   const handleLogout = async () => {
@@ -53,7 +57,12 @@ export default function TeknikMudurPage() {
     }
   };
 
-  // Üst panel: PersonelUserInfo & AuthToken_01 (cookie)
+  // Yeni iş emri ekle
+  const handleNewIsEmri = () => {
+    router.push("/teknikIsEmriEkle");
+  };
+
+  // Üst panel: PersonelUserInfo (cookie)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -65,15 +74,6 @@ export default function TeknikMudurPage() {
       }
     } catch (err) {
       console.error("PersonelUserInfo parse error:", err);
-    }
-
-    try {
-      const tokenCookie = getClientCookie("AuthToken_01");
-      if (tokenCookie) {
-        setAuthToken(tokenCookie);
-      }
-    } catch (err) {
-      console.error("AuthToken_01 read error:", err);
     }
   }, []); // sadece ilk render'da
 
@@ -113,99 +113,69 @@ export default function TeknikMudurPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto min-h-screen max-w-6xl p-4 flex flex-col gap-4">
-        {/* ÜSTTE PERSONEL PANELİ + BİLGİLER */}
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          {/* Başlık + isim + çıkış */}
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Teknik Müdür Paneli
-              </p>
-              <p className="text-sm font-medium">
-                {personel
-                  ? `${personel.ad} ${personel.soyad}`
-                  : "Personel Bilgisi"}
-              </p>
-            </div>
+      <div className="mx-auto min-h-screen max-w-6xl p-4 flex flex-col gap-3">
+        {/* ÜSTTE ÇOK SIKIŞIK PERSONEL PANELİ */}
+        <section className="rounded-md border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Teknik Müdür Paneli
+                </p>
+                {personel && (
+                  <span className="rounded-full bg-zinc-100 px-2 py-[2px] text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
+                    {personel.ad} {personel.soyad} – {personel.rol}
+                  </span>
+                )}
+              </div>
 
-            <button
-              onClick={handleLogout}
-              className="self-start rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 sm:self-auto"
-            >
-              Çıkış Yap
-            </button>
-          </div>
-
-          {/* PersonelUserInfo + Token (üstte detaylar) */}
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Personel bilgileri */}
-            <div className="space-y-1 text-xs">
-              <p className="font-semibold text-zinc-700 dark:text-zinc-100">
-                PersonelUserInfo
-              </p>
-              {personel ? (
-                <div className="space-y-0.5 text-[11px] text-zinc-600 dark:text-zinc-300">
-                  <p>
-                    <span className="font-medium">ID:</span> {personel.id}
-                  </p>
-                  <p>
-                    <span className="font-medium">Kod:</span>{" "}
+              {personel && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-zinc-600 dark:text-zinc-300">
+                  <span>
+                    <span className="font-semibold">Kod:</span>{" "}
                     {personel.personelKodu}
-                  </p>
-                  <p>
-                    <span className="font-medium">Ad Soyad:</span>{" "}
-                    {personel.ad} {personel.soyad}
-                  </p>
-                  <p>
-                    <span className="font-medium">E-posta:</span>{" "}
-                    {personel.eposta}
-                  </p>
-                  <p>
-                    <span className="font-medium">Telefon:</span>{" "}
-                    {personel.telefon}
-                  </p>
-                  <p>
-                    <span className="font-medium">Kullanıcı Adı:</span>{" "}
-                    {personel.kullaniciAdi}
-                  </p>
-                  <p>
-                    <span className="font-medium">Rol:</span> {personel.rol}
-                  </p>
-                  <p>
-                    <span className="font-medium">Aktif mi?:</span>{" "}
-                    {personel.aktifMi ? "Evet" : "Hayır"}
-                  </p>
-                  {personel.olusturmaTarihiUtc && (
-                    <p>
-                      <span className="font-medium">Oluşturma Tarihi:</span>{" "}
-                      {new Date(
-                        personel.olusturmaTarihiUtc
-                      ).toLocaleString("tr-TR")}
-                    </p>
+                  </span>
+                  {personel.kullaniciAdi && (
+                    <span>
+                      <span className="font-semibold">Kullanıcı:</span>{" "}
+                      {personel.kullaniciAdi}
+                    </span>
+                  )}
+                  {personel.telefon && (
+                    <span>
+                      <span className="font-semibold">Tel:</span>{" "}
+                      {personel.telefon}
+                    </span>
+                  )}
+                  {personel.eposta && (
+                    <span>
+                      <span className="font-semibold">E-posta:</span>{" "}
+                      {personel.eposta}
+                    </span>
                   )}
                 </div>
-              ) : (
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              )}
+
+              {!personel && (
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
                   PersonelUserInfo cookie içinde bulunamadı.
                 </p>
               )}
             </div>
 
-            {/* Token bilgisi */}
-            <div className="space-y-1 text-xs">
-              <p className="font-semibold text-zinc-700 dark:text-zinc-100">
-                AuthToken_01
-              </p>
-              {authToken ? (
-                <div className="max-h-32 overflow-y-auto rounded-md bg-zinc-100 p-2 text-[10px] font-mono text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                  {authToken}
-                </div>
-              ) : (
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  AuthToken_01 cookie içinde bulunamadı.
-                </p>
-              )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleNewIsEmri}
+                className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"
+              >
+                Yeni İş Emri Ekle
+              </button>
+              <button
+                onClick={handleLogout}
+                className="rounded-md bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
+              >
+                Çıkış Yap
+              </button>
             </div>
           </div>
         </section>

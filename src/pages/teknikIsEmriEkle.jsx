@@ -250,12 +250,7 @@ export default function TeknikIsEmriEkle() {
             Teknik İş Emri Ekle
           </h1>
 
-          <Link
-            href="/teknikAnaSayfa"
-            className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-900"
-          >
-            ← Geri
-          </Link>
+          
         </div>
 
         {/* Site / Personel yüklenme hataları */}

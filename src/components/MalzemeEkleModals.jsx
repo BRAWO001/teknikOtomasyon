@@ -524,15 +524,7 @@ export default function MalzemeEkleModals({
           </div>
         </div>
 
-        {/* Footer ufak bilgi */}
-        <div className="border-t border-zinc-200 px-4 py-2 text-[10px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-          Oluşturulan / güncellenen malzemeler bu iş emrine bağlıdır. KDV görünümü
-          sadece ekranda hesaplama içindir. POST isteği şu formattadır:
-          <br />
-          <code className="text-[9px]">
-            [{`{ malzemeAdi: "Kablo", adet: 34, birimFiyat: 123, kaynak: 10 }`}]
-          </code>
-        </div>
+     
       </div>
     </div>
   );
