@@ -236,7 +236,7 @@ export default function TeknikIsEmriEkle() {
     if (!result) return;
 
     const timer = setTimeout(() => {
-      router.push("/teknikAnaSayfa");
+      router.push("/teknikMudur");
     }, 1500);
 
     return () => clearTimeout(timer);
