@@ -1,8 +1,4 @@
 
-
-
-
-
 // pages/teknikMudur.jsx
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -61,21 +57,34 @@ export default function TeknikMudurPage() {
   const handleNewIsEmri = () => {
     router.push("/teknikIsEmriEkle");
   };
+  // Yeni iş emri ekle
+  const handleSatinalma = () => {
+    router.push("/satinalma/liste");
+  };
 
   // Üst panel: PersonelUserInfo (cookie)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+ useEffect(() => {
+   if (typeof window === "undefined") return;
 
-    try {
-      const personelCookie = getClientCookie("PersonelUserInfo");
-      if (personelCookie) {
-        const parsed = JSON.parse(personelCookie); // 👈 doğrudan personel objesi
-        setPersonel(parsed);
-      }
-    } catch (err) {
-      console.error("PersonelUserInfo parse error:", err);
-    }
-  }, []); // sadece ilk render'da
+   try {
+     const personelCookie = getClientCookie("PersonelUserInfo");
+
+     // Cookie YOKSA → anasayfaya gönder
+     if (!personelCookie) {
+       router.replace("/"); // veya router.push("/")
+       return;
+     }
+
+     const parsed = JSON.parse(personelCookie); // 👈 doğrudan personel objesi
+     setPersonel(parsed);
+   } catch (err) {
+     console.error("PersonelUserInfo parse error:", err);
+     // Cookie bozuk / parse hatası varsa da → anasayfaya gönder
+     router.replace("/");
+   }
+ }, [router]); 
+
+  
 
   const fetchIsEmirleri = async (filterKey) => {
     try {
@@ -169,6 +178,12 @@ export default function TeknikMudurPage() {
                 className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"
               >
                 Yeni İş Emri Ekle
+              </button>
+              <button
+                onClick={handleSatinalma}
+                className="rounded-md bg-yellow-500 px-3 py-1 text-[11px] font-semibold text-white hover:bg-yellow-700"
+              >
+                Satın Alma Talepleri
               </button>
               <button
                 onClick={handleLogout}
