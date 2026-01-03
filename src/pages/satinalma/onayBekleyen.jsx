@@ -1,11 +1,11 @@
-// src/pages/satinalma/liste.jsx
+// src/pages/satinalma/onayBekleyen.jsx
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 
-export default function SatinAlmaListePage() {
+export default function SatinAlmaOnayBekleyenPage() {
   const router = useRouter();
 
   const [personel, setPersonel] = useState(null);
@@ -21,37 +21,53 @@ export default function SatinAlmaListePage() {
 
     try {
       const cookie = getClientCookie("PersonelUserInfo");
-      if (!cookie) return;
+      if (!cookie) {
+        setError("Personel bilgisi bulunamadı. Tekrar giriş yapın.");
+        setLoading(false);
+        return;
+      }
 
       const parsed = JSON.parse(cookie);
       setPersonel(parsed);
     } catch (err) {
       console.error("PersonelUserInfo parse error:", err);
+      setError("Personel bilgisi okunurken hata oluştu.");
+      setLoading(false);
     }
   }, []);
 
   // ------------------------------------------------------
-  // Listeyi yükle
+  // Onay bekleyenleri yükle (personelId ile)
   // ------------------------------------------------------
   useEffect(() => {
     const load = async () => {
+      if (!personel) return;
+      const personelId = personel.id ?? personel.Id;
+      if (!personelId) {
+        setError("Personel Id bulunamadı.");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
 
-        // backend: GET /api/satinalma
-        const data = await getDataAsync("satinalma");
+        // backend: GET /api/satinalma/onayBekleyenler?personelId=XX
+        const data = await getDataAsync(
+          `satinalma/onayBekleyenler?personelId=${personelId}`
+        );
         setItems(data || []);
       } catch (err) {
-        console.error("SATINALMA LIST ERROR:", err);
-        setError("Satın alma listesi alınırken bir hata oluştu.");
+        console.error("ONAY BEKLEYEN LIST ERROR:", err);
+        setError("Onay bekleyen talepler alınırken bir hata oluştu.");
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, []);
+  }, [personel]);
 
   const formatDate = (iso) => {
     if (!iso) return "-";
@@ -62,30 +78,9 @@ export default function SatinAlmaListePage() {
     }
   };
 
-  // SİZE ÖZEL: Bu personelin onaylaması gereken kaç tane var?
   const currentPersonelId = personel
     ? personel.id ?? personel.Id
     : null;
-
-  const benimOnaylamamGerekenSayisi = items.reduce((acc, x) => {
-    if (!currentPersonelId) return acc;
-
-    const onaylayanlar =
-      x.onaylayanPersoneller ?? x.OnaylayanPersoneller ?? [];
-
-    const benimKaydim = onaylayanlar.find((o) => {
-      const pid =
-        o.personelId ??
-        o.PersonelId ??
-        o.personel?.id ??
-        o.Personel?.Id;
-      const durumKod = o.durumKod ?? o.DurumKod ?? null;
-      return pid === currentPersonelId && (durumKod === 0 || durumKod === null);
-    });
-
-    if (benimKaydim) return acc + 1;
-    return acc;
-  }, 0);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -94,45 +89,28 @@ export default function SatinAlmaListePage() {
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900">
-              Satın Alma Talepleri
+              Onay Bekleyen Satın Alma Taleplerim
             </h1>
             <p className="text-[12px] text-zinc-500">
-              Açılmış tüm satın alma taleplerinin listesi
+              Sizin onayınızı bekleyen satın alma taleplerinin listesi
             </p>
-
-            {/* Kullanıcının onayı gerekenler özeti */}
-            {currentPersonelId && (
+            {personel && (
               <p className="mt-1 text-[11px] text-zinc-600">
-                <span className="font-semibold">
-                  Sizin onayınızı bekleyen talep sayısı:
+                Personel:{" "}
+                <span className="font-medium">
+                  {personel.ad} {personel.soyad}
                 </span>{" "}
-                {benimOnaylamamGerekenSayisi}
+                (ID: {currentPersonelId})
               </p>
             )}
           </div>
 
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-             {/* AnaSayfaya git */}
             <button
-              onClick={() => router.push("/")}
-              className="rounded-md border border-amber-100 bg-amber-50 px-4 py-2 text-sm font-semibold text-black shadow-sm hover:bg-amber-100"
+              onClick={() => router.push("/satinalma/liste")}
+              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50"
             >
-              Ana Sayfa
-            </button>
-            {/* Onay bekleyenler sayfasına git */}
-            <button
-              onClick={() => router.push("/satinalma/onayBekleyen")}
-              className="rounded-md border border-amber-500 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 shadow-sm hover:bg-amber-100"
-            >
-              Onay Bekleyen Taleplerim
-            </button>
-
-            {/* Yeni satın alma */}
-            <button
-              onClick={() => router.push("/satinalma/yeni")}
-              className="rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700"
-            >
-              + Yeni Satın Alma Talebi Oluştur
+              ← Tüm Satın Alma Talepleri
             </button>
           </div>
         </div>
@@ -152,9 +130,9 @@ export default function SatinAlmaListePage() {
         )}
 
         {/* Liste boşsa */}
-        {!loading && items.length === 0 && (
-          <div className="rounded-md border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-600">
-            Henüz kayıtlı satın alma talebi yok.
+        {!loading && !error && items.length === 0 && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
+            Şu anda sizin onayınızı bekleyen satın alma talebi bulunmuyor.
           </div>
         )}
 
@@ -173,46 +151,48 @@ export default function SatinAlmaListePage() {
 
             const talepEden = x.talepEden ?? x.TalepEden ?? null;
 
+            const benimOnayKaydim =
+              x.benimOnayKaydim ?? x.BenimOnayKaydim ?? null;
+
+            const sira =
+              benimOnayKaydim?.sira ?? benimOnayKaydim?.Sira ?? null;
+
             const onaylayanlar =
               x.onaylayanPersoneller ?? x.OnaylayanPersoneller ?? [];
 
-            // Bu kartta bu personelin onayı bekliyor mu?
-            let benimKaydim = null;
-            if (currentPersonelId) {
-              benimKaydim = onaylayanlar.find((o) => {
-                const pid =
-                  o.personelId ??
-                  o.PersonelId ??
-                  o.personel?.id ??
-                  o.Personel?.Id;
-                const durumKod = o.durumKod ?? o.DurumKod ?? null;
-                return (
-                  pid === currentPersonelId &&
-                  (durumKod === 0 || durumKod === null) // Beklemede
-                );
-              });
-            }
-
-            const benimOnayimBekleniyor = !!benimKaydim;
+            const onayDurumText =
+              onaylayanlar.length === 0
+                ? "Onaylayan personel atanmamış."
+                : onaylayanlar
+                    .map((o) => {
+                      const p = o.personel ?? o.Personel ?? {};
+                      const adSoyad = `${p.ad ?? p.Ad ?? ""} ${
+                        p.soyad ?? p.Soyad ?? ""
+                      }`.trim();
+                      const durumAd = o.durumAd ?? o.DurumAd ?? "";
+                      return adSoyad
+                        ? `${adSoyad} (${durumAd})`
+                        : `(${durumAd})`;
+                    })
+                    .join(", ");
 
             return (
               <Link
                 key={id}
                 href={`/satinalma/teklifler/${id}`}
-                className="block rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                className="block rounded-xl border border-amber-300 bg-white p-4 shadow-sm transition hover:shadow-md"
               >
-                {/* Seri No + Tarih */}
+                {/* Üst satır: seri + tarih */}
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-sky-700">
+                  <span className="text-[11px] font-medium text-amber-700">
                     {seriNo}
                   </span>
-
                   <span className="text-[10px] text-zinc-500">
                     {formatDate(tarih)}
                   </span>
                 </div>
 
-                {/* Talep cinsi */}
+                {/* Talep Cinsi */}
                 <div className="mb-1 text-sm font-semibold text-zinc-900">
                   {talepCinsi}
                 </div>
@@ -250,13 +230,23 @@ export default function SatinAlmaListePage() {
                   </span>
                 </div>
 
-                {/* SİZE ÖZEL BADGE */}
-                {benimOnayimBekleniyor && (
+                {/* Bu sizin onay kaydınız badge */}
+                {benimOnayKaydim && (
                   <div className="mt-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-[3px] text-[11px] font-medium text-amber-800">
-                    Sizin onayınız bekleniyor 
-                    
+                    Sizin onayınız bekleniyor
+                    {sira ? ` (Sıra: ${sira})` : ""}.
                   </div>
                 )}
+
+                {/* Onaylayanlar listesi */}
+                <div className="mt-2 rounded-md bg-zinc-50 px-2 py-1">
+                  <div className="text-[11px] font-medium text-zinc-700">
+                    Onaylayan / Onaylayacak Personeller:
+                  </div>
+                  <div className="text-[11px] text-zinc-600">
+                    {onayDurumText}
+                  </div>
+                </div>
 
                 {/* Açıklama */}
                 {aciklama && (
@@ -266,8 +256,8 @@ export default function SatinAlmaListePage() {
                 )}
 
                 <div className="mt-3 flex justify-end">
-                  <span className="text-[11px] font-medium text-sky-700">
-                    Detayı Gör →
+                  <span className="text-[11px] font-medium text-amber-700">
+                    Detayı Gör ve Onayla →
                   </span>
                 </div>
               </Link>
