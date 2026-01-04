@@ -23,6 +23,9 @@ export default function SatinAlmaFiyatlandirPage() {
   const [sending, setSending] = useState(false);
   const [successModal, setSuccessModal] = useState(false);
 
+  // Toplam gösterme (KDV)
+  const [showTotals, setShowTotals] = useState(false);
+
   // Satın alma detayını token ile çek
   useEffect(() => {
     if (!token) return;
@@ -42,6 +45,7 @@ export default function SatinAlmaFiyatlandirPage() {
           initial[id] = {
             birimFiyat: "",
             paraBirimi: "TRY",
+            kdvOraniYuzde: "20", // varsayılan %20
             not: "",
           };
         });
@@ -71,10 +75,14 @@ export default function SatinAlmaFiyatlandirPage() {
     const malzemeler =
       data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
 
-    if (!globalTedarikciAdi.trim()) {
+    const trimmedName = globalTedarikciAdi.trim();
+    if (!trimmedName) {
       alert("Lütfen tedarikçi / firma adını giriniz.");
       return;
     }
+
+    // DAİMA BÜYÜK HARF
+    const firmaAdiUpper = trimmedName.toUpperCase("tr-TR");
 
     const payload = [];
 
@@ -86,15 +94,22 @@ export default function SatinAlmaFiyatlandirPage() {
       const birimFiyatNum = parseFloat(
         (formRow.birimFiyat || "").toString().replace(",", ".")
       );
-
       if (isNaN(birimFiyatNum) || birimFiyatNum <= 0) continue;
+
+      const kdvYuzdeNum = parseFloat(formRow.kdvOraniYuzde || "0");
+      const kdvOrani =
+        !isNaN(kdvYuzdeNum) && kdvYuzdeNum > 0
+          ? kdvYuzdeNum / 100
+          : 0; // 0.20 vs
 
       payload.push({
         satinAlmaMalzemeId: malzemeId,
-        tedarikciAdi: globalTedarikciAdi.trim(),
+        tedarikciAdi: firmaAdiUpper,
         birimFiyat: birimFiyatNum,
         paraBirimi: formRow.paraBirimi || "TRY",
         not: formRow.not || null,
+        // 🔧 JSX dosyasında TS cast olmaz, direkt null gönderiyoruz
+        kdvOrani: kdvOrani > 0 ? kdvOrani : null,
       });
     }
 
@@ -167,6 +182,40 @@ export default function SatinAlmaFiyatlandirPage() {
   const malzemeler =
     data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
 
+  // ⭐ Toplam ve KDV hesaplama
+  let netTotal = 0;
+  let toplamKdv = 0;
+
+  (malzemeler || []).forEach((m) => {
+    const id = m.id ?? m.Id;
+    const adet = Number(m.adet ?? m.Adet) || 0;
+    const formRow = teklifForm[id];
+    if (!formRow || adet <= 0) return;
+
+    const birimFiyatNum = parseFloat(
+      (formRow.birimFiyat || "").toString().replace(",", ".")
+    );
+    if (isNaN(birimFiyatNum) || birimFiyatNum <= 0) return;
+
+    const kdvYuzdeNum = parseFloat(formRow.kdvOraniYuzde || "0");
+    const kdvOrani =
+      !isNaN(kdvYuzdeNum) && kdvYuzdeNum > 0 ? kdvYuzdeNum / 100 : 0;
+
+    const satirNet = birimFiyatNum * adet;
+    const satirKdv = satirNet * kdvOrani;
+
+    netTotal += satirNet;
+    toplamKdv += satirKdv;
+  });
+
+  const genelToplam = netTotal + toplamKdv;
+
+  const formatCurrency = (val) =>
+    val.toLocaleString("tr-TR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
   return (
     <div
       style={{
@@ -178,6 +227,33 @@ export default function SatinAlmaFiyatlandirPage() {
         backgroundColor: "#ffffff",
       }}
     >
+      {/* Profesyonel giriş metni */}
+      <div
+        style={{
+          marginBottom: "0.75rem",
+          padding: "0.75rem 1rem",
+          borderRadius: 6,
+          border: "1px solid #d1d5db",
+          backgroundColor: "#f9fafb",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            marginBottom: 4,
+            color: "#000",
+          }}
+        >
+          EOS MANAGEMENT
+        </div>
+        <div style={{ fontSize: 13, color: "#111827" }}>
+          EOS MANAGEMENT, aşağıda listelenen ürünler için sizden fiyat teklifi
+          talep etmektedir. Lütfen birim fiyatlarınızı, para birimini ve KDV
+          oranını eksiksiz doldurarak teklifinizi gönderiniz.
+        </div>
+      </div>
+
       <h1
         style={{
           marginBottom: "0.75rem",
@@ -214,7 +290,7 @@ export default function SatinAlmaFiyatlandirPage() {
         </p>
       </div>
 
-      {/* Tedarikçi adı – tüm satırlar için ortak */}
+      {/* Tedarikçi adı */}
       <div
         style={{
           border: "1px solid #d1d5db",
@@ -233,13 +309,16 @@ export default function SatinAlmaFiyatlandirPage() {
             color: "#000",
           }}
         >
-          Tedarikçi Adı / Firma Adı
+          Tedarikçi Adı / Firma Adı{" "}
+          <span style={{ color: "#b91c1c", fontSize: 12 }}>*</span>
         </label>
         <input
           type="text"
           value={globalTedarikciAdi}
-          onChange={(e) => setGlobalTedarikciAdi(e.target.value)}
-          placeholder="Örn: ABC Elektrik A.Ş."
+          onChange={(e) =>
+            setGlobalTedarikciAdi(e.target.value.toUpperCase("tr-TR"))
+          }
+          placeholder="Örn: ABC ELEKTRİK A.Ş."
           style={{
             width: "100%",
             padding: "0.45rem 0.5rem",
@@ -247,6 +326,7 @@ export default function SatinAlmaFiyatlandirPage() {
             borderRadius: 4,
             border: "1px solid #9ca3af",
             color: "#000",
+            textTransform: "uppercase",
           }}
         />
         <p
@@ -256,8 +336,8 @@ export default function SatinAlmaFiyatlandirPage() {
             color: "#4b5563",
           }}
         >
-          Bu isim, aşağıdaki tüm ürünler için gönderilen tekliflerde
-          kullanılacaktır.
+          Girilen firma adı otomatik olarak BÜYÜK harfe çevrilir ve tüm
+          malzemeler için aynı tedarikçi adı ile kayıt edilir.
         </p>
       </div>
 
@@ -373,6 +453,16 @@ export default function SatinAlmaFiyatlandirPage() {
                       borderBottom: "1px solid #9ca3af",
                       textAlign: "left",
                       padding: "0.4rem",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    KDV Oranı (%)
+                  </th>
+                  <th
+                    style={{
+                      borderBottom: "1px solid #9ca3af",
+                      textAlign: "left",
+                      padding: "0.4rem",
                       minWidth: 120,
                     }}
                   >
@@ -394,6 +484,7 @@ export default function SatinAlmaFiyatlandirPage() {
                   const formRow = teklifForm[id] || {
                     birimFiyat: "",
                     paraBirimi: "TRY",
+                    kdvOraniYuzde: "20",
                     not: "",
                   };
 
@@ -514,6 +605,37 @@ export default function SatinAlmaFiyatlandirPage() {
                         </select>
                       </td>
 
+                      {/* KDV Oranı (%) */}
+                      <td
+                        style={{
+                          borderBottom: "1px solid #e5e7eb",
+                          padding: "0.35rem",
+                        }}
+                      >
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={formRow.kdvOraniYuzde}
+                          onChange={(e) =>
+                            handleInputChange(
+                              id,
+                              "kdvOraniYuzde",
+                              e.target.value
+                            )
+                          }
+                          placeholder="20"
+                          style={{
+                            width: "100%",
+                            fontSize: 13,
+                            padding: "0.25rem",
+                            borderRadius: 4,
+                            border: "1px solid #9ca3af",
+                            color: "#000",
+                          }}
+                        />
+                      </td>
+
                       {/* Not */}
                       <td
                         style={{
@@ -545,29 +667,123 @@ export default function SatinAlmaFiyatlandirPage() {
             </table>
           </div>
 
-          {/* Gönder butonu */}
+          {/* Toplam ve KDV gösterim + Gönder butonu */}
           <div
             style={{
               marginTop: "0.9rem",
-              textAlign: "right",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "1rem",
+              alignItems: "flex-start",
+              flexWrap: "wrap",
             }}
           >
-            <button
-              onClick={handleSubmit}
-              disabled={sending}
-              style={{
-                padding: "0.55rem 1.4rem",
-                borderRadius: 6,
-                border: "none",
-                backgroundColor: sending ? "#9ca3af" : "#2563eb",
-                color: "#ffffff",
-                cursor: sending ? "default" : "pointer",
-                fontWeight: 600,
-                fontSize: 14,
-              }}
-            >
-              {sending ? "Gönderiliyor..." : "Teklifi Gönder"}
-            </button>
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowTotals((prev) => !prev)}
+                disabled={netTotal <= 0}
+                style={{
+                  padding: "0.45rem 1rem",
+                  borderRadius: 6,
+                  border: "1px solid #16a34a",
+                  backgroundColor: netTotal > 0 ? "#16a34a" : "#9ca3af",
+                  color: "#ffffff",
+                  cursor: netTotal > 0 ? "pointer" : "default",
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                {showTotals
+                  ? "Toplamı Gizle (KDV Dahil)"
+                  : "Toplamı Göster (KDV Dahil)"}
+              </button>
+
+              {netTotal <= 0 && (
+                <div
+                  style={{
+                    marginTop: "0.35rem",
+                    fontSize: 11,
+                    color: "#6b7280",
+                  }}
+                >
+                  Toplamı görebilmek için en az bir ürün için geçerli birim fiyat
+                  giriniz.
+                </div>
+              )}
+            </div>
+
+            {showTotals && netTotal > 0 && (
+              <div
+                style={{
+                  borderRadius: 6,
+                  border: "1px solid #d1d5db",
+                  padding: "0.6rem 0.9rem",
+                  backgroundColor: "#f9fafb",
+                  minWidth: 260,
+                  fontSize: 13,
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 600,
+                    marginBottom: "0.25rem",
+                    color: "#111827",
+                  }}
+                >
+                  Toplam Özet (Satır bazlı KDV)
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Net Toplam:</span>
+                  <span>{formatCurrency(netTotal)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Toplam KDV:</span>
+                  <span>{formatCurrency(toplamKdv)}</span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 4,
+                    fontWeight: 700,
+                    color: "#000",
+                  }}
+                >
+                  <span>Genel Toplam (KDV Dahil):</span>
+                  <span>{formatCurrency(genelToplam)}</span>
+                </div>
+                <div
+                  style={{
+                    marginTop: "0.35rem",
+                    fontSize: 11,
+                    color: "#6b7280",
+                  }}
+                >
+                  Hesaplamalar, satır bazında girilen KDV oranlarına göre
+                  yapılmıştır.
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginLeft: "auto" }}>
+              <button
+                onClick={handleSubmit}
+                disabled={sending}
+                style={{
+                  padding: "0.55rem 1.4rem",
+                  borderRadius: 6,
+                  border: "none",
+                  backgroundColor: sending ? "#9ca3af" : "#2563eb",
+                  color: "#ffffff",
+                  cursor: sending ? "default" : "pointer",
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+              >
+                {sending ? "Gönderiliyor..." : "Teklifi Gönder"}
+              </button>
+            </div>
           </div>
         </>
       )}

@@ -386,10 +386,12 @@ export default function YeniSatinAlmaPage() {
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-zinc-700">
                   Site / Proje
+                  
                 </label>
                 <select
                   value={siteId}
                   required
+                  
                   onChange={(e) => setSiteId(e.target.value)}
                   className="w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 >

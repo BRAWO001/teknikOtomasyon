@@ -1,18 +1,18 @@
 // ===============================
-// src/pages/satinalma/onayBekleyen.jsx
+// src/pages/satinalma/onaylanan.jsx
 // ===============================
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
-import SatinAlmaOnayBekleyenItem from "@/components/SatinAlmaOnayBekleyenItem";
+import SatinAlmaOnaylananItem from "@/components/SatinAlmaOnaylananItem";
 
 function toDateInputValue(date) {
   // YYYY-MM-DD
   return date.toISOString().slice(0, 10);
 }
 
-export default function SatinAlmaOnayBekleyenPage() {
+export default function SatinAlmaOnaylananPage() {
   const router = useRouter();
 
   const [personel, setPersonel] = useState(null);
@@ -76,7 +76,7 @@ export default function SatinAlmaOnayBekleyenPage() {
   }, []);
 
   // ------------------------------------------------------
-  // Onay bekleyenleri yükle (filtre + personelId ile)
+  // Onaylananları yükle (filtre + personelId ile)
   // ------------------------------------------------------
   const loadItems = async () => {
     if (!currentPersonelId) return;
@@ -98,30 +98,42 @@ export default function SatinAlmaOnayBekleyenPage() {
         params.append("siteId", filterSiteId);
       }
 
-      // backend: GET /api/satinalma/onayBekleyenler?...
+      // backend: GET /api/satinalma/onaylananlar?...
       const data = await getDataAsync(
-        `satinalma/onayBekleyenler?${params.toString()}`
+        `satinalma/onaylananlar?${params.toString()}`
       );
+
       setItems(data || []);
     } catch (err) {
-      console.error("ONAY BEKLEYEN LIST ERROR:", err);
-      setError("Onay bekleyen talepler alınırken bir hata oluştu.");
+      console.error("ONAYLANAN LIST ERROR:", err);
+      setError(
+        "Onayladığınız / reddettiğiniz talepler alınırken bir hata oluştu."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Personel hazır olduğunda ilk yükleme (son 14 gün + tüm siteler)
+  // Personel hazır olduğunda ilk load (son 14 gün)
   useEffect(() => {
     if (!currentPersonelId) return;
     loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPersonelId]);
 
-  const formatDate = (iso) => {
+  const formatDateTime = (iso) => {
     if (!iso) return "-";
     try {
       return new Date(iso).toLocaleString("tr-TR");
+    } catch {
+      return iso;
+    }
+  };
+
+  const formatDateOnly = (iso) => {
+    if (!iso) return "-";
+    try {
+      return new Date(iso).toLocaleDateString("tr-TR");
     } catch {
       return iso;
     }
@@ -134,10 +146,11 @@ export default function SatinAlmaOnayBekleyenPage() {
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900">
-              Onay Bekleyen Satın Alma Taleplerim
+              Onayladığım / Reddettiğim Satın Alma Talepleri
             </h1>
             <p className="text-[12px] text-zinc-500">
-              Sizin onayınızı bekleyen satın alma taleplerinin listesi
+              Son 14 gün için otomatik filtre uygulanır, isterseniz tarih ve
+              site filtresini değiştirebilirsiniz.
             </p>
             {personel && (
               <p className="mt-1 text-[11px] text-zinc-600">
@@ -217,7 +230,7 @@ export default function SatinAlmaOnayBekleyenPage() {
             <div className="flex flex-row justify-end gap-2">
               <button
                 onClick={loadItems}
-                className="rounded-md bg-amber-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-amber-700"
+                className="rounded-md bg-emerald-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-emerald-700"
               >
                 Filtrele
               </button>
@@ -226,7 +239,7 @@ export default function SatinAlmaOnayBekleyenPage() {
 
           <div className="text-[11px] text-zinc-500">
             Not: Tarih filtresi belge tarihine (Tarih alanı) göre uygulanır.
-            Eğer tarih seçmezseniz, varsayılan olarak son 14 gün gösterilir.
+            Bitiş tarihi dahil olacak şekilde sunucu tarafında filtrelenir.
           </div>
         </div>
 
@@ -247,19 +260,19 @@ export default function SatinAlmaOnayBekleyenPage() {
         {/* Liste boşsa */}
         {!loading && !error && items.length === 0 && (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
-            Seçilen tarih ve site filtresine göre onay bekleyen talep bulunmuyor.
+            Seçilen tarih ve site filtresine göre kayıt bulunamadı.
           </div>
         )}
 
         {/* SATIR LİSTE */}
         {!loading && !error && items.length > 0 && (
-          <div className="mt-4 rounded-md border border-amber-200 bg-white">
+          <div className="mt-4 rounded-md border border-emerald-200 bg-white">
             {items.map((x) => (
-              <SatinAlmaOnayBekleyenItem
+              <SatinAlmaOnaylananItem
                 key={x.id ?? x.Id}
                 item={x}
-                currentPersonelId={currentPersonelId}
-                formatDate={formatDate}
+                formatDateTime={formatDateTime}
+                formatDateOnly={formatDateOnly}
               />
             ))}
           </div>
