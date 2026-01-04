@@ -508,12 +508,12 @@ export default function TeknikIsEmriEkle() {
         {/* <div className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
           İş Emri Endpoint:{" "}
           <span className="font-semibold">
-            https://localhost:7289/api/is-emirleri/only
+            https://pilotapisrc.com/api/is-emirleri/only
           </span>
           <br />
           Personel Atama Endpoint:{" "}
           <span className="font-semibold">
-            https://localhost:7289/api/Personeller/{"{isEmriId}"}/personeller
+            https://pilotapisrc.com/api/Personeller/{"{isEmriId}"}/personeller
           </span>
         </div> */}
       </div>

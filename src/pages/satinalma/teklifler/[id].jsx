@@ -17,7 +17,7 @@ const BASE_URL = "http://teknik-otomasyon.vercel.app";
 
 // API BASE (POST için)
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7289/api/";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://pilotapisrc.com/api/";
 
 export default function SatinAlmaTekliflerPage() {
   const router = useRouter();
