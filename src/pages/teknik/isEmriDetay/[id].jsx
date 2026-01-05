@@ -43,6 +43,34 @@ function isImageFile(urlOrName = "") {
   );
 }
 
+// ⭐ Malzeme kaynağı (enum) metne çevir
+function formatKaynak(kaynakKod, kaynakAd) {
+  // Öncelik: kaynakAd (string)
+  if (kaynakAd) {
+    const lower = kaynakAd.toLowerCase();
+
+    if (lower.includes("depo")) return "Depo";
+    if (lower.includes("yenialim") || lower.includes("yeni")) return "Yeni Alım";
+    if (lower.includes("isverentemini") || lower.includes("işveren"))
+      return "İşveren Temini";
+
+    // Tanıyamazsa olduğu gibi göster
+    return kaynakAd;
+  }
+
+  // Sonra: kaynakKod (sayı)
+  if (kaynakKod !== null && kaynakKod !== undefined) {
+    const num = Number(kaynakKod);
+    if (num === 10) return "Depo";
+    if (num === 20) return "Yeni Alım";
+    if (num === 30) return "İşveren Temini";
+    return String(kaynakKod);
+  }
+
+  return "-";
+}
+
+
 export default function IsEmriDetayPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -237,9 +265,7 @@ export default function IsEmriDetayPage() {
               <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
                 Oluşturma
               </div>
-              <div className="font-medium">
-                {formatTR(olusturmaTarihiUtc)}
-              </div>
+              <div className="font-medium">{formatTR(olusturmaTarihiUtc)}</div>
             </div>
             <div>
               <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
@@ -292,8 +318,7 @@ export default function IsEmriDetayPage() {
                   <>
                     <span className="text-zinc-400">•</span>
                     <span>
-                      Kapı:{" "}
-                      <span className="font-semibold">{ev.kapiNo}</span>
+                      Kapı: <span className="font-semibold">{ev.kapiNo}</span>
                     </span>
                   </>
                 )}
@@ -554,9 +579,7 @@ export default function IsEmriDetayPage() {
                         <div className="flex flex-col text-[10px] text-zinc-500 dark:text-zinc-400">
                           <span>{p.rolAd}</span>
                           {p.not && (
-                            <span className="truncate max-w-full">
-                              {p.not}
-                            </span>
+                            <span className="truncate max-w-full">{p.not}</span>
                           )}
                         </div>
                       </div>
@@ -612,14 +635,12 @@ export default function IsEmriDetayPage() {
                     <thead>
                       <tr className="border-b border-zinc-200 text-[10px] uppercase tracking-wide text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
                         <th className="pb-1 pr-2 text-left">Malzeme</th>
+                        {/* ⭐ Yeni sütun: Kaynak */}
+                        <th className="pb-1 px-2 text-left">Kaynak</th>
                         <th className="pb-1 px-2 text-right">Adet</th>
                         <th className="pb-1 px-2 text-right">Birim Fiyat</th>
-                        <th className="pb-1 px-2 text-right">
-                          Tutar (net)
-                        </th>
-                        <th className="pb-1 pl-2 text-right">
-                          Tutar (KDV)
-                        </th>
+                        <th className="pb-1 px-2 text-right">Tutar (net)</th>
+                        <th className="pb-1 pl-2 text-right">Tutar (KDV)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -628,6 +649,10 @@ export default function IsEmriDetayPage() {
                         const adet = Number(m.adet ?? 0);
                         const netTutar = net * adet;
                         const kdvTutar = netTutar * 1.2;
+
+                        // 🔹 JSON'dan gelen alanlar:
+                        const kaynakKod = m.kaynakKod ?? m.KaynakKod;
+                        const kaynakAd = m.kaynakAd ?? m.KaynakAd;
 
                         return (
                           <tr
@@ -639,9 +664,13 @@ export default function IsEmriDetayPage() {
                                 {m.malzemeAdi}
                               </div>
                             </td>
-                            <td className="py-1 px-2 text-right">
-                              {adet}
+
+                            {/* ⭐ Kaynak sütunu */}
+                            <td className="py-1 px-2 text-left">
+                              {formatKaynak(kaynakKod, kaynakAd)}
                             </td>
+
+                            <td className="py-1 px-2 text-right">{adet}</td>
                             <td className="py-1 px-2 text-right">
                               ₺ {net.toFixed(2)}
                             </td>
@@ -661,9 +690,7 @@ export default function IsEmriDetayPage() {
 
               <div className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
                 Toplam kalem:{" "}
-                <span className="font-semibold">
-                  {toplamMalzemeAdet}
-                </span>
+                <span className="font-semibold">{toplamMalzemeAdet}</span>
               </div>
             </div>
           </div>
