@@ -1,8 +1,5 @@
 /* public/sw.js */
 
-// next-pwa'nın runtime'ını içeri al (cache vs. için)
-importScripts("/_next/static/chunks/webpack.js");
-
 // Push mesajı geldiğinde çalışır
 self.addEventListener("push", function (event) {
   if (!event.data) {
@@ -11,7 +8,7 @@ self.addEventListener("push", function (event) {
 
   let data = {};
   try {
-    data = event.data.json(); // biz sunucudan JSON gönderiyoruz (title, body, url vs.)
+    data = event.data.json(); // .NET'ten JSON gönderiyoruz (title, body, url vs.)
   } catch {
     data = { title: "Bildirim", body: event.data.text() };
   }
@@ -22,7 +19,7 @@ self.addEventListener("push", function (event) {
     icon: "/icons/icon-192x192.png",
     badge: "/icons/icon-192x192.png",
     data: {
-      url: data.url || "/", // tıklayınca gideceği adres
+      url: data.url || "/", // tıklayınca açılacak adres (ileride doldururuz)
     },
   };
 
