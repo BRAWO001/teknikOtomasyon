@@ -1,3 +1,8 @@
+
+
+
+
+
 // src/pages/satinalma/teklifler/[id].jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
@@ -309,7 +314,7 @@ export default function SatinAlmaTekliflerPage() {
           color: "#000",
         }}
       >
-        Satın Alma Teklifleri
+        Satın Alma Teklifleri    --Tedarikçi Paylaşım Linki --
       </h1>
 
       <SatinalmaShareLinkBar
@@ -318,31 +323,54 @@ export default function SatinAlmaTekliflerPage() {
         onCopy={copyLink}
       />
 
-      <SatinalmaHeaderCard
-        seriNo={seriNo}
-        tarih={tarih}
-        talepCinsi={talepCinsi}
-        talepEden={talepEden}
-        aciklama={aciklama}
-      />
+      {/* ⭐ ÜST GRID: Solda Talep Bilgileri + Onay Paneli, Sağda Onaylayan Personeller */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1.3fr)",
+          gap: "0.75rem",
+          alignItems: "flex-start",
+          marginTop: "0.75rem",
+          marginBottom: "0.75rem",
+        }}
+      >
+        {/* SOL SÜTUN: Header + Onay Paneli (iki satır) */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+          }}
+        >
+          <SatinalmaHeaderCard
+            seriNo={seriNo}
+            tarih={tarih}
+            talepCinsi={talepCinsi}
+            talepEden={talepEden}
+            aciklama={aciklama}
+          />
 
-      <SatinalmaOnaylayanPersoneller
-        onaylayanPersoneller={onaylayanPersoneller}
-      />
+          <SatinalmaOnayPanel
+            currentPersonelId={currentPersonelId}
+            benimOnayKaydim={benimOnayKaydim}
+            benimBeklemedeMi={benimBeklemedeMi}
+            benimDurumAd={benimDurumAd}
+            onayNot={onayNot}
+            setOnayNot={setOnayNot}
+            onayError={onayError}
+            onaySuccess={onaySuccess}
+            onayLoading={onayLoading}
+            handleOnayIslem={handleOnayIslem}
+          />
+        </div>
 
-      <SatinalmaOnayPanel
-        currentPersonelId={currentPersonelId}
-        benimOnayKaydim={benimOnayKaydim}
-        benimBeklemedeMi={benimBeklemedeMi}
-        benimDurumAd={benimDurumAd}
-        onayNot={onayNot}
-        setOnayNot={setOnayNot}
-        onayError={onayError}
-        onaySuccess={onaySuccess}
-        onayLoading={onayLoading}
-        handleOnayIslem={handleOnayIslem}
-      />
+        {/* SAĞ SÜTUN: Onaylayan / Onaylayacak Personeller */}
+        <SatinalmaOnaylayanPersoneller
+          onaylayanPersoneller={onaylayanPersoneller}
+        />
+      </div>
 
+      {/* ALT BÖLÜMLER: Tedarikçi özet + Malzeme/Teklif listesi */}
       <SatinalmaTedarikciOzet tedarikciOzetList={tedarikciOzetList} />
 
       <SatinalmaMalzemeTeklifList

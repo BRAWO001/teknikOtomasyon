@@ -18,7 +18,6 @@ export default function SatinalmaOnayPanel({
       return "Bu talep için sizin adınıza tanımlı bir onay kaydı bulunmuyor.";
     }
 
-    // Onay kaydı var
     if (benimBeklemedeMi) {
       return (
         <>
@@ -28,31 +27,36 @@ export default function SatinalmaOnayPanel({
       );
     }
 
-    // Daha önce Onaylandı / Reddedildi ama artık güncellenebilir
-    return (
-      <>
-        Bu talep için onay kaydınız işlenmiş durumda:{" "}
-        <strong>{benimDurumAd}</strong>. İsterseniz aşağıdan
-        <strong> tekrar Onayla</strong> veya <strong>Reddet</strong> ile
-        güncelleyebilirsiniz.
-      </>
-    );
+    
   })();
+
+  // 📝 Not alanı zorunlu kontrolü – hem Onayla hem Reddet için
+  const validateNotOrWarn = () => {
+    if (!onayNot || !onayNot.trim()) {
+      alert(
+        "Lütfen Not alanını doldurunuz.\n\nOnaylıyorum ya da Faturanın kesileceği işletmeyi belirtiniz."
+      );
+      return false;
+    }
+    return true;
+  };
 
   return (
     <div
       style={{
-        border: "1px solid #d1d5db",
-        borderRadius: 6,
-        padding: "0.75rem 1rem",
-        marginBottom: "1rem",
+        border: "1px solid #e5e7eb",      // daha ince
+        borderRadius: 4,                  // 6 → 4
+        padding: "0.5rem 0.75rem",        // 0.75 → 0.5, 1 → 0.75
+        marginBottom: "0.5rem",           // 1rem → 0.5rem
         backgroundColor: "#fffbeb",
+        fontSize: 12,
+        lineHeight: 1.4,
       }}
     >
       <h2
         style={{
-          margin: "0 0 0.5rem 0",
-          fontSize: 15,
+          margin: "0 0 0.35rem 0",
+          fontSize: 13,                   // 15 → 13
           fontWeight: 600,
           color: "#92400e",
         }}
@@ -61,7 +65,7 @@ export default function SatinalmaOnayPanel({
       </h2>
 
       {!benimOnayKaydim && (
-        <p style={{ margin: 0, fontSize: 13, color: "#4b5563" }}>
+        <p style={{ margin: 0, fontSize: 12, color: "#4b5563" }}>
           {durumMetni}
         </p>
       )}
@@ -70,8 +74,8 @@ export default function SatinalmaOnayPanel({
         <>
           <p
             style={{
-              margin: "0 0 0.5rem 0",
-              fontSize: 13,
+              margin: "0 0 0.35rem 0",
+              fontSize: 12,
               color: "#4b5563",
             }}
           >
@@ -81,12 +85,12 @@ export default function SatinalmaOnayPanel({
           {onayError && (
             <div
               style={{
-                marginBottom: "0.5rem",
-                fontSize: 12,
+                marginBottom: "0.35rem",
+                fontSize: 11,
                 color: "#b91c1c",
                 backgroundColor: "#fef2f2",
-                borderRadius: 4,
-                padding: "4px 8px",
+                borderRadius: 3,
+                padding: "3px 6px",
               }}
             >
               {onayError}
@@ -96,28 +100,28 @@ export default function SatinalmaOnayPanel({
           {onaySuccess && (
             <div
               style={{
-                marginBottom: "0.5rem",
-                fontSize: 12,
+                marginBottom: "0.35rem",
+                fontSize: 11,
                 color: "#166534",
                 backgroundColor: "#dcfce7",
-                borderRadius: 4,
-                padding: "4px 8px",
+                borderRadius: 3,
+                padding: "3px 6px",
               }}
             >
               {onaySuccess}
             </div>
           )}
 
-          <div style={{ marginBottom: "0.5rem" }}>
+          <div style={{ marginBottom: "0.4rem" }}>
             <label
               style={{
                 display: "block",
-                fontSize: 12,
-                marginBottom: 4,
+                fontSize: 11,
+                marginBottom: 3,
                 color: "#4b5563",
               }}
             >
-              Not (opsiyonel):
+              Not <span style={{ color: "#b91c1c" }}>*</span> 
             </label>
             <textarea
               value={onayNot}
@@ -125,20 +129,28 @@ export default function SatinalmaOnayPanel({
               rows={2}
               style={{
                 width: "100%",
-                fontSize: 12,
-                borderRadius: 4,
+                fontSize: 11,
+                borderRadius: 3,
                 border: "1px solid #d1d5db",
-                padding: "4px 8px",
+                padding: "3px 6px",
                 resize: "vertical",
               }}
-              placeholder="Onay / red gerekçenizi yazabilirsiniz..."
+              placeholder="Onaylıyorum ya da Faturanın kesileceği işletmeyi belirtiniz..."
             />
+            <div
+              style={{
+                marginTop: 3,
+                fontSize: 10,
+                color: "#9ca3af",
+              }}
+            >
+            </div>
           </div>
 
           <div
             style={{
               display: "flex",
-              gap: 8,
+              gap: 6,
               flexWrap: "wrap",
               alignItems: "center",
             }}
@@ -146,11 +158,14 @@ export default function SatinalmaOnayPanel({
             <button
               type="button"
               disabled={onayLoading}
-              onClick={() => handleOnayIslem(true)}
+              onClick={() => {
+                if (!validateNotOrWarn()) return;
+                handleOnayIslem(true);
+              }}
               style={{
-                padding: "5px 10px",
-                fontSize: 12,
-                borderRadius: 6,
+                padding: "4px 8px",
+                fontSize: 11,
+                borderRadius: 5,
                 border: "1px solid #16a34a",
                 backgroundColor: "#16a34a",
                 color: "#fff",
@@ -163,11 +178,14 @@ export default function SatinalmaOnayPanel({
             <button
               type="button"
               disabled={onayLoading}
-              onClick={() => handleOnayIslem(false)}
+              onClick={() => {
+                if (!validateNotOrWarn()) return;
+                handleOnayIslem(false);
+              }}
               style={{
-                padding: "5px 10px",
-                fontSize: 12,
-                borderRadius: 6,
+                padding: "4px 8px",
+                fontSize: 11,
+                borderRadius: 5,
                 border: "1px solid #b91c1c",
                 backgroundColor: "#b91c1c",
                 color: "#fff",

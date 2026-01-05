@@ -5,17 +5,19 @@ export default function SatinalmaOnaylayanPersoneller({
   return (
     <div
       style={{
-        border: "1px solid #d1d5db",
-        borderRadius: 6,
-        padding: "0.75rem 1rem",
-        marginBottom: "1rem",
+        border: "1px solid #e5e7eb",
+        borderRadius: 4,
+        padding: "0.5rem 0.75rem",     // küçültüldü
+        marginBottom: "0.5rem",
         backgroundColor: "#ffffff",
+        fontSize: 11,                  // genel font küçüldü
+        lineHeight: 1.4,
       }}
     >
       <h2
         style={{
-          margin: "0 0 0.5rem 0",
-          fontSize: 16,
+          margin: "0 0 0.35rem 0",
+          fontSize: 13,
           fontWeight: 600,
           color: "#000",
         }}
@@ -24,7 +26,7 @@ export default function SatinalmaOnaylayanPersoneller({
       </h2>
 
       {onaylayanPersoneller.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: "#4b5563" }}>
+        <p style={{ margin: 0, fontSize: 11, color: "#4b5563" }}>
           Bu satın alma için kayıtlı onaylayıcı personel bulunmuyor.
         </p>
       ) : (
@@ -33,57 +35,25 @@ export default function SatinalmaOnaylayanPersoneller({
             style={{
               width: "100%",
               borderCollapse: "collapse",
-              fontSize: 12,
+              fontSize: 11,
               color: "#000",
             }}
           >
             <thead>
               <tr style={{ backgroundColor: "#f3f4f6" }}>
-                <th
-                  style={{
-                    borderBottom: "1px solid #9ca3af",
-                    textAlign: "left",
-                    padding: "0.35rem",
-                  }}
-                >
-                  Sıra
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #9ca3af",
-                    textAlign: "left",
-                    padding: "0.35rem",
-                  }}
-                >
-                  Personel
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #9ca3af",
-                    textAlign: "left",
-                    padding: "0.35rem",
-                  }}
-                >
-                  Durum
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #9ca3af",
-                    textAlign: "left",
-                    padding: "0.35rem",
-                  }}
-                >
-                  Tarih
-                </th>
-                <th
-                  style={{
-                    borderBottom: "1px solid #9ca3af",
-                    textAlign: "left",
-                    padding: "0.35rem",
-                  }}
-                >
-                  Not
-                </th>
+                {["Sıra", "Personel", "Durum", "Tarih", "Not"].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      borderBottom: "1px solid #d1d5db",
+                      textAlign: "left",
+                      padding: "0.25rem 0.35rem",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -109,7 +79,8 @@ export default function SatinalmaOnaylayanPersoneller({
                     <td
                       style={{
                         borderBottom: "1px solid #e5e7eb",
-                        padding: "0.35rem",
+                        padding: "0.25rem 0.35rem",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {sira}
@@ -117,7 +88,7 @@ export default function SatinalmaOnaylayanPersoneller({
                     <td
                       style={{
                         borderBottom: "1px solid #e5e7eb",
-                        padding: "0.35rem",
+                        padding: "0.25rem 0.35rem",
                       }}
                     >
                       {adSoyad || "-"}
@@ -125,7 +96,8 @@ export default function SatinalmaOnaylayanPersoneller({
                     <td
                       style={{
                         borderBottom: "1px solid #e5e7eb",
-                        padding: "0.35rem",
+                        padding: "0.25rem 0.35rem",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {durumAd}
@@ -133,7 +105,8 @@ export default function SatinalmaOnaylayanPersoneller({
                     <td
                       style={{
                         borderBottom: "1px solid #e5e7eb",
-                        padding: "0.35rem",
+                        padding: "0.25rem 0.35rem",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {tarihUtc
@@ -143,7 +116,7 @@ export default function SatinalmaOnaylayanPersoneller({
                     <td
                       style={{
                         borderBottom: "1px solid #e5e7eb",
-                        padding: "0.35rem",
+                        padding: "0.25rem 0.35rem",
                       }}
                     >
                       {not || "-"}

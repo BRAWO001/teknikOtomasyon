@@ -8,7 +8,9 @@ export function setCookie(res, name, value, options = {}) {
     secure: process.env.NODE_ENV === "production",
     path: "/",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 gün
+    // maxAge: 60 * 60 * 24 * 7, // 7 gün
+    // maxAge: 60 , // 1 dakika
+    maxAge: 60 * 60 * 8, // 8 saat
   };
 
   const cookie = serialize(name, value, {
