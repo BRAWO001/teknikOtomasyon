@@ -1,4 +1,8 @@
 
+
+
+
+
 // pages/teknikMudur.jsx
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -6,27 +10,38 @@ import TeknikIsEmriCard from "@/components/TeknikIsEmriCard";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 
-// Yüzdesel durum filtreleri (eşit ve üzeri)
-const DURUM_PROGRESS_FILTERS = [
-  { key: "ALL", min: 0, label: "Tümü", description: "0–100% tüm iş emirleri" },
-  { key: "P10", min: 10, label: "%10+", description: "%10 ve üzeri" },
-  { key: "P20", min: 20, label: "%20+", description: "%20 ve üzeri" },
-  { key: "P30", min: 30, label: "%30+", description: "%30 ve üzeri" },
-  { key: "P50", min: 50, label: "%50+", description: "%50 ve üzeri" },
-  { key: "P75", min: 75, label: "%75+", description: "%75 ve üzeri" },
-  { key: "P90", min: 90, label: "%90+", description: "%90 ve üzeri" },
-  { key: "P100", min: 100, label: "%100", description: "Sadece %100" },
+// Basit durum filtreleri: Tüm / Devam / Biten
+const STATUS_FILTERS = [
+  { key: "ALL", label: "Tüm İşler", description: "0–100 tüm iş emirleri" },
+  {
+    key: "DEVAM",
+    label: "Devam Edenler",
+    description: "%100 olmayan tüm işler",
+  },
+  {
+    key: "BITEN",
+    label: "Biten İşler",
+    description: "Sadece %100 (tamamlanmış) işler",
+  },
 ];
 
 // Backend path builder
-function buildPath(statusFilterKey) {
-  const f =
-    DURUM_PROGRESS_FILTERS.find((x) => x.key === statusFilterKey) ||
-    DURUM_PROGRESS_FILTERS[0];
+function buildPath({ statusFilter, startDate, endDate, siteId, personelId }) {
+  const qs = [];
 
-  const min = f.min ?? 0;
-  const max = 100; // hep eşit ve üzeri istediğin için üst sınırı 100 bırakıyoruz
-  return `is-emirleri/durum-filtre?minProgress=${min}&maxProgress=${max}`;
+  if (personelId) qs.push(`personelId=${encodeURIComponent(personelId)}`);
+  if (siteId) qs.push(`siteId=${encodeURIComponent(siteId)}`);
+  if (startDate) qs.push(`startDate=${encodeURIComponent(startDate)}`);
+  if (endDate) qs.push(`endDate=${encodeURIComponent(endDate)}`);
+
+  const statusKey = statusFilter || "ALL";
+  qs.push(`status=${encodeURIComponent(statusKey)}`);
+
+  const queryString = qs.length > 0 ? `?${qs.join("&")}` : "";
+
+  // 🔥 API: GET /api/Personeller/teknikMudurFilterGet
+  // getDataAsync içinde base + "personeller/..." şeklinde gidiyor
+  return `personeller/teknikMudurFilterGet${queryString}`;
 }
 
 export default function TeknikMudurPage() {
@@ -34,13 +49,22 @@ export default function TeknikMudurPage() {
 
   // İş emri state'leri
   const [isEmirleri, setIsEmirleri] = useState([]);
-  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL | P10 | P20 | ...
-
+  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL | DEVAM | BITEN
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Üst panel state'leri (cookie)
-  const [personel, setPersonel] = useState(null); // 👈 direkt personel objesi
+  const [personel, setPersonel] = useState(null); // teknik müdür kendi bilgisi
+
+  // Filtre state'leri
+  const [filterPersonelId, setFilterPersonelId] = useState(""); // personel filtresi
+  const [filterSiteId, setFilterSiteId] = useState(""); // site filtresi
+  const [startDate, setStartDate] = useState(""); // yyyy-MM-dd
+  const [endDate, setEndDate] = useState(""); // yyyy-MM-dd
+
+  // Dropdown verileri
+  const [personelList, setPersonelList] = useState([]);
+  const [siteList, setSiteList] = useState([]);
 
   // Çıkış
   const handleLogout = async () => {
@@ -57,41 +81,89 @@ export default function TeknikMudurPage() {
   const handleNewIsEmri = () => {
     router.push("/teknikIsEmriEkle");
   };
-  // Yeni iş emri ekle
+
+  // Satın alma sayfası
   const handleSatinalma = () => {
     router.push("/satinalma/liste");
   };
 
   // Üst panel: PersonelUserInfo (cookie)
- useEffect(() => {
-   if (typeof window === "undefined") return;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-   try {
-     const personelCookie = getClientCookie("PersonelUserInfo");
+    try {
+      const personelCookie = getClientCookie("PersonelUserInfo");
 
-     // Cookie YOKSA → anasayfaya gönder
-     if (!personelCookie) {
-       router.replace("/"); // veya router.push("/")
-       return;
-     }
+      // Cookie yoksa → anasayfaya
+      if (!personelCookie) {
+        router.replace("/");
+        return;
+      }
 
-     const parsed = JSON.parse(personelCookie); // 👈 doğrudan personel objesi
-     setPersonel(parsed);
-   } catch (err) {
-     console.error("PersonelUserInfo parse error:", err);
-     // Cookie bozuk / parse hatası varsa da → anasayfaya gönder
-     router.replace("/");
-   }
- }, [router]); 
+      const parsed = JSON.parse(personelCookie);
+      setPersonel(parsed);
+    } catch (err) {
+      console.error("PersonelUserInfo parse error:", err);
+      router.replace("/");
+    }
+  }, [router]);
 
-  
+  // Personel listesi (dropdown)
+  useEffect(() => {
+    let cancelled = false;
 
-  const fetchIsEmirleri = async (filterKey) => {
+    const loadPersonelList = async () => {
+      try {
+        const res = await getDataAsync("personeller");
+        if (cancelled) return;
+        setPersonelList(res || []);
+      } catch (err) {
+        console.error("PERSONELLER FETCH ERROR:", err);
+      }
+    };
+
+    loadPersonelList();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Site listesi (dropdown)
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSiteList = async () => {
+      try {
+        const res = await getDataAsync("SiteAptEvControllerSet/sites");
+        if (cancelled) return;
+        setSiteList(res || []);
+      } catch (err) {
+        console.error("SITES FETCH ERROR:", err);
+      }
+    };
+
+    loadSiteList();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // İş emirlerini backend'den çek
+  const fetchIsEmirleri = async (options = {}) => {
     try {
       setLoading(true);
       setError(null);
 
-      const path = buildPath(filterKey);
+      const path = buildPath({
+        statusFilter: options.statusFilter ?? statusFilter,
+        startDate: options.startDate ?? startDate,
+        endDate: options.endDate ?? endDate,
+        siteId: options.siteId ?? filterSiteId,
+        personelId: options.personelId ?? filterPersonelId,
+      });
+
       const data = await getDataAsync(path);
       const list = Array.isArray(data) ? data : data ? [data] : [];
 
@@ -105,25 +177,42 @@ export default function TeknikMudurPage() {
     }
   };
 
-  // Filtre değiştiğinde otomatik yükle
+  // Durum filtresi değiştiğinde otomatik yükle
   useEffect(() => {
-    fetchIsEmirleri(statusFilter);
+    fetchIsEmirleri({ statusFilter });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  // Manuel yenile
+  // Sayfa ilk açılışında (backend default: son 30 gün)
+  useEffect(() => {
+    fetchIsEmirleri();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleRefresh = async () => {
-    await fetchIsEmirleri(statusFilter);
+    await fetchIsEmirleri();
+  };
+
+  const handleFilterApply = async () => {
+    await fetchIsEmirleri();
+  };
+
+  const handleFilterReset = async () => {
+    setFilterPersonelId("");
+    setFilterSiteId("");
+    setStartDate("");
+    setEndDate("");
+    setStatusFilter("ALL");
+    // statusFilter değişimi zaten fetch tetikliyor
   };
 
   const activeFilterObj =
-    DURUM_PROGRESS_FILTERS.find((f) => f.key === statusFilter) ||
-    DURUM_PROGRESS_FILTERS[0];
+    STATUS_FILTERS.find((f) => f.key === statusFilter) || STATUS_FILTERS[0];
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto min-h-screen max-w-6xl p-4 flex flex-col gap-3">
-        {/* ÜSTTE ÇOK SIKIŞIK PERSONEL PANELİ */}
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-3 p-4">
+        {/* ÜSTTE TEKNİK MÜDÜR PANELİ */}
         <section className="rounded-md border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1">
@@ -181,7 +270,7 @@ export default function TeknikMudurPage() {
               </button>
               <button
                 onClick={handleSatinalma}
-                className="rounded-md bg-yellow-500 px-3 py-1 text-[11px] font-semibold text-white hover:bg-yellow-700"
+                className="rounded-md bg-yellow-500 px-3 py-1 text-[11px] font-semibold text-white hover:bg-yellow-600"
               >
                 Satın Alma Talepleri
               </button>
@@ -197,6 +286,7 @@ export default function TeknikMudurPage() {
 
         {/* ALTA GENİŞ TEKNİK İŞ EMİRLERİ */}
         <main className="flex-1 rounded-lg border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          {/* Başlık + durum filtresi + yenile */}
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-xl font-semibold sm:text-2xl">
@@ -212,9 +302,8 @@ export default function TeknikMudurPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {DURUM_PROGRESS_FILTERS.map((f) => {
+              {STATUS_FILTERS.map((f) => {
                 const isActive = statusFilter === f.key;
-
                 return (
                   <button
                     key={f.key}
@@ -242,7 +331,106 @@ export default function TeknikMudurPage() {
             </div>
           </div>
 
-          {/* Duruma göre içerik */}
+          {/* Filtre bar – personel + site + tarih */}
+          <section className="mb-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-3 text-xs shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
+              {/* Personel filtresi */}
+              <div className="w-full md:w-64">
+                <label className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
+                  Personel (Atanan)
+                </label>
+                <select
+                  value={filterPersonelId}
+                  onChange={(e) => setFilterPersonelId(e.target.value)}
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                >
+                  <option value="">Tüm Personeller</option>
+                  {personelList.map((p) => {
+                    const id = p.id ?? p.Id;
+                    const ad = p.ad ?? p.Ad;
+                    const soyad = p.soyad ?? p.Soyad;
+                    const rolAd = p.rolAd ?? p.RolAd;
+                    return (
+                      <option key={id} value={id}>
+                        {ad} {soyad} {rolAd ? `(${rolAd})` : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Site filtresi */}
+              <div className="w-full md:w-64">
+                <label className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
+                  Site / Proje
+                </label>
+                <select
+                  value={filterSiteId}
+                  onChange={(e) => setFilterSiteId(e.target.value)}
+                  className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                >
+                  <option value="">Tüm Siteler</option>
+                  {siteList.map((s) => {
+                    const id = s.id ?? s.Id;
+                    const ad = s.ad ?? s.Ad;
+                    return (
+                      <option key={id} value={id}>
+                        {ad || `Site #${id}`}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Tarih aralığı */}
+              <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+                <div className="flex-1">
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
+                    Başlangıç Tarihi
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
+                    Bitiş Tarihi
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </div>
+              </div>
+
+              {/* Filtre butonları */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleFilterApply}
+                  disabled={loading}
+                  className="rounded-md bg-emerald-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Filtrele
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFilterReset}
+                  disabled={loading}
+                  className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                >
+                  Temizle
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* İçerik */}
           {loading && (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               İş emirleri yükleniyor...
@@ -257,14 +445,13 @@ export default function TeknikMudurPage() {
 
           {!loading && !error && isEmirleri.length === 0 && (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Bu filtreye uygun iş emri bulunamadı.
+              Bu filtrelere uygun iş emri bulunamadı.
             </p>
           )}
 
           {!loading && !error && isEmirleri.length > 0 && (
-            <div className="mt-3 max-h-[70vh] overflow-y-auto ">
-              {/* 3 sütunlu geniş grid */}
-              <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
+            <div className="mt-3 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {isEmirleri.map((item) => (
                   <TeknikIsEmriCard key={item.id} data={item} />
                 ))}
