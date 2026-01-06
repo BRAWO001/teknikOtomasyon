@@ -1,3 +1,7 @@
+
+
+
+
 // pages/personel.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -33,24 +37,24 @@ export default function PersonelPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filtreler
+  // Filtreler (default: son 14 gün)
   const [startDate, setStartDate] = useState(() => {
-      const d = new Date();
-      d.setDate(d.getDate() - 14);
-      return toDateInputValue(d);
-    }); // yyyy-MM-dd
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return toDateInputValue(d);
+  }); // yyyy-MM-dd
+
   const [endDate, setEndDate] = useState(() => {
-      const d = new Date();
-      return toDateInputValue(d);
-    }); // yyyy-MM-dd
+    const d = new Date();
+    return toDateInputValue(d);
+  }); // yyyy-MM-dd
+
   const [siteId, setSiteId] = useState("");
 
   // Site listesi (dropdown)
   const [sites, setSites] = useState([]);
 
-  // ------------------------------------------------------
-  // Personel cookie'sini oku
-  // ------------------------------------------------------
+  // Cookie’den personel bilgisi
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -65,9 +69,10 @@ export default function PersonelPage() {
     }
   }, []);
 
-  // ------------------------------------------------------
+  // Hem id hem Id’yi destekle
+  const currentPersonelId = personel ? personel.id ?? personel.Id : null;
+
   // Site listesini çek (filtre dropdown'u için)
-  // ------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
 
@@ -88,14 +93,12 @@ export default function PersonelPage() {
     };
   }, []);
 
-  // ------------------------------------------------------
   // Personelin iş emirlerini filtrelere göre çek
   // GET: personeller/teknikPersonelFilterGet?personelId=&startDate=&endDate=&siteId=
-  // ------------------------------------------------------
   const fetchIsEmirleri = async (options = {}) => {
-    if (!personel?.id) return;
+    if (!currentPersonelId) return;
 
-    const personelId = options.personelId ?? personel.id;
+    const personelId = options.personelId ?? currentPersonelId;
     const sDate = options.startDate ?? startDate;
     const eDate = options.endDate ?? endDate;
     const sId = options.siteId ?? siteId;
@@ -133,16 +136,13 @@ export default function PersonelPage() {
     }
   };
 
-  // İlk açılışta (personel geldikten sonra) → backend default tarihle (son 30 gün)
+  // SAYFAYA GİRİNCE: personelId hazır olduğunda direkt GET at
+  // (default startDate/endDate/siteId state’i ile)
   useEffect(() => {
-    if (!personel?.id) return;
-    fetchIsEmirleri({
-      startDate: "",
-      endDate: "",
-      siteId: "",
-    });
+    if (!currentPersonelId) return;
+    fetchIsEmirleri();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personel?.id]);
+  }, [currentPersonelId]);
 
   const handleLogout = async () => {
     try {
@@ -159,12 +159,20 @@ export default function PersonelPage() {
   };
 
   const handleFilterReset = async () => {
-    setStartDate("");
-    setEndDate("");
+    const d1 = new Date();
+    d1.setDate(d1.getDate() - 14);
+    const d2 = new Date();
+
+    const defaultStart = toDateInputValue(d1);
+    const defaultEnd = toDateInputValue(d2);
+
+    setStartDate(defaultStart);
+    setEndDate(defaultEnd);
     setSiteId("");
+
     await fetchIsEmirleri({
-      startDate: "",
-      endDate: "",
+      startDate: defaultStart,
+      endDate: defaultEnd,
       siteId: "",
     });
   };
@@ -205,7 +213,6 @@ export default function PersonelPage() {
             <h2 className="text-[13px] font-extrabold tracking-wide text-emerald-800 dark:text-emerald-300">
               Atandığım İş Emirleri
             </h2>
-           
           </div>
 
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
@@ -263,7 +270,7 @@ export default function PersonelPage() {
               <button
                 type="button"
                 onClick={handleFilterApply}
-                disabled={loading || !personel?.id}
+                disabled={loading || !currentPersonelId}
                 className="rounded-md bg-emerald-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Filtrele
@@ -271,7 +278,7 @@ export default function PersonelPage() {
               <button
                 type="button"
                 onClick={handleFilterReset}
-                disabled={loading || !personel?.id}
+                disabled={loading || !currentPersonelId}
                 className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
               >
                 Temizle
@@ -282,7 +289,6 @@ export default function PersonelPage() {
 
         {/* İŞ EMİRLERİ LİSTESİ */}
         <main className="flex-1 rounded-md border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          {/* Durumlar */}
           {loading && (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               İş emirleri yükleniyor...
@@ -306,25 +312,26 @@ export default function PersonelPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {isEmirleri.map((item) => (
                   <TeknikIsEmriCard
-                    key={item.isEmriId || item.id}
+                    key={item.isEmriId || item.id || item.Id}
                     data={{
-                      id: item.isEmriId || item.id,
-                      kod: item.isEmriKod || item.kod,
-                      kisaBaslik: item.kisaBaslik,
-                      aciklama: item.aciklama,
+                      id: item.isEmriId || item.id || item.Id,
+                      kod: item.isEmriKod || item.kod || item.Kod,
+                      kisaBaslik: item.kisaBaslik || item.KisaBaslik,
+                      aciklama: item.aciklama || item.Aciklama,
                       olusturmaTarihiUtc:
-                        item.olusturmaTarihiUtc || item.OlusturmaTarihiUtc,
-                      konum: item.konum,
-                      site: item.site,
-                      apt: item.apt,
-                      ev: item.ev,
-                      dosyalar: item.dosyalar || [],
-                      personeller: item.personeller || [],
-                      notlar: item.notlar || [],
-                      malzemeler: item.malzemeler || [],
+                        item.olusturmaTarihiUtc ||
+                        item.OlusturmaTarihiUtc,
+                      konum: item.konum || item.Konum,
+                      site: item.site || item.Site,
+                      apt: item.apt || item.Apt,
+                      ev: item.ev || item.Ev,
+                      dosyalar: item.dosyalar || item.Dosyalar || [],
+                      personeller: item.personeller || item.Personeller || [],
+                      notlar: item.notlar || item.Notlar || [],
+                      malzemeler: item.malzemeler || item.Malzemeler || [],
                       DurumKod: item.durumKod ?? item.DurumKod,
                     }}
-                    currentPersonelId={personel?.id}
+                    currentPersonelId={currentPersonelId}
                   />
                 ))}
               </div>
