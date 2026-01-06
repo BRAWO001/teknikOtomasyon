@@ -81,7 +81,7 @@ export default function IsEmriDurumGuncelleModals({
   };
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 p-2">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black p-2">
       <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
         {/* Başlık */}
         <div className="mb-3 flex items-start justify-between gap-2">

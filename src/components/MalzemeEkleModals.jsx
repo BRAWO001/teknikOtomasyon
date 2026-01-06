@@ -211,7 +211,7 @@ export default function MalzemeEkleModals({
     };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 sm:p-6 md:p-10">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black p-4 sm:p-6 md:p-10">
       {/* İç kart */}
       <div className="relative flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-zinc-950">
         {/* Header */}

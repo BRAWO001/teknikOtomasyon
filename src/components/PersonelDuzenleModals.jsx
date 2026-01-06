@@ -132,7 +132,7 @@ export default function PersonelDuzenleModals({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-black/60 p-2"
+      className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-black p-2"
       onClick={onClose}
     >
       <div
