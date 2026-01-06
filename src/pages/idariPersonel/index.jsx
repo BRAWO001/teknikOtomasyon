@@ -5,6 +5,13 @@ import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 
+function toDateInputValue(date) {
+  return date.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+
+
+
 export default function IdariPersonelListePage() {
   const router = useRouter();
 
@@ -14,8 +21,15 @@ export default function IdariPersonelListePage() {
   const [error, setError] = useState(null);
 
   // Filtre state'leri
-  const [startDate, setStartDate] = useState(""); // "yyyy-MM-dd"
-  const [endDate, setEndDate] = useState(""); // "yyyy-MM-dd"
+  const [startDate, setStartDate] = useState(() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 14);
+      return toDateInputValue(d);
+    }); // "yyyy-MM-dd"
+  const [endDate, setEndDate] = useState(() => {
+      const d = new Date();
+      return toDateInputValue(d);
+    }); // "yyyy-MM-dd"
   const [siteId, setSiteId] = useState("");
 
   // Site listesi (dropdown için)

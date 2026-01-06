@@ -1,11 +1,17 @@
+
+
+
+
+
 // src/pages/idariPersonel/reddedilenler.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+import SatinAlmaReddedilenItem from "@/components/SatinAlmaReddedilenItem";
 
 function toDateInputValue(date) {
-  return date.toISOString().slice(0, 10);
+  return date.toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
 export default function IdariPersonelReddedilenlerPage() {
@@ -29,19 +35,28 @@ export default function IdariPersonelReddedilenlerPage() {
     return toDateInputValue(d);
   });
 
-  // Personel cookie
+  // Personel cookie (zorunlu)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
       const cookie = getClientCookie("PersonelUserInfo");
-      if (!cookie) return;
+      if (!cookie) {
+        setError("Personel bilgisi bulunamadı. Tekrar giriş yapın.");
+        setLoading(false);
+        return;
+      }
+
       const parsed = JSON.parse(cookie);
       setPersonel(parsed);
     } catch (err) {
       console.error("PersonelUserInfo parse error:", err);
+      setError("Personel bilgisi okunurken hata oluştu.");
+      setLoading(false);
     }
   }, []);
+
+  const currentPersonelId = personel ? personel.id ?? personel.Id : null;
 
   // Siteler
   useEffect(() => {
@@ -60,11 +75,16 @@ export default function IdariPersonelReddedilenlerPage() {
   // İDARİ – Reddedilenler
   // GET: /api/satinalma/idariPersonelSatinAlmaGetir/reddedilenler
   const loadItems = async () => {
+    if (!currentPersonelId) return;
+
     try {
       setLoading(true);
       setError(null);
 
       const params = new URLSearchParams();
+      // İleride gerekirse:
+      // params.append("personelId", currentPersonelId);
+
       if (filterStartDate) params.append("startDate", filterStartDate);
       if (filterEndDate) params.append("endDate", filterEndDate);
       if (filterSiteId) params.append("siteId", filterSiteId);
@@ -77,15 +97,17 @@ export default function IdariPersonelReddedilenlerPage() {
     } catch (err) {
       console.error("IDARI REDDEDILEN LIST ERROR:", err);
       setError("Reddedilen idari talepler alınırken bir hata oluştu.");
+      setItems([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!currentPersonelId) return;
     loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentPersonelId]);
 
   const handleFilterApply = async () => {
     await loadItems();
@@ -95,6 +117,15 @@ export default function IdariPersonelReddedilenlerPage() {
     if (!iso) return "-";
     try {
       return new Date(iso).toLocaleString("tr-TR");
+    } catch {
+      return iso;
+    }
+  };
+
+  const formatDateOnly = (iso) => {
+    if (!iso) return "-";
+    try {
+      return new Date(iso).toLocaleDateString("tr-TR");
     } catch {
       return iso;
     }
@@ -118,7 +149,8 @@ export default function IdariPersonelReddedilenlerPage() {
                 İdari Personel:{" "}
                 <span className="font-medium">
                   {personel.ad} {personel.soyad}
-                </span>
+                </span>{" "}
+                {currentPersonelId && <> (ID: {currentPersonelId})</>}
               </p>
             )}
           </div>
@@ -228,63 +260,17 @@ export default function IdariPersonelReddedilenlerPage() {
           </div>
         )}
 
-        {/* Liste */}
+        {/* Liste – ortak component ile */}
         {!loading && !error && items.length > 0 && (
-          <div className="mt-4 rounded-md border border-red-200 bg-white divide-y divide-red-50">
-            {items.map((x) => {
-              const id = x.id ?? x.Id;
-              const seriNo = x.seriNo ?? x.SeriNo;
-              const tarih = x.tarih ?? x.Tarih;
-              const talepCinsi = x.talepCinsi ?? x.TalepCinsi;
-              const aciklama = x.aciklama ?? x.Aciklama;
-              const talepEden = x.talepEden ?? x.TalepEden;
-              const site = x.site ?? x.Site;
-
-              return (
-                <div
-                  key={id}
-                  className="px-3 py-2 flex flex-col gap-1 hover:bg-red-50/60"
-                >
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="text-[11px] font-semibold text-zinc-500">
-                        #{id} • {seriNo}
-                      </div>
-                      <div className="text-sm font-semibold text-zinc-900">
-                        {talepCinsi}
-                      </div>
-                      {aciklama && (
-                        <div className="text-[12px] text-zinc-600">
-                          {aciklama}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-right text-[11px] text-zinc-500">
-                      <div>{formatDateTime(tarih)}</div>
-                      {site && (
-                        <div>
-                          Site:{" "}
-                          <span className="font-medium">
-                            {site.ad ?? site.Ad}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {talepEden && (
-                    <div className="mt-1 text-[11px] text-zinc-600">
-                      Talep Eden:{" "}
-                      <span className="font-medium">
-                        {talepEden.ad ?? talepEden.Ad}{" "}
-                        {talepEden.soyad ?? talepEden.Soyad}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="mt-4 grid gap-4">
+            {items.map((x) => (
+              <SatinAlmaReddedilenItem
+                key={x.id ?? x.Id}
+                item={x}
+                formatDateTime={formatDateTime}
+                formatDateOnly={formatDateOnly}
+              />
+            ))}
           </div>
         )}
       </div>

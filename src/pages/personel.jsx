@@ -21,6 +21,10 @@ function formatTR(iso) {
   }
 }
 
+function toDateInputValue(date) {
+  return date.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
 export default function PersonelPage() {
   const router = useRouter();
 
@@ -30,8 +34,15 @@ export default function PersonelPage() {
   const [error, setError] = useState(null);
 
   // Filtreler
-  const [startDate, setStartDate] = useState(""); // yyyy-MM-dd
-  const [endDate, setEndDate] = useState(""); // yyyy-MM-dd
+  const [startDate, setStartDate] = useState(() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 14);
+      return toDateInputValue(d);
+    }); // yyyy-MM-dd
+  const [endDate, setEndDate] = useState(() => {
+      const d = new Date();
+      return toDateInputValue(d);
+    }); // yyyy-MM-dd
   const [siteId, setSiteId] = useState("");
 
   // Site listesi (dropdown)

@@ -1,11 +1,18 @@
+
+
+
+
+
 // src/pages/idariPersonel/onayiBekleyenler.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+import SatinAlmaOnayBekleyenItem from "@/components/SatinAlmaOnayBekleyenItem";
 
 function toDateInputValue(date) {
-  return date.toISOString().slice(0, 10); // YYYY-MM-DD
+  // YYYY-MM-DD
+  return date.toISOString().slice(0, 10);
 }
 
 export default function IdariPersonelOnayiBekleyenlerPage() {
@@ -18,10 +25,11 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Filtreler
   const [filterSiteId, setFilterSiteId] = useState("");
   const [filterStartDate, setFilterStartDate] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 14);
+    d.setDate(d.getDate() - 14); // son 14 gün başlangıç
     return toDateInputValue(d);
   });
   const [filterEndDate, setFilterEndDate] = useState(() => {
@@ -29,20 +37,34 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
     return toDateInputValue(d);
   });
 
-  // Personel cookie (üst bilgi)
+  // ------------------------------------------------------
+  // Personel cookie'sini oku (zorunlu)
+  // ------------------------------------------------------
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     try {
       const cookie = getClientCookie("PersonelUserInfo");
-      if (!cookie) return;
+      if (!cookie) {
+        setError("Personel bilgisi bulunamadı. Tekrar giriş yapın.");
+        setLoading(false);
+        return;
+      }
+
       const parsed = JSON.parse(cookie);
       setPersonel(parsed);
     } catch (err) {
       console.error("PersonelUserInfo parse error:", err);
+      setError("Personel bilgisi okunurken hata oluştu.");
+      setLoading(false);
     }
   }, []);
 
-  // Siteler
+  const currentPersonelId = personel ? personel.id ?? personel.Id : null;
+
+  // ------------------------------------------------------
+  // Siteleri yükle (select options için)
+  // ------------------------------------------------------
   useEffect(() => {
     const loadSites = async () => {
       try {
@@ -52,42 +74,54 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
         console.error("SITES LOAD ERROR:", err);
       }
     };
+
     loadSites();
   }, []);
 
-  // İDARİ – Onayı bekleyenler
+  // ------------------------------------------------------
+  // İDARİ – Onayı bekleyenleri yükle
   // GET: /api/satinalma/idariPersonelSatinAlmaGetir/onayiBekleyenler
+  // ------------------------------------------------------
   const loadItems = async () => {
+    if (!currentPersonelId) return;
+
     try {
       setLoading(true);
       setError(null);
 
       const params = new URLSearchParams();
-      if (filterStartDate) params.append("startDate", filterStartDate);
-      if (filterEndDate) params.append("endDate", filterEndDate);
-      if (filterSiteId) params.append("siteId", filterSiteId);
+      // Eğer ileride personelId parametresi de kullanmak istersen:
+      // params.append("personelId", currentPersonelId);
+
+      if (filterStartDate) {
+        params.append("startDate", filterStartDate);
+      }
+      if (filterEndDate) {
+        params.append("endDate", filterEndDate);
+      }
+      if (filterSiteId) {
+        params.append("siteId", filterSiteId);
+      }
 
       const data = await getDataAsync(
         `satinalma/idariPersonelSatinAlmaGetir/onayiBekleyenler?${params.toString()}`
       );
-
       setItems(data || []);
     } catch (err) {
       console.error("IDARI ONAYI BEKLEYEN LIST ERROR:", err);
       setError("Onayı bekleyen idari talepler alınırken bir hata oluştu.");
+      setItems([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Personel hazır olduğunda ilk yükleme
   useEffect(() => {
+    if (!currentPersonelId) return;
     loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleFilterApply = async () => {
-    await loadItems();
-  };
+  }, [currentPersonelId]);
 
   const formatDate = (iso) => {
     if (!iso) return "-";
@@ -116,7 +150,8 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
                 İdari Personel:{" "}
                 <span className="font-medium">
                   {personel.ad} {personel.soyad}
-                </span>
+                </span>{" "}
+                {currentPersonelId && <> (ID: {currentPersonelId})</>}
               </p>
             )}
           </div>
@@ -142,6 +177,7 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
         <div className="mb-4 rounded-md border border-zinc-200 bg-white p-3 text-[12px]">
           <div className="mb-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {/* Başlangıç Tarihi */}
               <div className="flex flex-col">
                 <label className="mb-1 text-[11px] font-medium text-zinc-600">
                   Başlangıç Tarihi
@@ -154,6 +190,7 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
                 />
               </div>
 
+              {/* Bitiş Tarihi */}
               <div className="flex flex-col">
                 <label className="mb-1 text-[11px] font-medium text-zinc-600">
                   Bitiş Tarihi
@@ -166,6 +203,7 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
                 />
               </div>
 
+              {/* Site filtresi */}
               <div className="flex flex-col">
                 <label className="mb-1 text-[11px] font-medium text-zinc-600">
                   Site
@@ -191,7 +229,7 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
 
             <div className="flex flex-row justify-end gap-2">
               <button
-                onClick={handleFilterApply}
+                onClick={loadItems}
                 className="rounded-md bg-amber-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-amber-700"
               >
                 Filtrele
@@ -201,7 +239,7 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
 
           <div className="text-[11px] text-zinc-500">
             Not: Tarih filtresi belge tarihine (Tarih alanı) göre uygulanır.
-            Bitiş tarihi dahil olacak şekilde sunucu tarafında filtrelenir.
+            Eğer tarih seçmezseniz, varsayılan olarak son 14 gün gösterilir.
           </div>
         </div>
 
@@ -227,65 +265,17 @@ export default function IdariPersonelOnayiBekleyenlerPage() {
           </div>
         )}
 
-        {/* LİSTE */}
+        {/* LİSTE – Ortak component ile */}
         {!loading && !error && items.length > 0 && (
-          <div className="mt-4 rounded-md border border-amber-200 bg-white divide-y divide-amber-50">
-            {items.map((x) => {
-              const id = x.id ?? x.Id;
-              const seriNo = x.seriNo ?? x.SeriNo;
-              const tarih = x.tarih ?? x.Tarih;
-              const talepCinsi = x.talepCinsi ?? x.TalepCinsi;
-              const aciklama = x.aciklama ?? x.Aciklama;
-              const talepEden = x.talepEden ?? x.TalepEden;
-              const site = x.site ?? x.Site;
-              const malzemeSayisi = x.malzemeSayisi ?? x.MalzemeSayisi;
-
-              return (
-                <div
-                  key={id}
-                  className="px-3 py-2 flex flex-col gap-1 hover:bg-amber-50/60"
-                >
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="text-[11px] font-semibold text-zinc-500">
-                        #{id} • {seriNo}
-                      </div>
-                      <div className="text-sm font-semibold text-zinc-900">
-                        {talepCinsi}
-                      </div>
-                      {aciklama && (
-                        <div className="text-[12px] text-zinc-600">
-                          {aciklama}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-right text-[11px] text-zinc-500">
-                      <div>{formatDate(tarih)}</div>
-                      {site && (
-                        <div>
-                          Site:{" "}
-                          <span className="font-medium">
-                            {site.ad ?? site.Ad}
-                          </span>
-                        </div>
-                      )}
-                      <div>Malzeme sayısı: {malzemeSayisi}</div>
-                    </div>
-                  </div>
-
-                  {talepEden && (
-                    <div className="mt-1 text-[11px] text-zinc-600">
-                      Talep Eden:{" "}
-                      <span className="font-medium">
-                        {talepEden.ad ?? talepEden.Ad}{" "}
-                        {talepEden.soyad ?? talepEden.Soyad}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="mt-4 rounded-md border border-amber-200 bg-white">
+            {items.map((x) => (
+              <SatinAlmaOnayBekleyenItem
+                key={x.id ?? x.Id}
+                item={x}
+                currentPersonelId={currentPersonelId}
+                formatDate={formatDate}
+              />
+            ))}
           </div>
         )}
       </div>
