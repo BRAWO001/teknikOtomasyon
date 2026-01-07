@@ -80,7 +80,10 @@ export default function TeknikIsEmriEkle() {
       try {
         setPersonelLoading(true);
         setPersonelError("");
-        const data = await getDataAsync("Personeller");
+        const data = await getDataAsync(
+          "Personeller/ByDurum?rolKod=30&aktifMi=true"
+        );
+
         setPersoneller(data || []);
       } catch (err) {
         console.error("Personel listesi alınırken hata:", err);

@@ -114,7 +114,10 @@ export default function TeknikMudurPage() {
 
     const loadPersonelList = async () => {
       try {
-        const res = await getDataAsync("personeller");
+        const res = await getDataAsync(
+          "Personeller/ByDurum?rolKod=30&aktifMi=true"
+        );
+
         if (cancelled) return;
         setPersonelList(res || []);
       } catch (err) {
@@ -349,10 +352,9 @@ export default function TeknikMudurPage() {
                     const id = p.id ?? p.Id;
                     const ad = p.ad ?? p.Ad;
                     const soyad = p.soyad ?? p.Soyad;
-                    const rolAd = p.rolAd ?? p.RolAd;
                     return (
                       <option key={id} value={id}>
-                        {ad} {soyad} {rolAd ? `(${rolAd})` : ""}
+                        {ad} {soyad} 
                       </option>
                     );
                   })}
@@ -459,6 +461,8 @@ export default function TeknikMudurPage() {
             </div>
           )}
         </main>
+
+        
       </div>
     </div>
   );

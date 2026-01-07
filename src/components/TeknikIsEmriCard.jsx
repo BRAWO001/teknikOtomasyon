@@ -166,15 +166,33 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
             <span className="text-zinc-500 dark:text-zinc-400">
               İş İlerleme Durumu
             </span>
+            <Link
+              href={`/teknik/isEmriDetay/${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md  bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+            >
+              İş Emri Detay →
+            </Link>
+            
             <span className="font-semibold text-zinc-800 dark:text-zinc-100">
               {progress}%{" "}
               {progress === 100 && (
-                <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                <span className="ml-1 rounded-full bg-emerald-100 px-1 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
                   Tamamlandı
                 </span>
+                
+
+                
               )}
+              
+              
             </span>
+            
+            
           </div>
+          
+          
           <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
             <div
               className={`h-full rounded-full ${
@@ -186,7 +204,9 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               }`}
               style={{ width: `${progress}%` }}
             />
+            
           </div>
+          
 
           {/* Eğer personel ekranındaysa durum güncelle butonu */}
           {currentPersonelId && (

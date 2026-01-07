@@ -55,7 +55,9 @@ export default function PersonelDuzenleModals({
 
       try {
         setPersonelLoading(true);
-        const all = await getDataAsync("Personeller");
+        const all = await getDataAsync(
+          "Personeller/ByDurum?rolKod=30&aktifMi=true"
+        );
         setPersoneller(Array.isArray(all) ? all : []);
       } catch (err) {
         console.error("Personel listesi alınırken hata:", err);
