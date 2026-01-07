@@ -174,7 +174,7 @@ export default function TeknikIsEmriEkle() {
     if (!form.kisaBaslik.trim())
       return "Kısa başlık zorunlu. (Örn: Ortak alan – A Blok elektrik arızası)";
     if (!form.siteId) return "Site seçmelisin.";
-    if (!form.aptId) return "Bölüm / blok seçmelisin.";
+    // if (!form.aptId) return "Bölüm / blok seçmelisin.";
     // evId opsiyonel
     return "";
   };
