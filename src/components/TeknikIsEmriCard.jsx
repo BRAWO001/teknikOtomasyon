@@ -163,14 +163,12 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
         {/* DURUM / PROGRESS BAR */}
         <div className="px-3 pt-2">
           <div className="mb-1 flex items-center justify-between text-[11px]">
-            <span className="text-zinc-500 dark:text-zinc-400">
-              İş İlerleme Durumu
-            </span>
+            
             <Link
               href={`/teknik/isEmriDetay/${id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-md  bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+              className='rounded-md  bg-zinc-900 px-2  py-2 text-[10px] font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200'
             >
               İş Emri Detay →
             </Link>
