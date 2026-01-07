@@ -1,3 +1,7 @@
+
+
+
+
 // src/pages/satinalma/yeni.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -140,6 +144,12 @@ export default function YeniSatinAlmaPage() {
       return;
     }
 
+    // 🟢 Site zorunlu kontrolü
+    if (!siteId) {
+      setError("Site / Proje seçimi zorunludur.");
+      return;
+    }
+
     const talepEdenId = personel.id ?? personel.Id;
     if (!talepEdenId || talepEdenId === 0) {
       setError(
@@ -225,7 +235,7 @@ export default function YeniSatinAlmaPage() {
       malzemeler: cleanedMalzemeler,
       // siteId backend DTO'nda yoksa bunu EKLEME.
       // DTO'na SiteId eklediysen burada:
-      // siteId: siteId ? Number(siteId) : null
+      siteId: siteId ? Number(siteId) : null,
     };
 
     try {
@@ -272,7 +282,6 @@ export default function YeniSatinAlmaPage() {
                 Yeni Satın Alma Talebi
               </h1>
               <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                
                 {personel && (
                   <span className="rounded-full bg-zinc-100 px-2 py-[2px] text-[11px] font-medium text-zinc-700">
                     {personel.ad} {personel.soyad} – {personel.rol}
@@ -385,7 +394,7 @@ export default function YeniSatinAlmaPage() {
               {/* Site seçimi */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-zinc-700">
-                  Site / Proje
+                  Site / Proje <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={siteId}

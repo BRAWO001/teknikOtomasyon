@@ -8,6 +8,9 @@ export default function ProjeGorevlileriPage() {
 
   const [personel, setPersonel] = useState(null);
 
+  // Pilot modüller için uyarı mesajı
+  const [pilotInfo, setPilotInfo] = useState("");
+
   // Çıkış
   const handleLogout = async () => {
     try {
@@ -27,6 +30,13 @@ export default function ProjeGorevlileriPage() {
   // Taleplerim → aynı klasör altındaki sayfa
   const handleTaleplerim = () => {
     router.push("/projeGorevlileri/taleplerim");
+  };
+
+  // Pilot modüller: sadece bilgilendirme gösterecek
+  const handlePilotFeatureClick = (featureName) => {
+    setPilotInfo(
+      `Şimdilik pilot deneme süreci olduğu için "${featureName}" modülü buradan hizmet verememektedir.`
+    );
   };
 
   // PersonelUserInfo cookie kontrolü
@@ -133,6 +143,7 @@ export default function ProjeGorevlileriPage() {
             </p>
           </div>
 
+          {/* Mevcut iki buton */}
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleYeniTalep}
@@ -149,7 +160,126 @@ export default function ProjeGorevlileriPage() {
             </button>
           </div>
 
-          <div className="mt-4 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          {/* Profesyonel site yönetimi için diğer modüller (pilot) */}
+          <section className="mt-4 space-y-3">
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                Diğer Site Yönetimi Modülleri
+              </h2>
+              <p className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
+                Aşağıdaki modüller profesyonel site yönetimi için
+                planlanmaktadır. Şu an pilot deneme sürecinde olduğundan sadece
+                bilgilendirme amaçlı gösterilmektedir.
+              </p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {/* Arıza & İş Emirleri */}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
+                    Arıza & İş Emirleri
+                  </h3>
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
+                    Site içindeki tüm arıza ve bakım taleplerinin takibi,
+                    iş emirleri ve teknisyen görevlendirmeleri.
+                  </p>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePilotFeatureClick("Arıza & İş Emirleri")
+                    }
+                    className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    Modülü Görüntüle
+                  </button>
+                </div>
+              </div>
+
+              {/* Duyurular & Dokümanlar */}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
+                    Duyurular & Dokümanlar
+                  </h3>
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
+                    Yönetim duyuruları, karar defterleri, toplantı tutanakları
+                    ve önemli dokümanların paylaşımı.
+                  </p>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePilotFeatureClick("Duyurular & Dokümanlar")
+                    }
+                    className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    Modülü Görüntüle
+                  </button>
+                </div>
+              </div>
+
+              {/* Gelir Gider & Faturalar */}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
+                    Gelir Gider & Faturalar
+                  </h3>
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
+                    Aidat, tahsilat, gider kalemleri ve fatura hareketlerinin
+                    detaylı takibi.
+                  </p>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePilotFeatureClick("Gelir Gider & Faturalar")
+                    }
+                    className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    Modülü Görüntüle
+                  </button>
+                </div>
+              </div>
+
+              {/* Ziyaretçi & Güvenlik Kayıtları */}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
+                    Ziyaretçi & Güvenlik Kayıtları
+                  </h3>
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
+                    Kapı giriş-çıkış, ziyaretçi kayıtları ve güvenlik
+                    tutanaklarının merkezi takibi.
+                  </p>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handlePilotFeatureClick("Ziyaretçi & Güvenlik Kayıtları")
+                    }
+                    className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    Modülü Görüntüle
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Pilot bilgi mesajı */}
+            {pilotInfo && (
+              <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-100">
+                {pilotInfo}
+              </div>
+            )}
+          </section>
+
+          <div className="mt-4 border-t border-zinc-200 pt-3 text-[24px] text-center text-white dark:border-zinc-800 dark:text-zinc-400">
             SAYGILARIMIZLA,{" "}
             <span className="font-semibold">EOS MANAGEMENT</span>
           </div>

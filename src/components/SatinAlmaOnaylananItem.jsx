@@ -39,7 +39,7 @@ export default function SatinAlmaOnaylananItem({
       className="block border-b border-emerald-200 px-2 py-2 text-[12px] hover:bg-emerald-50"
     >
       {/* 1. SATIR: Sıra No + Seri No + Tarih */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between  gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <span className="rounded bg-emerald-50 px-2 py-[2px] text-[11px] font-semibold text-emerald-700">
             Sıra No: {id}
