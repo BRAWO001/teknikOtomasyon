@@ -1,3 +1,8 @@
+
+
+
+
+
 // src/components/TeknikIsEmriCard.jsx
 
 import { useState } from "react";
@@ -48,7 +53,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
     id,
     kod,
     kod_2,
-    kod_3, // ACIL / DISIS vb.
+    kod_3, // DIS_IS vb.
     kisaBaslik,
     aciklama,
     olusturmaTarihiUtc,
@@ -71,16 +76,18 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
     data.emirleriDurumu ??
     0;
 
-  const [localDurumKod, setLocalDurumKod] = useState(
-    Number(rawDurumKod) || 0
-  );
+  const [localDurumKod, setLocalDurumKod] = useState(Number(rawDurumKod) || 0);
 
-  const progress = Math.max(
-    0,
-    Math.min(100, Number(localDurumKod) || 0)
-  );
+  const progress = Math.max(0, Math.min(100, Number(localDurumKod) || 0));
 
-  const isAcil = kod_3 === "ACIL";
+  // ✅ DOĞRU: ACİL kod_2’den gelir
+  const k2 = String(kod_2 || "").toUpperCase().trim(); // ACIL
+  // ✅ DOĞRU: DIŞ İŞ kod_3’ten gelir
+  const k3 = String(kod_3 || "").toUpperCase().trim(); // DIS_IS / DISIS
+
+  const isAcil = k2 === "ACIL" || k2 === "ACİL";
+  const isDisIs = k3 === "DIS_IS" || k3 === "DISIS" || k3 === "DIS IS";
+
   const people = personeller.slice(0, 5);
   const notesPreview = notlar.slice(0, 2);
   const malzemelerPreview = malzemeler.slice(0, 2);
@@ -118,30 +125,42 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
     return acc + birim * adet;
   }, 0);
 
-  const toplamTutarGosterilen = kdvIncluded
-    ? toplamNetTutar * 1.2
-    : toplamNetTutar;
+  const toplamTutarGosterilen = kdvIncluded ? toplamNetTutar * 1.2 : toplamNetTutar;
 
-  // 🔹 kod_3 label (ACIL / DIŞ İŞ)
+  // 🔹 Sağ üstte görünen rozet (kod_3 için DIŞ İŞ, kod_2 için ACİL)
+  // İkisi birden gelirse: ACİL rozetini kırmızı, DIŞ İŞ rozetini amber basıyoruz.
+  // Senin mevcut tasarımın "tek rozet" idi; ben aynısını korudum ama doğru kaynaktan okudum.
   let kod3Label = null;
   let kod3Class = "";
-  if (kod_3) {
-    if (kod_3 === "ACIL") {
-      kod3Label = "ACİL";
-      kod3Class =
-        "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900";
-    } else {
-      // diğer tüm kod_3 değerlerini DIŞ İŞ olarak göster
-      kod3Label = "DIŞ İŞ";
-      kod3Class =
-        "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900";
-    }
+  if (isAcil) {
+    kod3Label = "ACİL";
+    kod3Class =
+      "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900";
+  } else if (isDisIs) {
+    kod3Label = "DIŞ İŞ";
+    kod3Class =
+      "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900";
   }
 
   // Modal'dan durum güncellendiğinde lokal state'i güncelle
   const handleDurumUpdated = (newKod) => {
     setLocalDurumKod(Number(newKod) || 0);
   };
+
+  // ✅ ÜST BUTON etiketi + class
+  const ustButonText = isAcil && isDisIs
+    ? "ACİL • DIŞ İŞ EMRİ DETAY →"
+    : isAcil
+    ? "ACİL İŞ EMRİ DETAY →"
+    : isDisIs
+    ? "DIŞ İŞ EMRİ DETAY →"
+    : "İŞ EMRİ DETAY →";
+
+  const ustButonClass = isAcil
+    ? "bg-red-600 hover:bg-red-700 text-white"
+    : isDisIs
+    ? "bg-amber-600 hover:bg-amber-700 text-white"
+    : "bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200";
 
   return (
     <>
@@ -162,35 +181,17 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
 
         {/* DURUM / PROGRESS BAR */}
         <div className="px-3 pt-2">
-          <div className="mb-1 flex items-center justify-between text-[11px]">
-            
+          <div className="mb-1 flex items-center justify-evenly text-[11px]">
             <Link
               href={`/teknik/isEmriDetay/${id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className='rounded-md  bg-zinc-900 px-2  py-2 text-[10px] font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200'
+              className={`rounded-md px-2 py-1 text-[14px] font-semibold transition ${ustButonClass}`}
             >
-              İş Emri Detay →
+              {ustButonText}
             </Link>
-            
-            <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-              {progress}%{" "}
-              {progress === 100 && (
-                <span className="ml-1 rounded-full bg-emerald-100 px-1 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                  Tamamlandı
-                </span>
-                
-
-                
-              )}
-              
-              
-            </span>
-            
-            
           </div>
-          
-          
+
           <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
             <div
               className={`h-full rounded-full ${
@@ -202,9 +203,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               }`}
               style={{ width: `${progress}%` }}
             />
-            
           </div>
-          
 
           {/* Eğer personel ekranındaysa durum güncelle butonu */}
           {currentPersonelId && (
@@ -247,7 +246,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 </div>
               )}
 
-              {/* KOD_3 – ACİL / DIŞ İŞ */}
+              {/* ✅ ACİL veya DIŞ İŞ rozet */}
               {kod3Label && (
                 <span
                   className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ${kod3Class}`}
@@ -317,8 +316,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Toplam:{" "}
-                  <span className="font-semibold">{toplamDosyaAdet}</span>
+                  Toplam: <span className="font-semibold">{toplamDosyaAdet}</span>
                 </div>
                 <button
                   type="button"
@@ -339,8 +337,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 <div className="grid grid-cols-2 gap-1.5">
                   {dosyalarPreview.map((f, idx) => {
                     const name = f.dosyaAdi || f.url || `Dosya #${idx + 1}`;
-                    const turLabel =
-                      f.turAd || (isImageFile(name) ? "Foto" : "Belge");
+                    const turLabel = f.turAd || (isImageFile(name) ? "Foto" : "Belge");
                     const isPhoto =
                       turLabel === "Foto" ||
                       isImageFile(f.url || "") ||
@@ -420,9 +417,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {people.map((p) => {
-                  const fullName = `${p?.personel?.ad ?? ""} ${
-                    p?.personel?.soyad ?? ""
-                  }`.trim();
+                  const fullName = `${p?.personel?.ad ?? ""} ${p?.personel?.soyad ?? ""}`.trim();
                   return (
                     <div
                       key={p.id}
@@ -432,13 +427,9 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                       <span className="grid h-5 w-5 place-items-center rounded-full bg-zinc-900 text-[9px] font-semibold text-white dark:bg-zinc-50 dark:text-black">
                         {initials(fullName)}
                       </span>
-                      <span className="max-w-[120px] truncate font-medium">
-                        {fullName}
-                      </span>
+                      <span className="max-w-[120px] truncate font-medium">{fullName}</span>
                       <span className="text-zinc-400">•</span>
-                      <span className="truncate text-zinc-500 dark:text-zinc-400">
-                        {p.rolAd}
-                      </span>
+                      <span className="truncate text-zinc-500 dark:text-zinc-400">{p.rolAd}</span>
                     </div>
                   );
                 })}
@@ -455,16 +446,13 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 </div>
                 <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
                   Genel Tutar:{" "}
-                    <span className="font-semibold">
-                      ₺ {toplamTutarGosterilen.toFixed(2)}
-                    </span>
+                  <span className="font-semibold">₺ {toplamTutarGosterilen.toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Adet:{" "}
-                  <span className="font-semibold">{toplamMalzemeAdet}</span>
+                  Adet: <span className="font-semibold">{toplamMalzemeAdet}</span>
                 </div>
 
                 <button
@@ -507,8 +495,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                           {m.malzemeAdi ?? m.ad ?? "Malzeme"}
                         </div>
                         <div className="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
-                          Adet:{" "}
-                          <span className="font-semibold">{adet || "-"}</span>
+                          Adet: <span className="font-semibold">{adet || "-"}</span>
                         </div>
                       </div>
 
@@ -555,9 +542,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
             ) : (
               <div className="space-y-1.5">
                 {notesPreview.map((n) => {
-                  const fullName = `${n?.personel?.ad ?? ""} ${
-                    n?.personel?.soyad ?? ""
-                  }`.trim();
+                  const fullName = `${n?.personel?.ad ?? ""} ${n?.personel?.soyad ?? ""}`.trim();
 
                   return (
                     <div

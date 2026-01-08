@@ -35,6 +35,7 @@ export default function TeknikIsEmriEkle() {
 
   // DIŞ İŞ toggle
   const [isDisIs, setIsDisIs] = useState(false);
+  const [isAcilIs, setIsAcilIs] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -154,7 +155,7 @@ export default function TeknikIsEmriEkle() {
       aptId: form.aptId ? Number(form.aptId) : null,
       evId: form.evId ? Number(form.evId) : null, // opsiyonel
 
-      kod_2: "TEKNIK", // sabit
+      kod_2: isAcilIs ? "ACIL" : null, // ACİL İŞ toggle'a göre
       kod_3: isDisIs ? "DIS_IS" : null, // DIŞ İŞ toggle'a göre
       durum: 10, // Beklemede
 
@@ -252,8 +253,6 @@ export default function TeknikIsEmriEkle() {
           <h1 className="text-2xl font-semibold tracking-tight">
             Teknik İş Emri Ekle
           </h1>
-
-          
         </div>
 
         {/* Site / Personel yüklenme hataları */}
@@ -337,9 +336,7 @@ export default function TeknikIsEmriEkle() {
                 {(selectedApt?.evler || []).map((ev) => (
                   <option key={ev.id} value={ev.id}>
                     {ev.kapiNo
-                      ? `Kapı ${ev.kapiNo} ${
-                          ev.pkNo ? `— ${ev.pkNo}` : ""
-                        }`
+                      ? `Kapı ${ev.kapiNo} ${ev.pkNo ? `— ${ev.pkNo}` : ""}`
                       : `Ev #${ev.id}`}
                   </option>
                 ))}
@@ -368,6 +365,29 @@ export default function TeknikIsEmriEkle() {
             </button>
             <span>
               <span className="font-semibold">DIŞ İŞ</span>{" "}
+            </span>
+          </div>
+          {/* ACİL İŞ toggle */}
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-200">
+            <button
+              type="button"
+              onClick={() => setIsAcilIs((v) => !v)}
+              className={[
+                "relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full border transition",
+                isAcilIs
+                  ? "border-emerald-500 bg-emerald-500"
+                  : "border-zinc-400 bg-zinc-300 dark:border-zinc-600 dark:bg-zinc-700",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "inline-block h-6 w-6 transform rounded-full bg-white shadow transition",
+                  isAcilIs ? "translate-x-4" : "translate-x-0.5",
+                ].join(" ")}
+              />
+            </button>
+            <span>
+              <span className="font-semibold">ACİL İŞ</span>{" "}
             </span>
           </div>
 
@@ -460,8 +480,7 @@ export default function TeknikIsEmriEkle() {
                 )}
                 {result.kod && (
                   <>
-                    — Kod:{" "}
-                    <span className="font-semibold">{result.kod}</span>
+                    — Kod: <span className="font-semibold">{result.kod}</span>
                   </>
                 )}
                 {selectedPersonelIds.length > 0 && (

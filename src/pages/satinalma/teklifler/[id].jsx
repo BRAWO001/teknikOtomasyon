@@ -6,8 +6,7 @@
 // src/pages/satinalma/teklifler/[id].jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import { getDataAsync } from "@/utils/apiService";
+import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 
 import SatinalmaShareLinkBar from "@/components/SatinalmaShareLinkBar";
@@ -20,9 +19,14 @@ import SatinalmaMalzemeTeklifList from "@/components/SatinalmaMalzemeTeklifList"
 // const BASE_URL = "http://localhost:3000";
 const BASE_URL = "http://teknik-otomasyon.vercel.app";
 
-// API BASE (POST için)
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://pilotapisrc.com/api/";
+// ✅ Not_1 normalize helper
+function normalizeNot1(val) {
+  if (val == null) return "";
+  return String(val)
+    .trim()
+    .toLocaleLowerCase("tr-TR")
+    .replace(/\s+/g, " "); // çoklu boşlukları tek boşluk yap
+}
 
 export default function SatinAlmaTekliflerPage() {
   const router = useRouter();
@@ -42,6 +46,14 @@ export default function SatinAlmaTekliflerPage() {
   const [onayError, setOnayError] = useState(null);
   const [onaySuccess, setOnaySuccess] = useState(null);
   const [onayNot, setOnayNot] = useState("");
+
+  // Satın alındı / alınmadı state
+  const [durumLoading, setDurumLoading] = useState(false);
+  const [durumError, setDurumError] = useState(null);
+  const [durumSuccess, setDurumSuccess] = useState(null);
+
+  // ✅ UI için local durum
+  const [localNot1, setLocalNot1] = useState("");
 
   // Personel cookie'sini oku
   useEffect(() => {
@@ -78,7 +90,15 @@ export default function SatinAlmaTekliflerPage() {
   useEffect(() => {
     if (!id) return;
     fetchData(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // ✅ data geldikçe local Not_1'i senkronla
+  useEffect(() => {
+    if (!data) return;
+    const not1FromApi = data.not_1 ?? data.Not_1 ?? "";
+    setLocalNot1(not1FromApi || "");
+  }, [data]);
 
   // Malzeme map (Id -> malzeme)
   const malzemeMap = useMemo(() => {
@@ -145,6 +165,26 @@ export default function SatinAlmaTekliflerPage() {
 
   const shareUrl = sistemUretilmisLink ? `${BASE_URL}${sistemUretilmisLink}` : "";
 
+  // ✅ Not_1'e göre DURUM tespiti (asıl fix burada)
+  const not1Norm = normalizeNot1(localNot1);
+
+  // “satın alındı” kelimesini içeriyorsa ALINDI say (case/space sorunlarını tolere eder)
+  const isAlindi = not1Norm.includes("satın alındı") || not1Norm.includes("satin alindi");
+
+  // “satın alınmadı” kelimesini içeriyorsa ALINMADI say
+  const isAlinmadi =
+    not1Norm.includes("satın alınmadı") ||
+    not1Norm.includes("satin alinmadi") ||
+    not1Norm.includes("satın alinmadi");
+
+  // Öncelik: ALINDI > ALINMADI > BOS
+  const satinAlimStatus = isAlindi ? "ALINDI" : isAlinmadi ? "ALINMADI" : "BOS";
+
+  // Rol kontrol (sadece Rol 35)
+  const currentRolRaw = personel ? personel.rol ?? personel.Rol : null;
+  const currentRol = currentRolRaw != null ? Number(currentRolRaw) : null;
+  const satinAlindiYetkiliMi = currentRol === 35;
+
   const copyLink = async () => {
     if (!shareUrl) return;
     try {
@@ -202,7 +242,6 @@ export default function SatinAlmaTekliflerPage() {
 
     const paraBirimi = t.paraBirimi ?? t.ParaBirimi ?? "TRY";
 
-    // KDV oranı (0.20 gibi, API'den KdvOrani geliyor varsayıyoruz)
     const kdvOraniRaw = t.kdvOrani ?? t.KdvOrani ?? null;
     let kdvOrani = 0;
     if (kdvOraniRaw != null) {
@@ -270,7 +309,7 @@ export default function SatinAlmaTekliflerPage() {
     setOnaySuccess(null);
 
     try {
-      const res = await axios.post(`${API_BASE_URL}satinalma/onay`, {
+      const res = await postDataAsync(`satinalma/onay`, {
         satinAlmaId: Number(id),
         personelId: currentPersonelId,
         onaylandiMi,
@@ -278,7 +317,7 @@ export default function SatinAlmaTekliflerPage() {
       });
 
       const apiMessage =
-        res?.data?.Message ??
+        res?.Message ??
         (onaylandiMi
           ? "Onayınız kaydedildi / güncellendi."
           : "Red işleminiz kaydedildi / güncellendi.");
@@ -286,7 +325,8 @@ export default function SatinAlmaTekliflerPage() {
       setOnaySuccess(apiMessage);
       setOnayNot("");
 
-      await fetchData(id); // güncel veriyi tekrar çek
+      await fetchData(id);
+      await router.replace(router.asPath);
     } catch (err) {
       console.error("ONAY POST ERROR:", err);
       setOnayError("Onay işlemi sırasında bir hata oluştu.");
@@ -294,6 +334,57 @@ export default function SatinAlmaTekliflerPage() {
       setOnayLoading(false);
     }
   };
+
+  // ✅ Çift taraflı güncelleme (ALINDI / ALINMADI)
+  const handleDurumDegistir = async (targetDurum) => {
+    if (!id) return;
+
+    if (!satinAlindiYetkiliMi) {
+      setDurumError("Bu işlem için yetkiniz yok. (Sadece Rol 35)");
+      return;
+    }
+
+    setDurumLoading(true);
+    setDurumError(null);
+    setDurumSuccess(null);
+
+    const prevNot1 = localNot1;
+
+    try {
+      if (targetDurum === "SATIN_ALINDI") {
+        // ✅ Not_1 açıkça satın alındı yazsın
+        setLocalNot1("Satın alındı");
+
+        const res = await postDataAsync(`satinalma/isaret/satin-alindi/${id}`, {
+          not1: "Satın alındı",
+        });
+
+        setDurumSuccess(res?.Message ?? "Satın alındı olarak işaretlendi.");
+      } else {
+        // ✅ Not_1 açıkça satın alınmadı yazsın (backend boşaltmıyorsa bile UI doğru anlayacak)
+        setLocalNot1("Satın alınmadı");
+
+        const res = await postDataAsync(
+          `satinalma/isaret/satin-alinmadi/${id}`,
+          { not1: "Satın alınmadı" } // backend body istemese bile sorun olmaz; yok sayar
+        );
+
+        setDurumSuccess(res?.Message ?? "Satın alınmadı olarak işaretlendi.");
+      }
+
+      await fetchData(id);
+      await router.replace(router.asPath);
+    } catch (err) {
+      console.error("DURUM POST ERROR:", err);
+      setLocalNot1(prevNot1);
+      setDurumError("Durum güncelleme sırasında hata oluştu.");
+    } finally {
+      setDurumLoading(false);
+    }
+  };
+
+  const canSetAlindi = satinAlimStatus !== "ALINDI";
+  const canSetAlinmadi = satinAlimStatus !== "ALINMADI";
 
   return (
     <div
@@ -306,16 +397,38 @@ export default function SatinAlmaTekliflerPage() {
         backgroundColor: "#fff",
       }}
     >
-      <h1
+      {/* ÜST BAR */}
+      <div
         style={{
-          marginBottom: "0.75rem",
-          fontSize: 20,
-          fontWeight: 600,
-          color: "#000",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          marginBottom: 10,
+          flexWrap: "wrap",
         }}
       >
-        Satın Alma Teklifleri    --Tedarikçi Paylaşım Linki --
-      </h1>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 10px",
+            borderRadius: 999,
+            border: "1px solid #d1d5db",
+            backgroundColor: "#f8fafc",
+            fontSize: 12,
+            fontWeight: 800,
+            color: "#0f172a",
+          }}
+        >
+          Sıra No: <span style={{ fontWeight: 900 }}>{id}</span>
+        </div>
+
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: "#000" }}>
+          Satın Alma Teklifleri --Tedarikçi Paylaşım Linki --
+        </h1>
+      </div>
 
       <SatinalmaShareLinkBar
         shareUrl={shareUrl}
@@ -323,7 +436,7 @@ export default function SatinAlmaTekliflerPage() {
         onCopy={copyLink}
       />
 
-      {/* ⭐ ÜST GRID: Solda Talep Bilgileri + Onay Paneli, Sağda Onaylayan Personeller */}
+      {/* ÜST GRID */}
       <div
         style={{
           display: "grid",
@@ -334,14 +447,7 @@ export default function SatinAlmaTekliflerPage() {
           marginBottom: "0.75rem",
         }}
       >
-        {/* SOL SÜTUN: Header + Onay Paneli (iki satır) */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <SatinalmaHeaderCard
             seriNo={seriNo}
             tarih={tarih}
@@ -364,13 +470,147 @@ export default function SatinAlmaTekliflerPage() {
           />
         </div>
 
-        {/* SAĞ SÜTUN: Onaylayan / Onaylayacak Personeller */}
         <SatinalmaOnaylayanPersoneller
           onaylayanPersoneller={onaylayanPersoneller}
         />
       </div>
 
-      {/* ALT BÖLÜMLER: Tedarikçi özet + Malzeme/Teklif listesi */}
+      {/* DURUM SEÇENEKLERİ */}
+      <div
+        style={{
+          border: "1px solid #e5e7eb",
+          borderRadius: 10,
+          padding: "10px 12px",
+          marginBottom: 12,
+          backgroundColor: "#ffffff",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#111827" }}>
+              Satın Alım Durumu:
+            </span>
+
+            {satinAlimStatus === "ALINDI" ? (
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #86efac",
+                  backgroundColor: "#ecfdf5",
+                  color: "#065f46",
+                }}
+                title={localNot1}
+              >
+                ✅ Satın Alındı
+              </span>
+            ) : satinAlimStatus === "ALINMADI" ? (
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #fed7aa",
+                  backgroundColor: "#fff7ed",
+                  color: "#9a3412",
+                }}
+                title={localNot1}
+              >
+                🚫 Satın Alınmadı
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  border: "1px solid #e5e7eb",
+                  backgroundColor: "#f8fafc",
+                  color: "#334155",
+                }}
+              >
+                ⏳ İşaretlenmedi
+              </span>
+            )}
+          </div>
+
+          {satinAlindiYetkiliMi ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => handleDurumDegistir("SATIN_ALINDI")}
+                disabled={durumLoading || !canSetAlindi}
+                style={{
+                  cursor: durumLoading || !canSetAlindi ? "not-allowed" : "pointer",
+                  opacity: durumLoading || !canSetAlindi ? 0.6 : 1,
+                  border: "1px solid #16a34a",
+                  backgroundColor: "#16a34a",
+                  color: "#fff",
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              >
+                Satın Alındı
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDurumDegistir("SATIN_ALINMADI")}
+                disabled={durumLoading || !canSetAlinmadi}
+                style={{
+                  cursor: durumLoading || !canSetAlinmadi ? "not-allowed" : "pointer",
+                  opacity: durumLoading || !canSetAlinmadi ? 0.6 : 1,
+                  border: "1px solid #334155",
+                  backgroundColor: "#ffffff",
+                  color: "#0f172a",
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              >
+                Satın Alınmadı
+              </button>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
+              .
+            </div>
+          )}
+        </div>
+
+        {(durumError || durumSuccess) && (
+          <div
+            style={{
+              marginTop: 10,
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: durumError ? "1px solid #fecaca" : "1px solid #bbf7d0",
+              backgroundColor: durumError ? "#fef2f2" : "#ecfdf5",
+              color: durumError ? "#b91c1c" : "#065f46",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            {durumError || durumSuccess}
+          </div>
+        )}
+      </div>
+
       <SatinalmaTedarikciOzet tedarikciOzetList={tedarikciOzetList} />
 
       <SatinalmaMalzemeTeklifList
