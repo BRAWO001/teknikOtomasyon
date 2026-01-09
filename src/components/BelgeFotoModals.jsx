@@ -1,19 +1,21 @@
+
+
+
+
+
 // src/components/BelgeFotoModals.jsx
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { getDataAsync } from "../utils/apiService";
+import { getDataAsync, postDataAsync } from "../utils/apiService";
 
 import BelgeFotoHeader from "./BelgeFotoHeader";
 import FotoUploadBlock from "./FotoUploadBlock";
 import BelgeUploadBlock from "./BelgeUploadBlock";
 import UploadedFilesSection from "./UploadedFilesSection";
 
-// Ortamına göre değiştir
-// const UPLOAD_URL = "https://pilotapisrc.com/api/HttpUpload/upload-ftp";
-// const SAVE_URL_BASE = "https://pilotapisrc.com/api/IsEmriDosyaEkle";
-const UPLOAD_URL = "https://pilotapisrc.com/api/HttpUpload/upload-ftp";
-const SAVE_URL_BASE = "https://pilotapisrc.com/api/IsEmriDosyaEkle";
+// ✅ apiService base'i kullanacağı için relative endpoint
+const UPLOAD_URL = "HttpUpload/upload-ftp";
+const SAVE_URL_BASE = "IsEmriDosyaEkle";
 
 export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }) {
   if (!isOpen) return null;
@@ -46,27 +48,29 @@ export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }
   };
 
   useEffect(() => {
-    if (isOpen && isEmriId) {
-      loadFiles();
-    }
+    if (isOpen && isEmriId) loadFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isEmriId]);
 
-  // Ortak upload + iş emrine kaydet
+  // ✅ Ortak upload + iş emrine kaydet (SADECE POST)
   const uploadAndAttach = async (file, tur) => {
     if (!file) return;
 
-    // 1) FTP'ye yükle
+    // 1) FTP'ye yükle (multipart)
     const formData = new FormData();
     formData.append("file", file);
 
-    const uploadRes = await axios.post(UPLOAD_URL, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const uploadRes = await postDataAsync(UPLOAD_URL, formData, {
+      headers: {
+        // ✅ Artık apiService bunu alıp kullanacak
+        "Content-Type": "multipart/form-data",
+      },
     });
 
-    const url = uploadRes.data?.Url || uploadRes.data?.url;
+    const url = uploadRes?.Url || uploadRes?.url;
     if (!url) throw new Error("Upload cevabında Url alanı bulunamadı.");
 
-    // 2) İş emrine kaydet
+    // 2) İş emrine kaydet (json)
     const body = [
       {
         url,
@@ -75,7 +79,7 @@ export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }
       },
     ];
 
-    await axios.post(`${SAVE_URL_BASE}/${isEmriId}`, body, {
+    await postDataAsync(`${SAVE_URL_BASE}/${isEmriId}`, body, {
       headers: { "Content-Type": "application/json" },
     });
 
@@ -106,13 +110,11 @@ export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }
         />
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 text-xs">
-          {/* ÜST KISIM: Foto / Belge yükleme */}
           <div className="grid gap-3 md:grid-cols-2">
             <FotoUploadBlock uploadAndAttach={uploadAndAttach} />
             <BelgeUploadBlock uploadAndAttach={uploadAndAttach} />
           </div>
 
-          {/* ALT KISIM: Liste */}
           <UploadedFilesSection
             files={files}
             loadingFiles={loadingFiles}

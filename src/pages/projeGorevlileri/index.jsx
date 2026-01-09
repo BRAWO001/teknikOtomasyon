@@ -63,63 +63,43 @@ export default function ProjeGorevlileriPage() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
       <div className="mx-auto min-h-screen max-w-4xl p-4 flex flex-col gap-3">
         {/* ÜST PANEL */}
+
         <section className="rounded-md border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-1">
-              <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Proje Görevlileri Paneli
-              </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* LOGO + BAŞLIK */}
+            <div className="flex items-center gap-3">
+              <img
+                src="/eos_management_logo.png"
+                alt="EOS Management"
+                className="h-10 w-auto object-contain"
+              />
 
-              {personel && (
-                <>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                    Merhaba değerli personelimiz{" "}
-                    <span className="font-bold">
-                      {personel.ad} {personel.soyad}
-                    </span>
-                    ,
-                  </p>
-                  <p className="text-[12px] text-zinc-600 dark:text-zinc-300">
-                    Bu sayfada şimdilik sadece{" "}
-                    <strong>satın alma talepleri</strong> oluşturabilir ve
-                    oluşturduğunuz talepleri <strong>Taleplerim</strong>{" "}
-                    ekranından kontrol edebilirsiniz.
-                  </p>
-
-                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-zinc-600 dark:text-zinc-300">
-                    <span>
-                      <span className="font-semibold">Kod:</span>{" "}
-                      {personel.personelKodu}
-                    </span>
-                    {personel.kullaniciAdi && (
-                      <span>
-                        <span className="font-semibold">Kullanıcı:</span>{" "}
-                        {personel.kullaniciAdi}
-                      </span>
-                    )}
-                    {personel.telefon && (
-                      <span>
-                        <span className="font-semibold">Tel:</span>{" "}
-                        {personel.telefon}
-                      </span>
-                    )}
-                    {personel.eposta && (
-                      <span>
-                        <span className="font-semibold">E-posta:</span>{" "}
-                        {personel.eposta}
-                      </span>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {!personel && (
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                  PersonelUserInfo cookie içinde bulunamadı.
+              <div className="flex flex-col gap-1">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Proje Görevlileri Paneli
                 </p>
-              )}
+
+                {personel && (
+                  <>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                      Merhaba değerli personelimiz{" "}
+                      <span className="font-bold">
+                        {personel.ad} {personel.soyad}
+                      </span>
+                      ,
+                    </p>
+                    <p className="text-[12px] text-zinc-600 dark:text-zinc-300">
+                      Bu sayfada şimdilik sadece{" "}
+                      <strong>satın alma talepleri</strong> oluşturabilir ve
+                      oluşturduğunuz talepleri <strong>Taleplerim</strong>{" "}
+                      ekranından kontrol edebilirsiniz.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
 
+            {/* ÇIKIŞ BUTONU */}
             <div className="flex items-center gap-2">
               <button
                 onClick={handleLogout}
@@ -181,8 +161,8 @@ export default function ProjeGorevlileriPage() {
                     Arıza & İş Emirleri
                   </h3>
                   <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
-                    Site içindeki tüm arıza ve bakım taleplerinin takibi,
-                    iş emirleri ve teknisyen görevlendirmeleri.
+                    Site içindeki tüm arıza ve bakım taleplerinin takibi, iş
+                    emirleri ve teknisyen görevlendirmeleri.
                   </p>
                 </div>
                 <div className="mt-2 flex justify-end">
