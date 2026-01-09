@@ -319,8 +319,7 @@ export default function PersonelPage() {
                       kisaBaslik: item.kisaBaslik || item.KisaBaslik,
                       aciklama: item.aciklama || item.Aciklama,
                       olusturmaTarihiUtc:
-                        item.olusturmaTarihiUtc ||
-                        item.OlusturmaTarihiUtc,
+                        item.olusturmaTarihiUtc || item.OlusturmaTarihiUtc,
                       konum: item.konum || item.Konum,
                       site: item.site || item.Site,
                       apt: item.apt || item.Apt,
@@ -330,6 +329,8 @@ export default function PersonelPage() {
                       notlar: item.notlar || item.Notlar || [],
                       malzemeler: item.malzemeler || item.Malzemeler || [],
                       DurumKod: item.durumKod ?? item.DurumKod,
+                      kod_2: item.kod_2 ?? item.Kod_2 ?? item.kod2 ?? item.Kod2,
+                      kod_3: item.kod_3 ?? item.Kod_3 ?? item.kod3 ?? item.Kod3,
                     }}
                     currentPersonelId={currentPersonelId}
                   />

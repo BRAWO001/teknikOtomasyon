@@ -152,6 +152,7 @@ function FaturaUploadModal({ open, onClose, satinAlmaId, onUploaded }) {
   };
 
   return (
+    
     <div
       onClick={onClose}
       style={{
