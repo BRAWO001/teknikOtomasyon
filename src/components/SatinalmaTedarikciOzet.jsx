@@ -9,9 +9,15 @@ import { postDataAsync } from "@/utils/apiService";
 
 export default function SatinalmaTedarikciOzet({
   tedarikciOzetList,
-  satinAlmaId,                 // ✅ hızlı onay için gerekli
-  showFastApprove = true,      // ✅ butonu kontrol
-  onAfterFastApprove,          // ✅ başarılı olunca parent refresh
+  satinAlmaId, // ✅ hızlı onay için gerekli
+  showFastApprove = true, // ✅ butonu kontrol
+  onAfterFastApprove, // ✅ başarılı olunca parent refresh
+
+  // ✅ Rol kontrolü için opsiyonel prop (parent'tan göndermen en sağlıklısı)
+  // Örnek: personelRolKod={personel?.RolKod}
+  personelRolKod,
+  // Alternatif isimle de gelebilir diye destek:
+  personelRoleCode,
 }) {
   const [fastApproveLoading, setFastApproveLoading] = useState(false);
   const [fastApproveMsg, setFastApproveMsg] = useState("");
@@ -19,6 +25,65 @@ export default function SatinalmaTedarikciOzet({
 
   // ✅ Modal state
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // ✅ Rol: önce prop'tan, yoksa client-side storage/cookie'den bul (fallback)
+  const resolvedRoleCode = useMemo(() => {
+    const direct =
+      personelRolKod ??
+      personelRoleCode ??
+      tedarikciOzetList?.personelRolKod ??
+      null;
+
+    if (direct != null) return Number(direct);
+
+    // Fallback: localStorage / cookie (client-side)
+    if (typeof window === "undefined") return null;
+
+    // 1) localStorage "PersonelUserInfo" (senin projede yaygın)
+    try {
+      const raw = window.localStorage.getItem("PersonelUserInfo");
+      if (raw) {
+        const obj = JSON.parse(raw);
+        const r =
+          obj?.RolKod ??
+          obj?.rolKod ??
+          obj?.RoleCode ??
+          obj?.roleCode ??
+          obj?.Rol ??
+          obj?.rol ??
+          null;
+        if (r != null) return Number(r);
+      }
+    } catch {}
+
+    // 2) cookie "PersonelUserInfo" (JSON olabilir)
+    try {
+      const cookieStr = document.cookie || "";
+      const match = cookieStr
+        .split(";")
+        .map((s) => s.trim())
+        .find((s) => s.startsWith("PersonelUserInfo="));
+
+      if (match) {
+        const val = decodeURIComponent(match.split("=").slice(1).join("="));
+        const obj = JSON.parse(val);
+        const r =
+          obj?.RolKod ??
+          obj?.rolKod ??
+          obj?.RoleCode ??
+          obj?.roleCode ??
+          obj?.Rol ??
+          obj?.rol ??
+          null;
+        if (r != null) return Number(r);
+      }
+    } catch {}
+
+    return null;
+  }, [personelRolKod, personelRoleCode, tedarikciOzetList]);
+
+  // ✅ Rol 40 ise hızlı onay görünmesin
+  const isRole40 = resolvedRoleCode === 40;
 
   // ⭐ Küçükten büyüğe sırala (GENEL TOPLAM / KDV DAHİL)
   const sorted = useMemo(() => {
@@ -131,6 +196,9 @@ export default function SatinalmaTedarikciOzet({
     setFastApproveMsg("");
   };
 
+  // ✅ Final: Rol 40 ise gösterme (parent showFastApprove=true gelse bile)
+  const canShowFastApprove = showFastApprove && !isRole40;
+
   return (
     <div
       style={{
@@ -179,8 +247,8 @@ export default function SatinalmaTedarikciOzet({
         </div>
       </div>
 
-      {/* ✅ GENİŞ HIZLI ONAY BUTONU (fiyat tekliflerinin üstünde, tam genişlik) */}
-      {showFastApprove && (
+      {/* ✅ GENİŞ HIZLI ONAY BUTONU (Rol 40 ise görünmez) */}
+      {canShowFastApprove && (
         <div style={{ marginBottom: "0.65rem" }}>
           <button
             type="button"
@@ -300,9 +368,7 @@ export default function SatinalmaTedarikciOzet({
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div
-                  style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}
-                >
+                <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
                   Onay İşlemi
                 </div>
                 <div style={{ marginTop: 2, fontSize: 12, color: "#6b7280" }}>
@@ -340,7 +406,6 @@ export default function SatinalmaTedarikciOzet({
                   padding: "12px 14px",
                 }}
               >
-                {/* Başlık */}
                 <div
                   style={{
                     fontSize: 13,
@@ -352,7 +417,6 @@ export default function SatinalmaTedarikciOzet({
                   Onay Yetki Bilgilendirmesi
                 </div>
 
-                {/* Liste */}
                 <div
                   style={{
                     display: "flex",
@@ -379,7 +443,6 @@ export default function SatinalmaTedarikciOzet({
                   </div>
                 </div>
 
-                {/* Alt uyarı */}
                 <div
                   style={{
                     marginTop: 10,
@@ -530,9 +593,7 @@ export default function SatinalmaTedarikciOzet({
           Henüz herhangi bir tedarikçi teklif girmemiş.
         </p>
       ) : (
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
           {sorted.map((t, index) => {
             const isBest = index === 0;
 
@@ -617,18 +678,14 @@ export default function SatinalmaTedarikciOzet({
                     </div>
 
                     {t.kapsamaText && (
-                      <div
-                        style={{ fontSize: 12, color: "#4b5563", marginTop: 3 }}
-                      >
+                      <div style={{ fontSize: 12, color: "#4b5563", marginTop: 3 }}>
                         {t.kapsamaText}
                       </div>
                     )}
                   </div>
 
                   {/* Sağ */}
-                  <div
-                    style={{ textAlign: "right", fontSize: 13, minWidth: 220 }}
-                  >
+                  <div style={{ textAlign: "right", fontSize: 13, minWidth: 220 }}>
                     <div
                       style={{
                         color: "#111827",
@@ -661,9 +718,7 @@ export default function SatinalmaTedarikciOzet({
                       <span>KDV: {formatCurrency(totalKdv)}</span>
                     </div>
 
-                    <div
-                      style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}
-                    >
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
                       Genel Toplam (KDV Dahil)
                     </div>
                   </div>
