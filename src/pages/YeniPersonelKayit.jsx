@@ -111,10 +111,10 @@ export default function YeniPersonelKayitPage() {
                   EOS Management • Yönetim
                 </p>
                 <h1 className="text-lg font-semibold leading-tight">
-                  Yeni Personel Kaydı
+                  Yeni Giriş Kaydı
                 </h1>
                 <p className="text-[12px] text-white/60">
-                  Personel bilgilerini eksiksiz girin. Şifreyi isterseniz otomatik üretebilirsiniz.
+                  Bilgilerinizi eksiksiz giriniz.
                 </p>
               </div>
             </div>
@@ -216,7 +216,10 @@ export default function YeniPersonelKayitPage() {
                       Merkez İdari Personeli
                     </option>
                     <option value="40" className="bg-zinc-900">
-                      Proje Sorumlu Personeli
+                      Proje Yöneticisi
+                    </option>
+                     <option value="40" className="bg-zinc-900">
+                      Proje Yönetici Yardımcısı
                     </option>
                   </select>
                 </div>
