@@ -56,7 +56,7 @@ export default function YeniPersonelKayitPage() {
     if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
     redirectTimerRef.current = setTimeout(() => {
       router.push("/");
-    }, 3500);
+    }, 30000);
   };
 
   const handleSubmit = async (e) => {
@@ -101,7 +101,7 @@ export default function YeniPersonelKayitPage() {
       setRol("");
       setAktifMi(true);
 
-      openSuccess("Personel başarıyla oluşturuldu. Ana sayfaya yönlendiriliyorsunuz...");
+      openSuccess("Personel başarıyla oluşturuldu. ");
     } catch (err) {
       console.error(err?.response?.data || err?.message || err);
 
@@ -383,7 +383,7 @@ export default function YeniPersonelKayitPage() {
 
               {successOpen && (
                 <div className="mt-3 text-[12px] text-white/60">
-                  3-4 saniye içinde ana sayfaya yönlendirileceksiniz…
+                  
                 </div>
               )}
             </div>
