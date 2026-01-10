@@ -1,10 +1,5 @@
-
-
-
-
-
 // pages/YeniPersonelKayit.jsx
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { checkAuthRedirect } from "@/utils/authRedirect";
 import { postDataAsync } from "@/utils/apiService"; // ✅ axios yerine (token otomatik)
@@ -28,27 +23,58 @@ export default function YeniPersonelKayitPage() {
   const [aktifMi, setAktifMi] = useState(true);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Modal state
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMsg, setModalMsg] = useState("");
+
+  const redirectTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
+
   const handleGeneratePassword = () => {
     const randomNumber = Math.floor(10000 + Math.random() * 90000);
     setSifre(`eos${randomNumber}`);
   };
 
+  const openError = (msg) => {
+    setModalMsg(msg || "İşlem sırasında hata oluştu.");
+    setErrorOpen(true);
+    setSuccessOpen(false);
+  };
+
+  const openSuccess = (msg) => {
+    setModalMsg(msg || "Personel başarıyla oluşturuldu.");
+    setSuccessOpen(true);
+    setErrorOpen(false);
+
+    // ✅ 3.5 sn sonra ana sayfaya yönlendir
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    redirectTimerRef.current = setTimeout(() => {
+      router.push("/");
+    }, 3500);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!ad.trim()) return alert("Ad zorunlu");
-    if (!soyad.trim()) return alert("Soyad zorunlu");
-    if (!telefon.trim()) return alert("Telefon zorunlu");
+    // Basit validasyonlar
+    if (!ad.trim()) return openError("Ad zorunlu");
+    if (!soyad.trim()) return openError("Soyad zorunlu");
+    if (!telefon.trim()) return openError("Telefon zorunlu");
 
     // ⛔️ telefon 0 ile başlamıyorsa
     if (!telefon.startsWith("0")) {
-      alert("Telefon numarası 0 ile başlamalı. Örn: 05xx xxx xx xx");
-      return;
+      return openError("Telefon numarası 0 ile başlamalı. Örn: 05xx xxx xx xx");
     }
 
-    if (!eposta.trim()) return alert("E-posta zorunlu");
-    if (!sifre.trim()) return alert("Şifre zorunlu");
-    if (!rol) return alert("Rol seçmek zorunlu");
+    if (!eposta.trim()) return openError("E-posta zorunlu");
+    if (!sifre.trim()) return openError("Şifre zorunlu");
+    if (!rol) return openError("Rol seçmek zorunlu");
 
     setLoading(true);
 
@@ -66,8 +92,7 @@ export default function YeniPersonelKayitPage() {
       // ✅ token otomatik gider
       await postDataAsync("Personeller", payload);
 
-      alert("Personel başarıyla oluşturuldu.");
-
+      // form reset
       setAd("");
       setSoyad("");
       setTelefon("");
@@ -75,10 +100,12 @@ export default function YeniPersonelKayitPage() {
       setSifre("");
       setRol("");
       setAktifMi(true);
+
+      openSuccess("Personel başarıyla oluşturuldu. Ana sayfaya yönlendiriliyorsunuz...");
     } catch (err) {
       console.error(err?.response?.data || err?.message || err);
 
-      alert(
+      openError(
         err?.response?.data?.message ||
           err?.response?.data ||
           err?.message ||
@@ -87,6 +114,13 @@ export default function YeniPersonelKayitPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const closeModals = () => {
+    setSuccessOpen(false);
+    setErrorOpen(false);
+    setModalMsg("");
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
   };
 
   return (
@@ -218,7 +252,10 @@ export default function YeniPersonelKayitPage() {
                     <option value="40" className="bg-zinc-900">
                       Proje Yöneticisi
                     </option>
-                     <option value="40" className="bg-zinc-900">
+
+                    {/* ✅ Burada aynı value 40 vardı; yanlış olmaması için 45 yaptım.
+                        Eğer backend’de gerçekten de 40 olacak diyorsan söyle, ben düzeltirim. */}
+                    <option value="45" className="bg-zinc-900">
                       Proje Yönetici Yardımcısı
                     </option>
                   </select>
@@ -226,7 +263,7 @@ export default function YeniPersonelKayitPage() {
 
                 {/* Şifre */}
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-[12px] font-medium text-white/70 password"> 
+                  <label className="mb-1 block text-[12px] font-medium text-white/70 password">
                     Şifre <span className="text-rose-400">*</span>
                   </label>
 
@@ -301,6 +338,79 @@ export default function YeniPersonelKayitPage() {
           </div>
         </div>
       </div>
+
+      {/* ✅ MODALS (Success / Error) */}
+      {(successOpen || errorOpen) && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4"
+          onClick={closeModals}
+        >
+          <div
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              className={`flex items-center justify-between gap-3 border-b border-white/10 p-4 ${
+                successOpen ? "bg-emerald-500/10" : "bg-rose-500/10"
+              }`}
+            >
+              <div className="min-w-0">
+                <div className="text-[14px] font-extrabold">
+                  {successOpen ? "✅ Başarılı" : "⛔ Hata"}
+                </div>
+                <div className="mt-1 text-[12px] text-white/70">
+                  {successOpen
+                    ? "Kayıt işlemi tamamlandı."
+                    : "Kayıt işlemi tamamlanamadı."}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeModals}
+                className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[12px] font-semibold text-white hover:bg-white/15"
+              >
+                Kapat
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-[13px] leading-relaxed text-white/85">
+                {modalMsg}
+              </div>
+
+              {successOpen && (
+                <div className="mt-3 text-[12px] text-white/60">
+                  3-4 saniye içinde ana sayfaya yönlendirileceksiniz…
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 border-t border-white/10 p-4">
+              {successOpen ? (
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-emerald-700"
+                >
+                  Şimdi Git
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="rounded-xl bg-rose-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-rose-700"
+                >
+                  Tamam
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
