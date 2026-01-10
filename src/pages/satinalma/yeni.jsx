@@ -416,52 +416,6 @@ export default function YeniSatinAlmaPage() {
               </div>
             </div>
 
-            {/* Onaycılar (otomatik, değiştirilemez) */}
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-zinc-700">
-                Onaycı Personeller 
-               
-              </label>
-
-              {onayciCandidates.length === 0 ? (
-                <p className="text-[11px] text-zinc-500">
-                  Uygun onaycı personel bulunamadı.
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-2">
-                  {onayciCandidates.map((p) => {
-                    const id = p.id ?? p.Id;
-                    const ad = p.ad ?? p.Ad;
-                    const soyad = p.soyad ?? p.Soyad;
-                    const rolAd = p.rolAd ?? p.RolAd;
-
-                    return (
-                      <label
-                        key={id}
-                        className="flex items-center gap-1 rounded bg-white px-2 py-1 text-[11px] text-zinc-800 shadow-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          className="h-3 w-3"
-                          checked
-                          readOnly
-                          disabled
-                        />
-                        <span className="font-medium">
-                          {ad} {soyad}
-                        </span>
-                        <span className="text-[10px] text-zinc-500">
-                          ({rolAd})
-                        </span>
-                        <span className="text-[10px] text-zinc-400">
-                          #{id}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
 
             {/* Açıklama */}
             <div className="space-y-1.5">
