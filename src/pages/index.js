@@ -1,3 +1,8 @@
+
+
+
+
+
 // pages/index.js
 import { useState } from "react";
 import { useRouter } from "next/router";
@@ -23,7 +28,6 @@ export default function LoginPage() {
       return;
     }
 
-    // ⛔️ Telefon 0 ile başlamıyorsa
     if (!tel.startsWith("0")) {
       alert("Telefon numarası 0 ile başlamalı. Örn: 05xx xxx xx xx");
       return;
@@ -57,17 +61,31 @@ export default function LoginPage() {
   return (
     <div className="max-w-2xl h-full m-auto mt-2">
       <div className="relative flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-gray-700 via-gray-800 to-black p-4">
+        {/* Yeni Personel Kaydı */}
         <button
           onClick={() => router.push("/YeniPersonelKayit")}
-          className="absolute top-4 right-4 px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md cursor-pointer transition-all duration-200"
+          className="absolute top-2 right-2 px-2 py-1 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md cursor-pointer transition-all duration-200"
         >
           Yeni Personel Kaydı
         </button>
 
-        <div className="bg-gray-600 rounded-2xl shadow-2xl p-8 w-full max-w-sm">
-          <h2 className="text-2xl font-bold text-center text-white mb-4">
-            Giriş Yap
-          </h2>
+        {/* ✅ LOGO (public/eos_management_logo.png) */}
+        <div className="mb-6 flex flex-col items-center">
+          <div className="rounded-2xl bg-white/10 p-4 shadow-xl backdrop-blur">
+            <img
+              src="/eos_management_logo.png"
+              alt="EOS Management"
+              className="h-20 w-auto object-contain"
+            />
+          </div>
+          <p className="mt-3 text-[13px] text-white/70 tracking-wide">
+            EOS Management - Teknik Otomasyon Sistemi
+          </p>
+        </div>
+
+        {/* LOGIN KART */}
+        <div className="bg-gray-600/90 rounded-2xl shadow-2xl p-8 w-full max-w-sm backdrop-blur">
+          
 
           <div className="flex flex-col gap-4">
             <input
@@ -75,7 +93,7 @@ export default function LoginPage() {
               placeholder="Telefon"
               value={tel}
               onChange={(e) => setTel(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 rounded-xl bg-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             <input
@@ -83,12 +101,12 @@ export default function LoginPage() {
               placeholder="Şifre"
               value={sifre}
               onChange={(e) => setSifre(e.target.value)}
-              className="px-4 py-3 rounded-xl bg-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-3 rounded-xl bg-gray-400 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             <button
               onClick={handleLogin}
-              className="mt-2 py-3 bg-blue-600 text-white rounded-xl cursor-pointer hover:bg-blue-700 transition-all duration-300 disabled:opacity-60 flex justify-center items-center gap-2"
+              className="mt-2 py-3 bg-blue-600 text-white rounded-xl cursor-pointer hover:bg-blue-700 transition-all duration-300 disabled:opacity-60"
               disabled={loading}
             >
               {loading ? "Giriş yapılıyor..." : "Giriş Yap"}

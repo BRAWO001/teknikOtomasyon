@@ -82,7 +82,7 @@ export default function ProjeGorevlileriPage() {
                 {personel && (
                   <>
                     <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Merhaba değerli personelimiz{" "}
+                      Merhaba {" "}
                       <span className="font-bold">
                         {personel.ad} {personel.soyad}
                       </span>
