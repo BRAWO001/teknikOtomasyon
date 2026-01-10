@@ -252,10 +252,7 @@ export default function YeniPersonelKayitPage() {
                     <option value="40" className="bg-zinc-900">
                       Proje Yöneticisi
                     </option>
-
-                    {/* ✅ Burada aynı value 40 vardı; yanlış olmaması için 45 yaptım.
-                        Eğer backend’de gerçekten de 40 olacak diyorsan söyle, ben düzeltirim. */}
-                    <option value="45" className="bg-zinc-900">
+                    <option value="40" className="bg-zinc-900">
                       Proje Yönetici Yardımcısı
                     </option>
                   </select>
