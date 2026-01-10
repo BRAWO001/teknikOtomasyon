@@ -419,10 +419,8 @@ export default function YeniSatinAlmaPage() {
             {/* Onaycılar (otomatik, değiştirilemez) */}
             <div className="space-y-2">
               <label className="block text-xs font-medium text-zinc-700">
-                Onaycı Personeller (Rol 90)
-                <span className="ml-1 text-[10px] font-normal text-zinc-500">
-                  – Tüm rol 90 personeller otomatik onaycıdır (değiştirilemez).
-                </span>
+                Onaycı Personeller 
+               
               </label>
 
               {onayciCandidates.length === 0 ? (
