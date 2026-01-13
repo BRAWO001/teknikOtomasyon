@@ -81,6 +81,10 @@ export default function TeknikMudurPage() {
   const handleNewIsEmri = () => {
     router.push("/teknikIsEmriEkle");
   };
+  // Yonetici raporu
+  const handleYoneticiRaporu = () => {
+    router.push("/yoneticiRaporu");
+  };
 
   // Satın alma sayfası
   const handleSatinalma = () => {
@@ -265,6 +269,12 @@ export default function TeknikMudurPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleYoneticiRaporu}
+                className="rounded-md bg-blue-500 px-3 py-1 text-[11px] font-semibold text-white hover:bg-blue-700"
+              >
+                Yönetici Raporu
+              </button>
               <button
                 onClick={handleNewIsEmri}
                 className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"

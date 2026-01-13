@@ -154,7 +154,7 @@ export default function YoneticiRaporuSatinAlmaCard({ data = [] }) {
       "Kalem",
       "Ara Toplam",
       "KDV",
-      "Genel Toplam",
+      "Toplam",
     ],
     []
   );

@@ -9,6 +9,7 @@ import { getDataAsync } from "@/utils/apiService";
 import { useRouter } from "next/router";
 import YoneticiRaporuIsEmriCard from "@/components/yoneticiRaporu/YoneticiRaporuIsEmriCard";
 import YoneticiRaporuSatinAlmaCard from "@/components/yoneticiRaporu/YoneticiRaporuSatinAlmaCard";
+import YoneticiRaporuSatinAlmaGrafikPanel from "@/components/yoneticiRaporu/YoneticiRaporuSatinAlmaGrafikPanel";
 
 export default function YoneticiRaporuPage() {
   // =========================
@@ -301,9 +302,6 @@ const [end, setEnd] = useState(defaults.endDate);
       {/* ===== Üst Panel ===== */}
       <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center justify-between gap-2">
-        
-
-          
           <div>
             <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
               Yönetici Raporu – İş Emirleri + Satın Alma
@@ -318,8 +316,6 @@ const [end, setEnd] = useState(defaults.endDate);
           </div>
 
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            
-
             <button
               type="button"
               onClick={resetFilters}
@@ -499,6 +495,9 @@ const [end, setEnd] = useState(defaults.endDate);
       </div>
 
       <YoneticiRaporuIsEmriCard data={isEmriItems} />
+
+      {/* ✅ Satın Alma Grafik Özet (yukarıda olsun daha iyi) */}
+      <YoneticiRaporuSatinAlmaGrafikPanel className="mt-2" />
 
       {/* ===== Satın Alma Pagination ===== */}
       <div className="flex items-center justify-between gap-2 pt-1">
