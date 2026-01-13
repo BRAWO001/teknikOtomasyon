@@ -1,3 +1,8 @@
+
+
+
+
+
 // pages/projeGorevlileri/taleplerim.jsx
 import { useEffect, useState } from "react";
 import { getDataAsync } from "@/utils/apiService";
@@ -41,8 +46,29 @@ export default function ProjeGorevlileriTaleplerimPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+function toDateInputValue(d) {
+  try {
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  } catch {
+    return "";
+  }
+}
+
+function getDefaultRange() {
+  const today = new Date();
+  const start = new Date(today);
+  start.setMonth(start.getMonth() - 1); // 1 ay önce
+  return {
+    startDate: toDateInputValue(start),
+    endDate: toDateInputValue(today),
+  };
+}
+
+// ✅ default: 1 ay önce -> bugün
+const defaults = getDefaultRange();
+
+const [startDate, setStartDate] = useState(defaults.startDate);
+const [endDate, setEndDate] = useState(defaults.endDate);
 
   // Personel cookie'sini oku
   useEffect(() => {
@@ -60,7 +86,6 @@ export default function ProjeGorevlileriTaleplerimPage() {
 
   const personelId = personel ? personel.id ?? personel.Id : null;
 
-  // Listeyi çek
   const fetchRecords = async () => {
     if (!personelId) return;
 
@@ -69,13 +94,8 @@ export default function ProjeGorevlileriTaleplerimPage() {
 
     try {
       let query = `satinalma/taleplerim?personelId=${personelId}`;
-
-      if (startDate) {
-        query += `&startDate=${startDate}`;
-      }
-      if (endDate) {
-        query += `&endDate=${endDate}`;
-      }
+      if (startDate) query += `&startDate=${startDate}`;
+      if (endDate) query += `&endDate=${endDate}`;
 
       const res = await getDataAsync(query);
       setRecords(res || []);
@@ -87,7 +107,6 @@ export default function ProjeGorevlileriTaleplerimPage() {
     }
   };
 
-  // PersonelId geldiğinde default listeyi çek
   useEffect(() => {
     if (!personelId) return;
     fetchRecords();
@@ -100,152 +119,102 @@ export default function ProjeGorevlileriTaleplerimPage() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 1200,
-        margin: "0 auto",
-        padding: "1rem 1.25rem",
-        fontSize: 14,
-        color: "#000",
-        backgroundColor: "#fff",
-      }}
-    >
-      <h1
-        style={{
-          marginBottom: "0.75rem",
-          fontSize: 20,
-          fontWeight: 600,
-          color: "#000",
-        }}
-      >
-        Satın Alma Taleplerim
-      </h1>
+    <div className="mx-auto max-w-5xl px-4 py-5">
+      {/* Header */}
+      <div className="mb-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <h1 className="text-lg font-semibold text-zinc-900">
+          Satın Alma Taleplerim
+        </h1>
 
-      <p
-        style={{
-          marginTop: 0,
-          marginBottom: "0.75rem",
-          fontSize: 13,
-          color: "#4b5563",
-        }}
-      >
-        Bu listede <strong>TalepEden</strong> olarak sizin oluşturduğunuz
-        satın alma talepleri görünür. Kartlara tıklayarak teklif detayına
-        gidebilirsiniz.
-      </p>
+        <p className="mt-1 text-[13px] text-zinc-600">
+          Bu listede <strong>TalepEden</strong> olarak sizin oluşturduğunuz satın alma talepleri görünür.
+          Kartlara tıklayarak teklif detayına gidebilirsiniz.
+        </p>
 
-      {/* Filtre formu */}
+        {personel && (
+          <div className="mt-2 text-[12px] text-emerald-700">
+            <span className="font-semibold">Kullanıcı:</span>{" "}
+            {personel.ad ?? personel.Ad} {personel.soyad ?? personel.Soyad}
+          </div>
+        )}
+      </div>
+
+      {/* Filtre */}
       <form
         onSubmit={handleFilterSubmit}
-        style={{
-          marginBottom: "0.75rem",
-          padding: "0.75rem 0.9rem",
-          borderRadius: 6,
-          border: "1px solid #e5e7eb",
-          backgroundColor: "#f9fafb",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 12,
-          alignItems: "flex-end",
-        }}
+        className="mb-3 flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3"
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: 12, color: "#4b5563" }}>
-            Başlangıç Tarihi
-          </label>
+        <div className="flex flex-col gap-1">
+          <label className="text-[12px] text-zinc-600">Başlangıç Tarihi</label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            style={{
-              fontSize: 12,
-              padding: "4px 8px",
-              borderRadius: 4,
-              border: "1px solid #d1d5db",
-            }}
+            className="rounded-md border border-zinc-300 bg-white px-2 text-black py-1 text-[12px]"
           />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: 12, color: "#4b5563" }}>
-            Bitiş Tarihi
-          </label>
+        <div className="flex flex-col gap-1">
+          <label className="text-[12px] text-zinc-600">Bitiş Tarihi</label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            style={{
-              fontSize: 12,
-              padding: "4px 8px",
-              borderRadius: 4,
-              border: "1px solid #d1d5db",
-            }}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-black text-[12px]"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading || !personelId}
-          style={{
-            padding: "6px 12px",
-            fontSize: 12,
-            borderRadius: 6,
-            border: "1px solid #16a34a",
-            backgroundColor: "#16a34a",
-            color: "#fff",
-            cursor: loading ? "default" : "pointer",
-            opacity: loading ? 0.7 : 1,
-          }}
+          className="rounded-md border border-emerald-600 bg-emerald-600 px-3 py-2 text-[12px] font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {loading ? "Yükleniyor..." : "Filtrele"}
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStartDate("");
+            setEndDate("");
+            // filtreleri temizleyip tekrar çek
+            setTimeout(() => fetchRecords(), 0);
+          }}
+          disabled={loading || !personelId}
+          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[12px] font-semibold text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          Filtreyi Temizle
+        </button>
       </form>
 
+      {/* Hata */}
       {error && (
-        <div
-          style={{
-            marginBottom: "0.75rem",
-            fontSize: 13,
-            color: "#b91c1c",
-            backgroundColor: "#fef2f2",
-            borderRadius: 4,
-            padding: "6px 10px",
-          }}
-        >
+        <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] font-semibold text-rose-700">
           {error}
         </div>
       )}
 
+      {/* Boş */}
       {!loading && records.length === 0 && !error && (
-        <div
-          style={{
-            fontSize: 13,
-            color: "#4b5563",
-            backgroundColor: "#f9fafb",
-            borderRadius: 4,
-            padding: "0.75rem 0.9rem",
-          }}
-        >
+        <div className="rounded-lg border border-zinc-200 bg-white px-4 py-6 text-center text-[13px] text-zinc-600">
           Seçili tarih aralığında talebiniz bulunmuyor.
         </div>
       )}
 
-      <div
-        style={{
-          marginTop: "0.5rem",
-          borderRadius: 6,
-          border: "1px solid #bbf7d0",
-          backgroundColor: "#f0fdf4",
-        }}
-      >
-        {records.map((item) => (
-          <SatinAlmaOnaylananItem
-            key={item.id ?? item.Id}
-            item={item}
-            formatDateTime={formatDateTimeTR}
-            formatDateOnly={formatDateOnlyTR}
-          />
-        ))}
+      {/* Liste */}
+      <div className="overflow-hidden rounded-xl border border-emerald-200 bg-white">
+        {loading ? (
+          <div className="px-4 py-4 text-[13px] text-zinc-600">Yükleniyor...</div>
+        ) : (
+          records.map((item) => (
+            <SatinAlmaOnaylananItem
+              key={item.id ?? item.Id}
+              item={item}
+              formatDateTime={formatDateTimeTR}
+              formatDateOnly={formatDateOnlyTR}
+            />
+          ))
+        )}
       </div>
     </div>
   );

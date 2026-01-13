@@ -283,6 +283,7 @@ export default function IdariPersonelListePage() {
           onGoHome={() => router.push("/")}
           onGoOnayiBekleyen={() => router.push("/idariPersonel/onayiBekleyenler")}
           onGoReddedilen={() => router.push("/idariPersonel/reddedilenler")}
+          yoneticiRaporu={() => router.push("/yoneticiRaporu")}
           onYeniTalep={handleYeniTalep}
           onLogout={handleLogout}
         />

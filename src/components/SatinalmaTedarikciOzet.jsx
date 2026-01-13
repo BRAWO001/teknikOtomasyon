@@ -277,18 +277,7 @@ export default function SatinalmaTedarikciOzet({
               : "✅ Hızlı Onayla"}
           </button>
 
-          {/* küçük açıklama satırı */}
-          <div
-            style={{
-              marginTop: 6,
-              fontSize: 11,
-              color: "#6b7280",
-              lineHeight: 1.35,
-            }}
-          >
-            Bu işlem onay kayıtlarını kuralına göre <b>Onaylandı</b> durumuna
-            getirir.
-          </div>
+          
         </div>
       )}
 

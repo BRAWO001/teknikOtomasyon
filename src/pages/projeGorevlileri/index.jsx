@@ -115,11 +115,10 @@ export default function ProjeGorevlileriPage() {
         <main className="flex-1 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-4">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-              Satın Alma Talepleri
+              Talep Yönetim Paneli
             </h1>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-              Bu bölümden yeni satın alma talebi oluşturabilir ve daha önce
-              oluşturduğunuz talepleri görebilirsiniz.
+              Bu bölümden <strong>talep</strong> oluşturabilir ve <strong>teknik</strong> isteklerinizi ekibimize iletebilirsiniz.  
             </p>
           </div>
 
@@ -129,7 +128,7 @@ export default function ProjeGorevlileriPage() {
               onClick={handleYeniTalep}
               className="rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
             >
-              Yeni Satın Alma Talebi Oluştur
+              Yeni Talep Oluştur
             </button>
 
             <button

@@ -2,6 +2,7 @@
 
 
 
+
 // src/pages/satinalma/yeni.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -17,6 +18,13 @@ export default function YeniSatinAlmaPage() {
   const [siteId, setSiteId] = useState("");
   const [talepCinsi, setTalepCinsi] = useState("");
   const [aciklama, setAciklama] = useState("");
+
+  // ✅ EK: Not_3 / Not_4 (Teknik talep + teknik açıklama)
+  const [teknikTalepVarMi, setTeknikTalepVarMi] = useState(false); // Not_3
+  const [teknikAciklama, setTeknikAciklama] = useState(""); // Not_4
+
+  // ✅ EK: Malzeme istemiyorum (teknik talep tek başına)
+  const [malzemeIstemiyorum, setMalzemeIstemiyorum] = useState(false);
 
   // Dropdown / listeler
   const [sites, setSites] = useState([]);
@@ -150,6 +158,12 @@ export default function YeniSatinAlmaPage() {
       return;
     }
 
+    // ✅ EK: Teknik talep işaretliyse teknik açıklama zorunlu olsun
+    if (teknikTalepVarMi && !teknikAciklama.trim()) {
+      setError("Teknik talep seçildi. Teknik açıklama zorunludur.");
+      return;
+    }
+
     const talepEdenId = personel.id ?? personel.Id;
     if (!talepEdenId || talepEdenId === 0) {
       setError(
@@ -159,62 +173,70 @@ export default function YeniSatinAlmaPage() {
     }
 
     // ✅ Malzeme doğrulama:
-    // Örnek ürün linki HARİÇ tüm alanlar zorunlu.
+    // Malzeme istemiyorum seçiliyse malzeme doğrulama tamamen pas geçilir.
     const cleanedMalzemeler = [];
-    for (let i = 0; i < malzemeler.length; i++) {
-      const row = malzemeler[i];
 
-      const malzemeAdi = (row.malzemeAdi || "").trim();
-      const marka = (row.marka || "").trim();
-      const birim = (row.birim || "").trim();
-      const kullanimAmaci = (row.kullanimAmaci || "").trim();
-      const ornekUrunLinki = (row.ornekUrunLinki || "").trim();
-      const notText = (row.not || "").trim();
-      const adetRaw = row.adet === "" ? "" : String(row.adet);
-      const adetNum =
-        adetRaw === "" || isNaN(Number(adetRaw)) ? NaN : Number(adetRaw);
+    if (!malzemeIstemiyorum) {
+      // Örnek ürün linki HARİÇ tüm alanlar zorunlu.
+      for (let i = 0; i < malzemeler.length; i++) {
+        const row = malzemeler[i];
 
-      const hepsiBos =
-        !malzemeAdi &&
-        !marka &&
-        !birim &&
-        !kullanimAmaci &&
-        !ornekUrunLinki &&
-        !notText &&
-        (adetRaw === "" || adetNum === 0);
+        const malzemeAdi = (row.malzemeAdi || "").trim();
+        const marka = (row.marka || "").trim();
+        const birim = (row.birim || "").trim();
+        const kullanimAmaci = (row.kullanimAmaci || "").trim();
+        const ornekUrunLinki = (row.ornekUrunLinki || "").trim();
+        const notText = (row.not || "").trim();
+        const adetRaw = row.adet === "" ? "" : String(row.adet);
+        const adetNum =
+          adetRaw === "" || isNaN(Number(adetRaw)) ? NaN : Number(adetRaw);
 
-      // Tamamen boş satırı yok say
-      if (hepsiBos) continue;
+        const hepsiBos =
+          !malzemeAdi &&
+          !marka &&
+          !birim &&
+          !kullanimAmaci &&
+          !ornekUrunLinki &&
+          !notText &&
+          (adetRaw === "" || adetNum === 0);
 
-      // Zorunlu alan kontrolü
-      if (!malzemeAdi || !marka || !birim || !kullanimAmaci || !notText) {
-        setError(
-          `Malzeme satır ${i + 1} için örnek ürün linki hariç tüm alanlar zorunludur.`
-        );
-        return;
+        // Tamamen boş satırı yok say
+        if (hepsiBos) continue;
+
+        // Zorunlu alan kontrolü
+        if (!malzemeAdi || !marka || !birim || !kullanimAmaci || !notText) {
+          setError(
+            `Malzeme satır ${
+              i + 1
+            } için örnek ürün linki hariç tüm alanlar zorunludur.`
+          );
+          return;
+        }
+
+        if (!adetNum || adetNum <= 0) {
+          setError(
+            `Malzeme satır ${
+              i + 1
+            } için adet alanı zorunludur ve 0'dan büyük olmalıdır.`
+          );
+          return;
+        }
+
+        cleanedMalzemeler.push({
+          malzemeAdi,
+          marka,
+          adet: adetNum,
+          birim,
+          kullanimAmaci,
+          ornekUrunLinki: ornekUrunLinki || null, // opsiyonel
+          not: notText,
+        });
       }
 
-      if (!adetNum || adetNum <= 0) {
-        setError(
-          `Malzeme satır ${i + 1} için adet alanı zorunludur ve 0'dan büyük olmalıdır.`
-        );
+      if (cleanedMalzemeler.length === 0) {
+        setError("En az bir malzeme girişi yapmalısınız.");
         return;
       }
-
-      cleanedMalzemeler.push({
-        malzemeAdi,
-        marka,
-        adet: adetNum,
-        birim,
-        kullanimAmaci,
-        ornekUrunLinki: ornekUrunLinki || null, // opsiyonel
-        not: notText,
-      });
-    }
-
-    if (cleanedMalzemeler.length === 0) {
-      setError("En az bir malzeme girişi yapmalısınız.");
-      return;
     }
 
     // ✅ Onaycı personel Id'leri:
@@ -232,10 +254,19 @@ export default function YeniSatinAlmaPage() {
       onayciPersonelIdler: onayciPersonelIdler.length
         ? onayciPersonelIdler
         : null,
-      malzemeler: cleanedMalzemeler,
-      // siteId backend DTO'nda yoksa bunu EKLEME.
+
+      // ✅ Malzeme istemiyorum seçiliyse malzemeler null gönder
+      malzemeler: malzemeIstemiyorum ? null : cleanedMalzemeler,
+
       // DTO'na SiteId eklediysen burada:
       siteId: siteId ? Number(siteId) : null,
+
+      // ✅ Not_3 / Not_4
+      not_3: teknikTalepVarMi ? "Evet" : "Hayır",
+      not_4: teknikTalepVarMi ? teknikAciklama.trim() : null,
+
+      // ✅ İstersen bunu da not alanına basabilirsin (opsiyonel)
+      // not_2: malzemeIstemiyorum ? "Malzeme istemiyorum" : null,
     };
 
     try {
@@ -249,6 +280,12 @@ export default function YeniSatinAlmaPage() {
       setSiteId("");
       setTalepCinsi("");
       setAciklama("");
+
+      setTeknikTalepVarMi(false);
+      setTeknikAciklama("");
+
+      setMalzemeIstemiyorum(false);
+
       setMalzemeler([
         {
           malzemeAdi: "",
@@ -416,6 +453,78 @@ export default function YeniSatinAlmaPage() {
               </div>
             </div>
 
+            {/* ✅ EK: Not_3 (Teknik talep var mı?) + Not_4 (Teknik açıklama) */}
+            <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
+              <div className="w-full rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-4">
+                <label className="flex w-full items-center justify-center gap-3 text-sm font-semibold text-emerald-900">
+                  <input
+                    type="checkbox"
+                    checked={teknikTalepVarMi}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setTeknikTalepVarMi(checked);
+
+                      // kapatınca: teknik açıklama + malzeme istemiyorum sıfırla
+                      if (!checked) {
+                        setTeknikAciklama("");
+                        setMalzemeIstemiyorum(false);
+                      }
+                    }}
+                    className="h-5 w-5 rounded border-emerald-400"
+                  />
+                  Teknik talebiniz var mı?
+                </label>
+              </div>
+
+              {teknikTalepVarMi && (
+                <div className="mt-3 space-y-3">
+                  {/* ✅ Malzeme istemiyorum artık burada (teknik talep açılınca görünsün) */}
+                  <div className="w-full rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+                    <label className="flex w-full items-center justify-center gap-3 text-sm font-semibold text-amber-900">
+                      <input
+                        type="checkbox"
+                        checked={malzemeIstemiyorum}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setMalzemeIstemiyorum(checked);
+
+                          // İşaretlenirse: malzeme alanlarını temizle (opsiyonel ama pratik)
+                          if (checked) {
+                            setMalzemeler([
+                              {
+                                malzemeAdi: "",
+                                marka: "",
+                                adet: "",
+                                birim: "Adet",
+                                kullanimAmaci: "",
+                                ornekUrunLinki: "",
+                                not: "",
+                              },
+                            ]);
+                          }
+                        }}
+                        className="h-5 w-5 rounded border-amber-400"
+                      />
+                      Malzeme istemiyorum (sadece teknik talep)
+                    </label>
+                  </div>
+
+                  {/* Teknik açıklama */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-medium text-zinc-700">
+                      Teknik Açıklama <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={teknikAciklama}
+                      onChange={(e) => setTeknikAciklama(e.target.value)}
+                      placeholder="Teknik talep ile ilgili detay açıklama yazınız."
+                      className="w-full resize-y rounded-md border border-zinc-300 px-2 py-1.5 text-sm text-zinc-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Açıklama */}
             <div className="space-y-1.5">
@@ -433,7 +542,11 @@ export default function YeniSatinAlmaPage() {
           </section>
 
           {/* Malzemeler */}
-          <section className="space-y-3">
+          <section
+            className={`space-y-3 ${
+              malzemeIstemiyorum ? "opacity-50 pointer-events-none" : ""
+            }`}
+          >
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-zinc-800">
                 Malzemeler
@@ -488,7 +601,7 @@ export default function YeniSatinAlmaPage() {
                           onChange={(e) =>
                             handleRowChange(index, "malzemeAdi", e.target.value)
                           }
-                          required
+                          required={!malzemeIstemiyorum}
                           placeholder="Malzeme adı"
                           className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />
@@ -501,7 +614,7 @@ export default function YeniSatinAlmaPage() {
                           onChange={(e) =>
                             handleRowChange(index, "marka", e.target.value)
                           }
-                          required
+                          required={!malzemeIstemiyorum}
                           placeholder="Marka"
                           className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />
@@ -516,7 +629,7 @@ export default function YeniSatinAlmaPage() {
                           onChange={(e) =>
                             handleRowChange(index, "adet", e.target.value)
                           }
-                          required
+                          required={!malzemeIstemiyorum}
                           placeholder="0"
                           className="w-full rounded border border-zinc-300 px-1 py-[3px] text-right text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />
@@ -529,7 +642,7 @@ export default function YeniSatinAlmaPage() {
                           onChange={(e) =>
                             handleRowChange(index, "birim", e.target.value)
                           }
-                          required
+                          required={!malzemeIstemiyorum}
                           placeholder="Adet / Paket / Metre..."
                           className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />
@@ -546,7 +659,7 @@ export default function YeniSatinAlmaPage() {
                               e.target.value
                             )
                           }
-                          required
+                          required={!malzemeIstemiyorum}
                           placeholder="Kullanım amacı"
                           className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />
@@ -575,7 +688,7 @@ export default function YeniSatinAlmaPage() {
                           onChange={(e) =>
                             handleRowChange(index, "not", e.target.value)
                           }
-                          required
+                          required={!malzemeIstemiyorum}
                           placeholder="İsteğe bağlı not"
                           className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                         />

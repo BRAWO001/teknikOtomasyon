@@ -1,918 +1,540 @@
+
+
+
+
+
 // pages/yoneticiRaporu.jsx
 import { useEffect, useMemo, useState } from "react";
 import { getDataAsync } from "@/utils/apiService";
-
-/**
- * ✅ Yönetici Raporu (Excel gibi)
- * - Üstte 3 KPI kartı (Toplam Kayıt, Toplam Tutar, Toplam Kalem)
- * - Altta filtrelenebilir / sıralanabilir tablo
- * - Satır tıklayınca detay drawer (Not_1..Not_2..Not_3, malzemeler vs.)
- *
- * ✅ Beklenen JSON (örnek alanlar)
- * [
- *  {
- *    "id": 3,
- *    "tarih": "2026-01-03T07:24:32.017",
- *    "seriNo": "SA-20260103072432",
- *    "talepCinsi": "elektrik",
- *    "not_1": "Satın alındı",
- *    "not_2": "https://...fatura.pdf",
- *    "siteAdi": "Site A",
- *    "malzemeler": [ ... ],
- *    "not_3": "12345" // string ama sayıya çevrilebilir
- *  }
- * ]
- *
- * ⚠️ Endpoint'i aşağıdaki REPORT_ENDPOINT ile değiştir.
- */
-const REPORT_ENDPOINT = "satinalma/yonetici-raporu"; // <-- senin backend endpoint
-
-function safeStr(v) {
-  if (v == null) return "";
-  return String(v);
-}
-function normalizeTRLower(s) {
-  return safeStr(s).trim().toLocaleLowerCase("tr-TR");
-}
-function formatTR(iso) {
-  if (!iso) return "-";
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "-";
-  }
-}
-function parseMoney(val) {
-  // Not_3 string gelebilir: "12.345,67" / "12345.67" / "12345" vb.
-  if (val == null) return 0;
-  const raw = safeStr(val).trim();
-  if (!raw) return 0;
-
-  // TR format olasılığı: 12.345,67 -> 12345.67
-  const tr = raw.replace(/\./g, "").replace(",", ".");
-  const num = Number(tr);
-  return Number.isFinite(num) ? num : 0;
-}
-function currencyTR(val) {
-  const n = Number(val) || 0;
-  return n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function getField(row, keys, fallback = "") {
-  for (const k of keys) {
-    if (row && row[k] != null) return row[k];
-  }
-  return fallback;
-}
-
-function KPI({ title, value, hint }) {
-  return (
-    <div
-      style={{
-        border: "1px solid #e5e7eb",
-        background: "#ffffff",
-        borderRadius: 16,
-        padding: 14,
-        boxShadow: "0 10px 22px rgba(0,0,0,0.06)",
-        minWidth: 220,
-      }}
-    >
-      <div style={{ fontSize: 12, fontWeight: 900, color: "#6b7280" }}>{title}</div>
-      <div style={{ marginTop: 4, fontSize: 26, fontWeight: 950, color: "#111827" }}>{value}</div>
-      {hint && (
-        <div style={{ marginTop: 6, fontSize: 12, color: "#6b7280", fontWeight: 700 }}>
-          {hint}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Pill({ text, tone = "gray" }) {
-  const tones = {
-    gray: { bg: "#f3f4f6", bd: "#e5e7eb", tx: "#111827" },
-    green: { bg: "#d1fae5", bd: "#86efac", tx: "#064e3b" },
-    red: { bg: "#fee2e2", bd: "#fecaca", tx: "#991b1b" },
-    amber: { bg: "#fffbeb", bd: "#fde68a", tx: "#92400e" },
-    blue: { bg: "#dbeafe", bd: "#bfdbfe", tx: "#1e40af" },
-  };
-  const t = tones[tone] || tones.gray;
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "5px 10px",
-        borderRadius: 999,
-        border: `1px solid ${t.bd}`,
-        background: t.bg,
-        color: t.tx,
-        fontSize: 11,
-        fontWeight: 900,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {text}
-    </span>
-  );
-}
-
-function Drawer({ open, onClose, row }) {
-  if (!open) return null;
-
-  const id = row?.id ?? row?.Id;
-  const seriNo = row?.seriNo ?? row?.SeriNo ?? "-";
-  const tarih = row?.tarih ?? row?.Tarih ?? null;
-  const talepCinsi = row?.talepCinsi ?? row?.TalepCinsi ?? "-";
-  const siteAdi = row?.siteAdi ?? row?.SiteAdi ?? row?.siteAdı ?? row?.SiteAdı ?? "-";
-  const not1 = row?.not_1 ?? row?.Not_1 ?? "";
-  const not2 = row?.not_2 ?? row?.Not_2 ?? "";
-  const not3 = row?.not_3 ?? row?.Not_3 ?? "";
-
-  const malzList = row?.malzemeler ?? row?.Malzemeler ?? [];
-  const malzemeler = Array.isArray(malzList) ? malzList : [];
-  const kalemSayisi = malzemeler.length;
-
-  const toplam = parseMoney(not3);
-
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        background: "rgba(0,0,0,0.45)",
-        display: "flex",
-        justifyContent: "flex-end",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "min(520px, 92vw)",
-          height: "100%",
-          background: "#ffffff",
-          boxShadow: "-20px 0 60px rgba(0,0,0,0.25)",
-          padding: 14,
-          overflowY: "auto",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ fontSize: 16, fontWeight: 950, color: "#111827" }}>
-            Detay • #{id}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              borderRadius: 10,
-              padding: "8px 10px",
-              border: "1px solid #e5e7eb",
-              background: "#ffffff",
-              fontWeight: 900,
-              cursor: "pointer",
-            }}
-          >
-            Kapat
-          </button>
-        </div>
-
-        <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: 14, padding: 12, background: "#f9fafb" }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: "#6b7280" }}>Özet</div>
-            <div style={{ marginTop: 8, display: "grid", gap: 6, fontSize: 13, color: "#111827" }}>
-              <div><strong>SeriNo:</strong> {seriNo}</div>
-              <div><strong>Tarih:</strong> {formatTR(tarih)}</div>
-              <div><strong>Talep Cinsi:</strong> {talepCinsi}</div>
-              <div><strong>Site:</strong> {siteAdi}</div>
-              <div><strong>Kalem Sayısı:</strong> {kalemSayisi}</div>
-              <div><strong>Not_3 Toplam:</strong> {currencyTR(toplam)} ₺</div>
-            </div>
-          </div>
-
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: 14, padding: 12, background: "#ffffff" }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: "#6b7280" }}>Not Alanları</div>
-            <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 900, color: "#6b7280" }}>Not_1</div>
-                <div style={{ marginTop: 4, fontSize: 13, fontWeight: 800, color: "#111827" }}>
-                  {not1 || "-"}
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 900, color: "#6b7280" }}>Not_2 (Fatura URL)</div>
-                {not2 ? (
-                  <a
-                    href={safeStr(not2)}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ marginTop: 4, display: "inline-block", fontSize: 13, fontWeight: 900, color: "#2563eb", textDecoration: "underline", wordBreak: "break-all" }}
-                  >
-                    {safeStr(not2)}
-                  </a>
-                ) : (
-                  <div style={{ marginTop: 4, fontSize: 13, fontWeight: 800, color: "#111827" }}>-</div>
-                )}
-              </div>
-
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 900, color: "#6b7280" }}>Not_3 (Toplam)</div>
-                <div style={{ marginTop: 4, fontSize: 13, fontWeight: 900, color: "#111827" }}>
-                  {safeStr(not3) || "-"}{" "}
-                  {not3 ? <span style={{ color: "#6b7280", fontWeight: 800 }}>(parse: {currencyTR(toplam)} ₺)</span> : null}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: 14, padding: 12, background: "#f9fafb" }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: "#6b7280" }}>Satın Alınan Malzemeler</div>
-            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-              {malzemeler.length === 0 ? (
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280" }}>Malzeme yok.</div>
-              ) : (
-                malzemeler.map((m, idx) => {
-                  const ad = m?.malzemeAdi ?? m?.MalzemeAdi ?? "-";
-                  const marka = m?.marka ?? m?.Marka ?? "";
-                  const adet = m?.adet ?? m?.Adet ?? "";
-                  const birim = m?.birim ?? m?.Birim ?? "";
-                  return (
-                    <div
-                      key={m?.id ?? m?.Id ?? idx}
-                      style={{
-                        border: "1px solid #e5e7eb",
-                        background: "#ffffff",
-                        borderRadius: 12,
-                        padding: "10px 12px",
-                      }}
-                    >
-                      <div style={{ fontWeight: 950, color: "#111827", fontSize: 13 }}>
-                        {idx + 1}. {ad}
-                      </div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#4b5563", fontWeight: 700 }}>
-                        {marka ? <div><strong>Marka:</strong> {marka}</div> : null}
-                        {(adet || birim) ? <div><strong>Miktar:</strong> {adet} {birim}</div> : null}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { useRouter } from "next/router";
+import YoneticiRaporuIsEmriCard from "@/components/yoneticiRaporu/YoneticiRaporuIsEmriCard";
+import YoneticiRaporuSatinAlmaCard from "@/components/yoneticiRaporu/YoneticiRaporuSatinAlmaCard";
 
 export default function YoneticiRaporuPage() {
-  const [rows, setRows] = useState([]);
-  const [rawErr, setRawErr] = useState("");
-  const [loading, setLoading] = useState(true);
+  // =========================
+  // Ortak listeler (dropdown)
+  // =========================
+  const [sites, setSites] = useState([]);
+  const [personeller, setPersoneller] = useState([]);
 
-  // UI state
-  const [q, setQ] = useState("");
-  const [siteFilter, setSiteFilter] = useState("ALL");
-  const [not1Filter, setNot1Filter] = useState("ALL");
-  const [sortKey, setSortKey] = useState("tarih");
-  const [sortDir, setSortDir] = useState("desc");
+  // =========================
+  // İş Emri state
+  // =========================
+  const [isEmriItems, setIsEmriItems] = useState([]);
+  const [isEmriLoading, setIsEmriLoading] = useState(true);
+  const [isEmriPage, setIsEmriPage] = useState(1);
+  const [isEmriPageSize] = useState(100);
+  const [isEmriTotalPages, setIsEmriTotalPages] = useState(1);
+  const [isEmriTotalCount, setIsEmriTotalCount] = useState(0);
 
-  // selection
-  const [selected, setSelected] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // =========================
+  // Satın Alma state
+  // =========================
+  const [saItems, setSaItems] = useState([]);
+  const [saLoading, setSaLoading] = useState(true);
+  const [saPage, setSaPage] = useState(1);
+  const [saPageSize] = useState(100);
+  const [saTotalPages, setSaTotalPages] = useState(1);
+  const [saTotalCount, setSaTotalCount] = useState(0);
 
-
-  const load = async () => {
+  // =========================
+  // Filtreler (opsiyonel)
+  // =========================
+  const [siteId, setSiteId] = useState("");
+  const [personelId, setPersonelId] = useState("");
+function toDateInputValue(d) {
   try {
-    setLoading(true);
-    setRawErr("");
-
-    // ✅ MOCK DATA (GET hazır değilken görünüm için)
-    const mockRows = [
-      {
-        id: 101,
-        tarih: "2026-01-06T09:12:00.000",
-        seriNo: "SA-20260106091200",
-        talepCinsi: "Elektrik",
-        not_1: "Satın alındı",
-        not_2: "https://files.pilotapisrc.com/faturalar/SA-20260106091200.pdf",
-        siteAdi: "Güneş Sitesi",
-        malzemeler: [
-          { id: 1, malzemeAdi: "Kablo NYM 3x2.5", marka: "Prysmian", adet: 50, birim: "Metre" },
-          { id: 2, malzemeAdi: "Sigorta 16A", marka: "Schneider", adet: 6, birim: "Adet" },
-          { id: 3, malzemeAdi: "Buat", marka: "Viko", adet: 10, birim: "Adet" },
-        ],
-        not_3: "18450,00",
-      },
-      {
-        id: 102,
-        tarih: "2026-01-06T11:35:00.000",
-        seriNo: "SA-20260106113500",
-        talepCinsi: "Temizlik",
-        not_1: "Beklemede - Onay bekleniyor",
-        not_2: "",
-        siteAdi: "Mavi Kule",
-        malzemeler: [
-          { id: 1, malzemeAdi: "Yüzey Temizleyici 5L", marka: "Diversey", adet: 6, birim: "Bidon" },
-          { id: 2, malzemeAdi: "Mop Seti", marka: "Vileda", adet: 4, birim: "Set" },
-        ],
-        not_3: "7420",
-      },
-      {
-        id: 103,
-        tarih: "2026-01-06T14:10:00.000",
-        seriNo: "SA-20260106141000",
-        talepCinsi: "Asansör",
-        not_1: "Satın alınmadı",
-        not_2: "",
-        siteAdi: "Ihlamur Evleri",
-        malzemeler: [
-          { id: 1, malzemeAdi: "Kapı Kilidi", marka: "Fermator", adet: 1, birim: "Adet" },
-          { id: 2, malzemeAdi: "Fotosel", marka: "Wittur", adet: 1, birim: "Adet" },
-        ],
-        not_3: "12980,50",
-      },
-      {
-        id: 104,
-        tarih: "2026-01-07T08:20:00.000",
-        seriNo: "SA-20260107082000",
-        talepCinsi: "Mekanik",
-        not_1: "Satın alındı",
-        not_2: "https://files.pilotapisrc.com/faturalar/SA-20260107082000.pdf",
-        siteAdi: "Yelken Residence",
-        malzemeler: [
-          { id: 1, malzemeAdi: "Sirkülasyon Pompası", marka: "Grundfos", adet: 1, birim: "Adet" },
-          { id: 2, malzemeAdi: "Vana 1\"", marka: "ECA", adet: 3, birim: "Adet" },
-          { id: 3, malzemeAdi: "Teflon Bant", marka: "Fırat", adet: 10, birim: "Adet" },
-        ],
-        not_3: "25500",
-      },
-      {
-        id: 105,
-        tarih: "2026-01-07T10:05:00.000",
-        seriNo: "SA-20260107100500",
-        talepCinsi: "Elektrik",
-        not_1: "Satın alındı",
-        not_2: "",
-        siteAdi: "Güneş Sitesi",
-        malzemeler: [
-          { id: 1, malzemeAdi: "LED Panel 60x60", marka: "Philips", adet: 8, birim: "Adet" },
-          { id: 2, malzemeAdi: "Klemens", marka: "Wago", adet: 20, birim: "Adet" },
-        ],
-        not_3: "16890,75",
-      },
-      {
-        id: 106,
-        tarih: "2026-01-07T13:40:00.000",
-        seriNo: "SA-20260107134000",
-        talepCinsi: "Peyzaj",
-        not_1: "Beklemede - Fiyat toplama",
-        not_2: "",
-        siteAdi: "Çınar Park",
-        malzemeler: [
-          { id: 1, malzemeAdi: "Çim Tohumu", marka: "Barenbrug", adet: 2, birim: "Çuval" },
-          { id: 2, malzemeAdi: "Budama Makası", marka: "Fiskars", adet: 2, birim: "Adet" },
-          { id: 3, malzemeAdi: "Bahçe Hortumu 50m", marka: "Hozelock", adet: 1, birim: "Adet" },
-        ],
-        not_3: "9850",
-      },
-      {
-        id: 107,
-        tarih: "2026-01-08T09:00:00.000",
-        seriNo: "SA-20260108090000",
-        talepCinsi: "Güvenlik",
-        not_1: "Satın alındı",
-        not_2: "https://files.pilotapisrc.com/faturalar/SA-20260108090000.pdf",
-        siteAdi: "Mavi Kule",
-        malzemeler: [
-          { id: 1, malzemeAdi: "IP Kamera", marka: "Hikvision", adet: 4, birim: "Adet" },
-          { id: 2, malzemeAdi: "PoE Switch 8 Port", marka: "TP-Link", adet: 1, birim: "Adet" },
-        ],
-        not_3: "32100",
-      },
-      {
-        id: 108,
-        tarih: "2026-01-08T11:15:00.000",
-        seriNo: "SA-20260108111500",
-        talepCinsi: "Elektrik",
-        not_1: "Satın alınmadı",
-        not_2: "",
-        siteAdi: "Ihlamur Evleri",
-        malzemeler: [
-          { id: 1, malzemeAdi: "UPS 1kVA", marka: "Inform", adet: 1, birim: "Adet" },
-        ],
-        not_3: "8700,00",
-      },
-      {
-        id: 109,
-        tarih: "2026-01-08T15:25:00.000",
-        seriNo: "SA-20260108152500",
-        talepCinsi: "Boya",
-        not_1: "Beklemede - Onay bekleniyor",
-        not_2: "",
-        siteAdi: "Yelken Residence",
-        malzemeler: [
-          { id: 1, malzemeAdi: "İç Cephe Boya 20kg", marka: "Filli Boya", adet: 3, birim: "Kova" },
-          { id: 2, malzemeAdi: "Rulo Set", marka: "Dyo", adet: 5, birim: "Set" },
-          { id: 3, malzemeAdi: "Maskeleme Bandı", marka: "Tesa", adet: 10, birim: "Adet" },
-        ],
-        not_3: "14640",
-      },
-      {
-        id: 110,
-        tarih: "2026-01-09T08:45:00.000",
-        seriNo: "SA-20260109084500",
-        talepCinsi: "Mekanik",
-        not_1: "Satın alındı",
-        not_2: "https://files.pilotapisrc.com/faturalar/SA-20260109084500.pdf",
-        siteAdi: "Çınar Park",
-        malzemeler: [
-          { id: 1, malzemeAdi: "Genleşme Tankı 24L", marka: "Reflex", adet: 1, birim: "Adet" },
-          { id: 2, malzemeAdi: "Emniyet Ventili", marka: "ECA", adet: 2, birim: "Adet" },
-        ],
-        not_3: "11250,90",
-      },
-    ];
-
-    setRows(mockRows);
-  } catch (e) {
-    setRawErr("Rapor verisi alınamadı.");
-    setRows([]);
-  } finally {
-    setLoading(false);
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  } catch {
+    return "";
   }
-};
+}
 
+function getDefaultRange() {
+  const today = new Date();
+  const start = new Date(today);
+  start.setMonth(start.getMonth() - 1); // 1 ay önce
+  return {
+    startDate: toDateInputValue(start),
+    endDate: toDateInputValue(today),
+  };
+}
 
+// ✅ default: 1 ay önce -> bugün
+const defaults = getDefaultRange();
 
+const [start, setStart] = useState(defaults.startDate);
+const [end, setEnd] = useState(defaults.endDate);
 
+  // =========================
+  // Excel download state
+  // =========================
+  const [downloading, setDownloading] = useState(false);
+  const [downloadErr, setDownloadErr] = useState("");
 
+  // =========================
+  // Endpoints (LIST)
+  // =========================
+  const isEmriEndpoint = useMemo(() => {
+    const qs = new URLSearchParams();
+    qs.set("page", String(isEmriPage));
+    qs.set("pageSize", String(isEmriPageSize));
+
+    if (siteId) qs.set("siteId", String(siteId));
+    if (personelId) qs.set("personelId", String(personelId));
+    if (start && end) {
+      qs.set("start", start);
+      qs.set("end", end);
+    }
+
+    return `yoneticiraporu/isEmirleriDetayliYoneticiRaporu?${qs.toString()}`;
+  }, [isEmriPage, isEmriPageSize, siteId, personelId, start, end]);
+
+  const satinAlmaEndpoint = useMemo(() => {
+    const qs = new URLSearchParams();
+    qs.set("page", String(saPage));
+    qs.set("pageSize", String(saPageSize));
+    return `yoneticiraporu/satinalmaGetDetayliYoneticiRaporu?${qs.toString()}`;
+  }, [saPage, saPageSize]);
+
+  // =========================
+  // Loaders
+  // =========================
+  async function loadIsEmri() {
+    setIsEmriLoading(true);
+    try {
+      const res = await getDataAsync(isEmriEndpoint);
+      setIsEmriItems(res?.items || []);
+      setIsEmriTotalPages(res?.totalPages || 1);
+      setIsEmriTotalCount(res?.totalCount || 0);
+    } catch (e) {
+      console.error("IsEmri YoneticiRaporu GET hata:", e);
+      setIsEmriItems([]);
+      setIsEmriTotalPages(1);
+      setIsEmriTotalCount(0);
+    } finally {
+      setIsEmriLoading(false);
+    }
+  }
+
+  async function loadSatinAlma() {
+    setSaLoading(true);
+    try {
+      const res = await getDataAsync(satinAlmaEndpoint);
+      setSaItems(res?.items || []);
+      setSaTotalPages(res?.totalPages || 1);
+      setSaTotalCount(res?.totalCount || 0);
+    } catch (e) {
+      console.error("SatınAlma YoneticiRaporu GET hata:", e);
+      setSaItems([]);
+      setSaTotalPages(1);
+      setSaTotalCount(0);
+    } finally {
+      setSaLoading(false);
+    }
+  }
+
+  // =========================
+  // İlk açılış: Siteler + Personeller
+  // =========================
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let cancelled = false;
 
-  const sites = useMemo(() => {
-    const set = new Set();
-    rows.forEach((r) => {
-      const s = getField(r, ["siteAdi", "SiteAdi", "siteAdı", "SiteAdı"], "");
-      if (s) set.add(s);
-    });
-    return ["ALL", ...Array.from(set).sort((a, b) => a.localeCompare(b, "tr"))];
-  }, [rows]);
+    const loadLists = async () => {
+      try {
+        const [siteRes, perRes] = await Promise.allSettled([
+          getDataAsync("SiteAptEvControllerSet/sites"),
+          // burada rolKod’u ihtiyacına göre değiştirirsin
+          getDataAsync("Personeller/ByDurum?rolKod=30&aktifMi=true"),
+        ]);
 
-  const not1Options = useMemo(() => {
-    // Not_1'e göre status rozet
-    return ["ALL", "satın alındı", "satın alınmadı", "beklemede/diğer"];
-  }, []);
+        if (cancelled) return;
 
-  const kpi = useMemo(() => {
-    const totalCount = rows.length;
+        if (siteRes.status === "fulfilled") setSites(siteRes.value || []);
+        else console.error("SITES FETCH ERROR:", siteRes.reason);
 
-    let totalAmount = 0;
-    let totalKalem = 0;
-
-    rows.forEach((r) => {
-      const not3 = getField(r, ["not_3", "Not_3"], "");
-      totalAmount += parseMoney(not3);
-
-      const malz = getField(r, ["malzemeler", "Malzemeler"], []);
-      const arr = Array.isArray(malz) ? malz : [];
-      totalKalem += arr.length;
-    });
-
-    return { totalCount, totalAmount, totalKalem };
-  }, [rows]);
-
-  const filtered = useMemo(() => {
-    const query = normalizeTRLower(q);
-
-    return rows.filter((r) => {
-      const id = getField(r, ["id", "Id"], "");
-      const seriNo = getField(r, ["seriNo", "SeriNo"], "");
-      const talepCinsi = getField(r, ["talepCinsi", "TalepCinsi"], "");
-      const not1 = getField(r, ["not_1", "Not_1"], "");
-      const not2 = getField(r, ["not_2", "Not_2"], "");
-      const siteAdi = getField(r, ["siteAdi", "SiteAdi", "siteAdı", "SiteAdı"], "");
-
-      const textBlob = normalizeTRLower([id, seriNo, talepCinsi, not1, not2, siteAdi].join(" | "));
-
-      const passQ = !query || textBlob.includes(query);
-
-      const passSite = siteFilter === "ALL" ? true : safeStr(siteAdi) === safeStr(siteFilter);
-
-      const not1Norm = normalizeTRLower(not1);
-      let passNot1 = true;
-      if (not1Filter !== "ALL") {
-        if (not1Filter === "satın alındı") passNot1 = not1Norm.includes("satın alındı") || not1Norm.includes("satin alindi");
-        else if (not1Filter === "satın alınmadı") passNot1 = not1Norm.includes("satın alınmadı") || not1Norm.includes("satin alinmadi");
-        else passNot1 = !(not1Norm.includes("satın alındı") || not1Norm.includes("satin alindi") || not1Norm.includes("satın alınmadı") || not1Norm.includes("satin alinmadi"));
+        if (perRes.status === "fulfilled") setPersoneller(perRes.value || []);
+        else console.error("PERSONELLER FETCH ERROR:", perRes.reason);
+      } catch (err) {
+        console.error("LIST LOAD ERROR:", err);
       }
-
-      return passQ && passSite && passNot1;
-    });
-  }, [rows, q, siteFilter, not1Filter]);
-
-  const sorted = useMemo(() => {
-    const list = [...filtered];
-
-    const getSortVal = (r) => {
-      if (sortKey === "siraNo") return Number(getField(r, ["id", "Id"], 0)) || 0;
-      if (sortKey === "tarih") return new Date(getField(r, ["tarih", "Tarih"], 0)).getTime() || 0;
-      if (sortKey === "seriNo") return safeStr(getField(r, ["seriNo", "SeriNo"], ""));
-      if (sortKey === "talepCinsi") return safeStr(getField(r, ["talepCinsi", "TalepCinsi"], ""));
-      if (sortKey === "siteAdi") return safeStr(getField(r, ["siteAdi", "SiteAdi", "siteAdı", "SiteAdı"], ""));
-      if (sortKey === "kalem") {
-        const malz = getField(r, ["malzemeler", "Malzemeler"], []);
-        return (Array.isArray(malz) ? malz.length : 0) || 0;
-      }
-      if (sortKey === "toplam") {
-        const not3 = getField(r, ["not_3", "Not_3"], "");
-        return parseMoney(not3);
-      }
-      return 0;
     };
 
-    list.sort((a, b) => {
-      const va = getSortVal(a);
-      const vb = getSortVal(b);
+    loadLists();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-      // string karşılaştırma
-      if (typeof va === "string" || typeof vb === "string") {
-        const sa = safeStr(va);
-        const sb = safeStr(vb);
-        const cmp = sa.localeCompare(sb, "tr");
-        return sortDir === "asc" ? cmp : -cmp;
-      }
+  // İş emri: filtre/paging değişince otomatik
+  useEffect(() => {
+    loadIsEmri();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmriEndpoint]);
 
-      const cmp = (va || 0) - (vb || 0);
-      return sortDir === "asc" ? cmp : -cmp;
-    });
+  // Satın alma: paging değişince otomatik
+  useEffect(() => {
+    loadSatinAlma();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [satinAlmaEndpoint]);
 
-    return list;
-  }, [filtered, sortKey, sortDir]);
-
-  const openRow = (r) => {
-    setSelected(r);
-    setDrawerOpen(true);
+  // =========================
+  // UI handlers
+  // =========================
+  const resetFilters = () => {
+    setSiteId("");
+    setPersonelId("");
+    setStart("");
+    setEnd("");
+    setIsEmriPage(1);
+    setSaPage(1);
   };
 
-  const getNot1Tone = (not1) => {
-    const n = normalizeTRLower(not1);
-    if (n.includes("satın alındı") || n.includes("satin alindi")) return "green";
-    if (n.includes("satın alınmadı") || n.includes("satin alinmadi")) return "red";
-    if (!n) return "gray";
-    return "amber";
+  const refreshAll = async () => {
+    await Promise.all([loadIsEmri(), loadSatinAlma()]);
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0b1220", padding: 16, color: "#fff" }}>
-        Yükleniyor...
+  // =========================
+  // ✅ EXCEL DOWNLOAD (getDataAsync ile BLOB)
+  // =========================
+  const buildExcelQueryString = () => {
+    const qs = new URLSearchParams();
+
+    if (siteId) qs.set("siteId", String(siteId));
+    if (personelId) qs.set("personelId", String(personelId));
+
+    // ✅ tarih: sadece ikisi birlikte
+    if (start && end) {
+      qs.set("start", start);
+      qs.set("end", end);
+    }
+
+    const s = qs.toString();
+    return s ? `?${s}` : "";
+  };
+
+  function downloadBlob(blob, baseFilename) {
+  const d = new Date();
+  const gun = String(d.getDate()).padStart(2, "0");
+  const ay = String(d.getMonth() + 1).padStart(2, "0");
+  const yil = d.getFullYear();
+
+  const filename = baseFilename.replace(
+    /\.xlsx$/i,
+    `-${gun}-${ay}-${yil}.xlsx`
+  );
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+
+  const handleDownloadIsEmriExcel = async () => {
+    try {
+      setDownloadErr("");
+      setDownloading(true);
+
+      const qs = buildExcelQueryString();
+      const blob = await getDataAsync(
+        `yoneticiraporu/IS-EMIRLERI-DETAYLI-RAPOR-EXCEL${qs}`,
+        { responseType: "blob" }
+      );
+
+      downloadBlob(blob, "is-emirleri-rapor.xlsx");
+    } catch (e) {
+      console.error("IS EMRI EXCEL DOWNLOAD ERROR:", e);
+      const status = e?.response?.status;
+      const msg =
+        status === 401
+          ? "401: Token yok/expired. Tekrar giriş yap."
+          : status === 403
+          ? "403: Yetkin yok."
+          : status
+          ? `İndirme hatası: ${status}`
+          : "İndirme hatası oluştu.";
+      setDownloadErr(msg);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleDownloadSatinAlmaExcel = async () => {
+    try {
+      setDownloadErr("");
+      setDownloading(true);
+
+      const qs = buildExcelQueryString();
+      const blob = await getDataAsync(
+        `yoneticiraporu/SATIN-ALMA-DETAYLI-RAPOR-EXCEL${qs}`,
+        { responseType: "blob" }
+      );
+
+      downloadBlob(blob, "satinalma-rapor.xlsx");
+    } catch (e) {
+      console.error("SATIN ALMA EXCEL DOWNLOAD ERROR:", e);
+      const status = e?.response?.status;
+      const msg =
+        status === 401
+          ? "401: Token yok/expired. Tekrar giriş yap."
+          : status === 403
+          ? "403: Yetkin yok."
+          : status
+          ? `İndirme hatası: ${status}`
+          : "İndirme hatası oluştu.";
+      setDownloadErr(msg);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // =========================
+  // Render
+  // =========================
+  return (
+    <div className="p-3 space-y-3">
+      {/* ===== Üst Panel ===== */}
+      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex items-center justify-between gap-2">
+        
+
+          
+          <div>
+            <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+              Yönetici Raporu – İş Emirleri + Satın Alma
+            </div>
+
+            <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              İş Emri: {isEmriTotalCount} kayıt • Sayfa: {isEmriPage}/
+              {isEmriTotalPages}
+              <span className="mx-2">•</span>
+              Satın Alma: {saTotalCount} kayıt • Sayfa: {saPage}/{saTotalPages}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            
+
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              Filtreleri Sıfırla
+            </button>
+
+            <button
+              type="button"
+              onClick={refreshAll}
+              className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200 dark:hover:bg-emerald-900/45"
+            >
+              Tümünü Yenile
+            </button>
+
+            <button
+              type="button"
+              disabled={downloading}
+              onClick={handleDownloadIsEmriExcel}
+              className={`rounded-md px-2 py-1 text-[11px] font-semibold text-white ${
+                downloading ? "bg-zinc-400" : "bg-sky-600 hover:bg-sky-700"
+              }`}
+            >
+              {downloading ? "İndiriliyor..." : "İŞ EMRİ EXCEL"}
+            </button>
+
+            <button
+              type="button"
+              disabled={downloading}
+              onClick={handleDownloadSatinAlmaExcel}
+              className={`rounded-md px-2 py-1 text-[11px] font-semibold text-white ${
+                downloading
+                  ? "bg-zinc-400"
+                  : "bg-indigo-600 hover:bg-indigo-700"
+              }`}
+            >
+              {downloading ? "İndiriliyor..." : "SATIN ALMA EXCEL"}
+            </button>
+          </div>
+        </div>
+
+        {downloadErr ? (
+          <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-[12px] text-red-700 dark:border-red-500 dark:bg-red-900/20 dark:text-red-100">
+            {downloadErr}
+          </div>
+        ) : null}
+
+        {/* Filtre satırı (iş emri için) */}
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+          {/* Site dropdown */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-zinc-500">Site</label>
+            <select
+              value={siteId}
+              onChange={(e) => {
+                setSiteId(e.target.value);
+                setIsEmriPage(1);
+              }}
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            >
+              <option value="">Tümü</option>
+              {sites.map((s) => (
+                <option key={s.id ?? s.Id} value={s.id ?? s.Id}>
+                  {s.ad ?? s.Ad ?? `Site #${s.id ?? s.Id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Personel dropdown */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-zinc-500">Personel</label>
+            <select
+              value={personelId}
+              onChange={(e) => {
+                setPersonelId(e.target.value);
+                setIsEmriPage(1);
+              }}
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            >
+              <option value="">Tümü</option>
+              {personeller.map((p) => {
+                const id = p.id ?? p.Id;
+                const ad = p.ad ?? p.Ad ?? "";
+                const soyad = p.soyad ?? p.Soyad ?? "";
+                const label = `${ad} ${soyad}`.trim() || `Personel #${id}`;
+                return (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-zinc-500">Start</label>
+            <input
+              type="date"
+              value={start}
+              onChange={(e) => {
+                setStart(e.target.value);
+                setIsEmriPage(1);
+              }}
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-zinc-500">End</label>
+            <input
+              type="date"
+              value={end}
+              onChange={(e) => {
+                setEnd(e.target.value);
+                setIsEmriPage(1);
+              }}
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          <div className="flex items-end gap-2 md:col-span-2">
+            <button
+              type="button"
+              onClick={loadIsEmri}
+              className="h-8 rounded-md border border-sky-200 bg-sky-50 px-3 text-[12px] font-semibold text-sky-700 hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200 dark:hover:bg-sky-900/45"
+            >
+              İş Emri Yenile
+            </button>
+
+            <button
+              type="button"
+              onClick={loadSatinAlma}
+              className="h-8 rounded-md border border-indigo-200 bg-indigo-50 px-3 text-[12px] font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-200 dark:hover:bg-indigo-900/45"
+            >
+              Satın Alma Yenile
+            </button>
+          </div>
+        </div>
       </div>
-    );
-  }
 
-  if (rawErr) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0b1220", padding: 16, color: "#fff" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ fontSize: 22, fontWeight: 950 }}>Yönetici Raporu</div>
-          <div style={{ marginTop: 10, color: "#fecaca", fontWeight: 800 }}>{rawErr}</div>
+      {/* ===== İş Emri Pagination ===== */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
+            İş Emirleri
+          </div>
+          {isEmriLoading && (
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Yükleniyor…
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
-            onClick={load}
-            style={{
-              marginTop: 12,
-              borderRadius: 12,
-              padding: "10px 12px",
-              border: "1px solid rgba(255,255,255,0.15)",
-              background: "rgba(255,255,255,0.06)",
-              color: "#fff",
-              fontWeight: 900,
-              cursor: "pointer",
-            }}
+            type="button"
+            disabled={isEmriPage <= 1}
+            onClick={() => setIsEmriPage((p) => Math.max(1, p - 1))}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
-            Yeniden Dene
+            ◀ Önceki
+          </button>
+
+          <button
+            type="button"
+            disabled={isEmriPage >= isEmriTotalPages}
+            onClick={() =>
+              setIsEmriPage((p) => Math.min(isEmriTotalPages, p + 1))
+            }
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+          >
+            Sonraki ▶
           </button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div style={{ minHeight: "100vh", background: "#0b1220", padding: 16 }}>
-      <div style={{ maxWidth: 1300, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* Header */}
-        <div
-          style={{
-            borderRadius: 18,
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            padding: 14,
-            color: "#fff",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 20, fontWeight: 980, letterSpacing: 0.2 }}>
-              Yönetici Raporu
-            </div>
-            <div style={{ flex: 1 }} />
-            <button
-              onClick={load}
-              style={{
-                borderRadius: 12,
-                padding: "10px 12px",
-                border: "1px solid rgba(255,255,255,0.15)",
-                background: "rgba(255,255,255,0.06)",
-                color: "#fff",
-                fontWeight: 950,
-                cursor: "pointer",
-              }}
-            >
-              Yenile
-            </button>
-          </div>
+      <YoneticiRaporuIsEmriCard data={isEmriItems} />
 
-          <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <KPI title="Toplam Kayıt" value={kpi.totalCount} hint="Rapor içindeki toplam satın alma satırı" />
-            <KPI title="Toplam Tutar (Not_3)" value={`${currencyTR(kpi.totalAmount)} ₺`} hint="Not_3 string → sayıya çevrilerek toplandı" />
-            <KPI title="Toplam Kalem" value={kpi.totalKalem} hint="Tüm kayıtların malzeme adet toplamı (kalem sayısı)" />
+      {/* ===== Satın Alma Pagination ===== */}
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex items-center gap-2">
+          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
+            Satın Alma
           </div>
+          {saLoading && (
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Yükleniyor…
+            </span>
+          )}
         </div>
 
-        {/* Filters */}
-        <div
-          style={{
-            borderRadius: 18,
-            background: "#ffffff",
-            padding: 14,
-            boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 14, fontWeight: 950, color: "#111827" }}>Filtreler</div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={saPage <= 1}
+            onClick={() => setSaPage((p) => Math.max(1, p - 1))}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+          >
+            ◀ Önceki
+          </button>
 
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Ara: sıraNo, seriNo, site, talep cinsi, not_1, not_2..."
-              style={{
-                flex: "1 1 360px",
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                padding: "10px 12px",
-                fontSize: 13,
-                fontWeight: 700,
-                outline: "none",
-              }}
-            />
-
-            <select
-              value={siteFilter}
-              onChange={(e) => setSiteFilter(e.target.value)}
-              style={{
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                padding: "10px 12px",
-                fontSize: 13,
-                fontWeight: 800,
-                background: "#fff",
-                minWidth: 190,
-              }}
-            >
-              {sites.map((s) => (
-                <option key={s} value={s}>
-                  {s === "ALL" ? "Site: Tümü" : s}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={not1Filter}
-              onChange={(e) => setNot1Filter(e.target.value)}
-              style={{
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                padding: "10px 12px",
-                fontSize: 13,
-                fontWeight: 800,
-                background: "#fff",
-                minWidth: 190,
-              }}
-            >
-              {not1Options.map((s) => (
-                <option key={s} value={s}>
-                  {s === "ALL" ? "Not_1: Tümü" : s}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={`${sortKey}:${sortDir}`}
-              onChange={(e) => {
-                const [k, d] = e.target.value.split(":");
-                setSortKey(k);
-                setSortDir(d);
-              }}
-              style={{
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                padding: "10px 12px",
-                fontSize: 13,
-                fontWeight: 800,
-                background: "#fff",
-                minWidth: 220,
-              }}
-            >
-              <option value="tarih:desc">Sırala: Tarih (Yeni → Eski)</option>
-              <option value="tarih:asc">Sırala: Tarih (Eski → Yeni)</option>
-              <option value="toplam:desc">Sırala: Toplam (Büyük → Küçük)</option>
-              <option value="toplam:asc">Sırala: Toplam (Küçük → Büyük)</option>
-              <option value="kalem:desc">Sırala: Kalem (Çok → Az)</option>
-              <option value="kalem:asc">Sırala: Kalem (Az → Çok)</option>
-              <option value="seriNo:asc">Sırala: SeriNo (A → Z)</option>
-              <option value="seriNo:desc">Sırala: SeriNo (Z → A)</option>
-              <option value="siteAdi:asc">Sırala: Site (A → Z)</option>
-              <option value="siteAdi:desc">Sırala: Site (Z → A)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div
-          style={{
-            borderRadius: 18,
-            background: "#ffffff",
-            overflow: "hidden",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-          }}
-        >
-          <div style={{ padding: 12, borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 14, fontWeight: 950, color: "#111827" }}>
-              Kayıtlar
-              <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 900, color: "#6b7280" }}>
-                ({sorted.length} satır)
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 800 }}>
-              Satıra tıkla → Detay açılır
-            </div>
-          </div>
-
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, minWidth: 1100 }}>
-              <thead>
-                <tr style={{ background: "#f9fafb" }}>
-                  {[
-                    "SıraNo",
-                    "Tarih",
-                    "SeriNo",
-                    "TalepCinsi",
-                    "Not_1",
-                    "Not_2",
-                    "SiteAdı",
-                    "Kalem",
-                    "Toplam (Not_3)",
-                    "",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: "left",
-                        padding: "12px 12px",
-                        fontSize: 12,
-                        fontWeight: 950,
-                        color: "#374151",
-                        borderBottom: "1px solid #e5e7eb",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {sorted.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} style={{ padding: 16, fontSize: 13, fontWeight: 800, color: "#6b7280" }}>
-                      Kayıt bulunamadı.
-                    </td>
-                  </tr>
-                ) : (
-                  sorted.map((r, idx) => {
-                    const id = getField(r, ["id", "Id"], "");
-                    const tarih = getField(r, ["tarih", "Tarih"], null);
-                    const seriNo = getField(r, ["seriNo", "SeriNo"], "");
-                    const talepCinsi = getField(r, ["talepCinsi", "TalepCinsi"], "");
-                    const not1 = getField(r, ["not_1", "Not_1"], "");
-                    const not2 = getField(r, ["not_2", "Not_2"], "");
-                    const siteAdi = getField(r, ["siteAdi", "SiteAdi", "siteAdı", "SiteAdı"], "");
-                    const malz = getField(r, ["malzemeler", "Malzemeler"], []);
-                    const kalem = Array.isArray(malz) ? malz.length : 0;
-                    const not3 = getField(r, ["not_3", "Not_3"], "");
-                    const toplam = parseMoney(not3);
-
-                    const tone = getNot1Tone(not1);
-
-                    return (
-                      <tr
-                        key={id || idx}
-                        onClick={() => openRow(r)}
-                        style={{
-                          cursor: "pointer",
-                          background: idx % 2 === 0 ? "#ffffff" : "#fcfcfd",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = idx % 2 === 0 ? "#ffffff" : "#fcfcfd")}
-                      >
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", fontWeight: 950, color: "#111827", whiteSpace: "nowrap" }}>
-                          {id}
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", fontWeight: 800, color: "#111827", whiteSpace: "nowrap" }}>
-                          {formatTR(tarih)}
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", fontWeight: 900, color: "#111827", whiteSpace: "nowrap" }}>
-                          {seriNo || "-"}
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", fontWeight: 800, color: "#111827" }}>
-                          {talepCinsi || "-"}
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6" }}>
-                          <Pill text={not1 ? safeStr(not1) : "—"} tone={tone} />
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", maxWidth: 320 }}>
-                          {not2 ? (
-                            <a
-                              href={safeStr(not2)}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              style={{
-                                color: "#2563eb",
-                                fontWeight: 900,
-                                textDecoration: "underline",
-                                display: "inline-block",
-                                maxWidth: 320,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                              title={safeStr(not2)}
-                            >
-                              Fatura Linki
-                            </a>
-                          ) : (
-                            <span style={{ color: "#6b7280", fontWeight: 900 }}>—</span>
-                          )}
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", fontWeight: 800, color: "#111827", whiteSpace: "nowrap" }}>
-                          {siteAdi || "-"}
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", fontWeight: 950, color: "#111827", whiteSpace: "nowrap" }}>
-                          {kalem}
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", fontWeight: 950, color: "#111827", whiteSpace: "nowrap" }}>
-                          {currencyTR(toplam)} ₺
-                        </td>
-
-                        <td style={{ padding: "12px 12px", borderBottom: "1px solid #f3f4f6", color: "#6b7280", fontWeight: 900, whiteSpace: "nowrap" }}>
-                          Detay →
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          <button
+            type="button"
+            disabled={saPage >= saTotalPages}
+            onClick={() => setSaPage((p) => Math.min(saTotalPages, p + 1))}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+          >
+            Sonraki ▶
+          </button>
         </div>
       </div>
 
-      <Drawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        row={selected}
-      />
+      <YoneticiRaporuSatinAlmaCard data={saItems} />
     </div>
   );
 }

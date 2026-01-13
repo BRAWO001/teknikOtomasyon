@@ -5,9 +5,8 @@ import { postDataAsync } from "@/utils/apiService";
 // Backend enum ile uyumlu adımlar (10,20,30,50,60,75,90,100)
 const DURUM_STEPS = [
   { value: 10, label: "10% - Beklemede" },
-  { value: 20, label: "20% - Onaylandı" },
-  { value: 30, label: "30% - İşe Başlandı" },
-  { value: 50, label: "50% - Devam Ediyor" },
+  { value: 20, label: "20% - İşe Başlandı" },
+  { value: 50, label: "50% - Malzeme Temini" },
   { value: 60, label: "60% - Devam Ediyor" },
   { value: 75, label: "75% - Son Kontroller" },
   { value: 90, label: "90% - Bitmek Üzere" },

@@ -16,19 +16,15 @@ import SatinalmaOnayPanel from "@/components/SatinalmaOnayPanel";
 import SatinalmaTedarikciOzet from "@/components/SatinalmaTedarikciOzet";
 import SatinalmaMalzemeTeklifList from "@/components/SatinalmaMalzemeTeklifList";
 
+// ✅ yeni componentler
+import SatinalmaFaturaPdfDurumCard from "@/components/satinalma/SatinalmaFaturaPdfDurumCard";
+import SatinalmaDurumCard from "@/components/satinalma/SatinalmaDurumCard";
+import SatinalmaSurecDurumCard from "@/components/satinalma/SatinalmaSurecDurumCard";
+
 // const BASE_URL = "http://localhost:3000";
 const BASE_URL = "http://teknik-otomasyon.vercel.app";
 
-// ✅ Not_1 normalize helper
-function normalizeNot1(val) {
-  if (val == null) return "";
-  return String(val)
-    .trim()
-    .toLocaleLowerCase("tr-TR")
-    .replace(/\s+/g, " ");
-}
-
-// ✅ güvenli url mi?
+// ✅ güvenli url mi? (share link için)
 function isValidHttpUrl(url) {
   if (!url) return false;
   try {
@@ -58,16 +54,9 @@ export default function SatinAlmaTekliflerPage() {
   const [onaySuccess, setOnaySuccess] = useState(null);
   const [onayNot, setOnayNot] = useState("");
 
-  // Satın alındı / alınmadı state
-  const [durumLoading, setDurumLoading] = useState(false);
-  const [durumError, setDurumError] = useState(null);
-  const [durumSuccess, setDurumSuccess] = useState(null);
-
-  // ✅ UI için local durum
+  // ✅ UI için local Not_1 & Not_5
   const [localNot1, setLocalNot1] = useState("");
-
-  // ✅ Link kopyalama state (fatura linki için)
-  const [copiedFatura, setCopiedFatura] = useState(false);
+  const [localNot5, setLocalNot5] = useState("");
 
   // Personel cookie'sini oku
   useEffect(() => {
@@ -107,18 +96,17 @@ export default function SatinAlmaTekliflerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // ✅ data geldikçe local Not_1'i senkronla
+  // ✅ data geldikçe local Not'ları senkronla
   useEffect(() => {
     if (!data) return;
-    const not1FromApi = data.not_1 ?? data.Not_1 ?? "";
-    setLocalNot1(not1FromApi || "");
+    setLocalNot1((data.not_1 ?? data.Not_1 ?? "") || "");
+    setLocalNot5((data.not_5 ?? data.Not_5 ?? "") || "");
   }, [data]);
 
   // Malzeme map (Id -> malzeme)
   const malzemeMap = useMemo(() => {
     if (!data) return {};
-    const malzemeler =
-      data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
+    const malzemeler = data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
     const map = {};
     malzemeler.forEach((m) => {
       const mid = m.id ?? m.Id;
@@ -163,22 +151,18 @@ export default function SatinAlmaTekliflerPage() {
   const talepCinsi = data.talepCinsi ?? data.TalepCinsi;
   const aciklama = data.aciklama ?? data.Aciklama;
   const talepEden = data.talepEden ?? data.TalepEden;
-  const malzemeler =
-    data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
-  const fiyatTeklifleri =
-    data.fiyatTeklifleri ?? data.FiyatTeklifleri ?? [];
 
+  const malzemeler = data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
+  const fiyatTeklifleri = data.fiyatTeklifleri ?? data.FiyatTeklifleri ?? [];
   const onaylayanPersoneller =
     data.onaylayanPersoneller ?? data.OnaylayanPersoneller ?? [];
 
   const publicToken = data.publicToken ?? data.PublicToken;
 
-  // ✅ Not_2 (fatura pdf url) al
+  // ✅ Not_2 (fatura pdf url)
   const not2Raw = data.not_2 ?? data.Not_2 ?? "";
-  const not2 = (not2Raw || "").trim();
-  const hasInvoicePdfUrl = isValidHttpUrl(not2);
 
-  // ✅ Tedarikçi paylaşım linki (senin mevcut linkin)
+  // ✅ Tedarikçi paylaşım linki
   const sistemUretilmisLink =
     data.sistemUretilmisLink ??
     data.SistemUretilmisLink ??
@@ -186,29 +170,9 @@ export default function SatinAlmaTekliflerPage() {
 
   const shareUrl = sistemUretilmisLink ? `${BASE_URL}${sistemUretilmisLink}` : "";
 
-  // ✅ Fatura sayfası linki (publicToken ile açılacak)
-  // Burada iki seçenek var:
-  // 1) /satinalma/fatura/{token}  (benim önerdiğim sayfa)
-  // 2) /satinalma/fiyatlandir/{token} (senin mevcut yapın)
-  // Hangisini kullanıyorsan onu aç:
-  const faturaPath = publicToken ? `/satinalma/fatura/${publicToken}` : null; // ✅ önerilen
-  // const faturaPath = publicToken ? `/satinalma/fiyatlandir/${publicToken}` : null; // alternatif
+  // ✅ Fatura sayfası linki
+  const faturaPath = publicToken ? `/satinalma/fatura/${publicToken}` : null;
   const faturaShareUrl = faturaPath ? `${BASE_URL}${faturaPath}` : "";
-
-  // ✅ Not_1'e göre DURUM tespiti
-  const not1Norm = normalizeNot1(localNot1);
-  const isAlindi = not1Norm.includes("satın alındı") || not1Norm.includes("satin alindi");
-  const isAlinmadi =
-    not1Norm.includes("satın alınmadı") ||
-    not1Norm.includes("satin alinmadi") ||
-    not1Norm.includes("satın alinmadi");
-
-  const satinAlimStatus = isAlindi ? "ALINDI" : isAlinmadi ? "ALINMADI" : "BOS";
-
-  // Rol kontrol (sadece Rol 35)
-  const currentRolRaw = personel ? personel.rol ?? personel.Rol : null;
-  const currentRol = currentRolRaw != null ? Number(currentRolRaw) : null;
-  const satinAlindiYetkiliMi = currentRol === 35;
 
   const copyLink = async () => {
     if (!shareUrl) return;
@@ -221,18 +185,19 @@ export default function SatinAlmaTekliflerPage() {
     }
   };
 
-  const copyFaturaLink = async () => {
-    if (!faturaShareUrl) return;
-    try {
-      await navigator.clipboard.writeText(faturaShareUrl);
-      setCopiedFatura(true);
-      setTimeout(() => setCopiedFatura(false), 1200);
-    } catch (err) {
-      console.error("Fatura link kopyalama hatası:", err);
-    }
-  };
-
   const currentPersonelId = personel ? personel.id ?? personel.Id : null;
+
+  // ✅ Rol 35 satın alındı yetkisi
+  const currentRolRaw = personel ? personel.rol ?? personel.Rol : null;
+  const currentRol = currentRolRaw != null ? Number(currentRolRaw) : null;
+  const satinAlindiYetkiliMi = currentRol === 35;
+
+  // ✅ Talep açan kişi mi? (Not_5 sadece talep açan için)
+  const talepEdenId = talepEden ? (talepEden.id ?? talepEden.Id) : null;
+  const surecIsaretYetkiliMi =
+    currentPersonelId && talepEdenId
+      ? Number(currentPersonelId) === Number(talepEdenId)
+      : false;
 
   const benimOnayKaydim = onaylayanPersoneller
     ? onaylayanPersoneller.find((o) => {
@@ -336,7 +301,7 @@ export default function SatinAlmaTekliflerPage() {
     };
   });
 
-  // Onay / Red işlemi
+  // Onay / Red işlemi (sayfada kalsın)
   const handleOnayIslem = async (onaylandiMi) => {
     if (!id || !currentPersonelId) return;
 
@@ -370,55 +335,6 @@ export default function SatinAlmaTekliflerPage() {
       setOnayLoading(false);
     }
   };
-
-  // ✅ Çift taraflı güncelleme (ALINDI / ALINMADI)
-  const handleDurumDegistir = async (targetDurum) => {
-    if (!id) return;
-
-    if (!satinAlindiYetkiliMi) {
-      setDurumError("Bu işlem için yetkiniz yok. (Sadece Rol 35)");
-      return;
-    }
-
-    setDurumLoading(true);
-    setDurumError(null);
-    setDurumSuccess(null);
-
-    const prevNot1 = localNot1;
-
-    try {
-      if (targetDurum === "SATIN_ALINDI") {
-        setLocalNot1("Satın alındı");
-
-        const res = await postDataAsync(`satinalma/isaret/satin-alindi/${id}`, {
-          not1: "Satın alındı",
-        });
-
-        setDurumSuccess(res?.Message ?? "Satın alındı olarak işaretlendi.");
-      } else {
-        setLocalNot1("Satın alınmadı");
-
-        const res = await postDataAsync(
-          `satinalma/isaret/satin-alinmadi/${id}`,
-          { not1: "Satın alınmadı" }
-        );
-
-        setDurumSuccess(res?.Message ?? "Satın alınmadı olarak işaretlendi.");
-      }
-
-      await fetchData(id);
-      await router.replace(router.asPath);
-    } catch (err) {
-      console.error("DURUM POST ERROR:", err);
-      setLocalNot1(prevNot1);
-      setDurumError("Durum güncelleme sırasında hata oluştu.");
-    } finally {
-      setDurumLoading(false);
-    }
-  };
-
-  const canSetAlindi = satinAlimStatus !== "ALINDI";
-  const canSetAlinmadi = satinAlimStatus !== "ALINMADI";
 
   return (
     <div
@@ -465,173 +381,10 @@ export default function SatinAlmaTekliflerPage() {
       </div>
 
       {/* PAYLAŞIM LINK */}
-      <SatinalmaShareLinkBar
-        shareUrl={shareUrl}
-        copied={copied}
-        onCopy={copyLink}
-      />
+      <SatinalmaShareLinkBar shareUrl={shareUrl} copied={copied} onCopy={copyLink} />
 
       {/* ✅ FATURA + PDF DURUM KARTI */}
-      <div
-        style={{
-          marginTop: 10,
-          marginBottom: 12,
-          border: "1px solid #e5e7eb",
-          borderRadius: 14,
-          background: "#ffffff",
-          padding: "12px 12px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 900, color: "#111827" }}>
-              Fatura / PDF Durumu
-            </div>
-            
-          </div>
-
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            {faturaShareUrl ? (
-              <>
-                <button
-                  type="button"
-                  onClick={copyFaturaLink}
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    background: copiedFatura ? "#ecfdf5" : "#f8fafc",
-                    color: "#111827",
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    fontSize: 12,
-                    fontWeight: 900,
-                    cursor: "pointer",
-                  }}
-                  title="Fatura sayfası linkini kopyalar"
-                >
-                  {copiedFatura ? "Kopyalandı ✅" : "Fatura Linkini Kopyala"}
-                </button>
-
-                <a
-                  href={faturaShareUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    textDecoration: "none",
-                    border: "1px solid #bbf7d0",
-                    background: "#d1fae5",
-                    color: "#065f46",
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    fontSize: 12,
-                    fontWeight: 950,
-                  }}
-                  title="Tedarikçi ekranını yeni sekmede açar"
-                >
-                  Fatura Sayfasını Aç →
-                </a>
-              </>
-            ) : (
-              <span style={{ fontSize: 12, color: "#b91c1c", fontWeight: 800 }}>
-                PublicToken yok, fatura linki üretilemedi.
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* ✅ Not_2 PDF linki görünümü */}
-        <div style={{ marginTop: 10 }}>
-          {hasInvoicePdfUrl ? (
-            <div
-              style={{
-                border: "1px solid #bbf7d0",
-                background: "#f0fdf4",
-                color: "#065f46",
-                padding: "10px 12px",
-                borderRadius: 12,
-              }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 950, marginBottom: 6 }}>
-                ✅ Fatura PDF yüklendi
-              </div>
-
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#064e3b",
-                  wordBreak: "break-all",
-                  fontWeight: 700,
-                  marginBottom: 8,
-                }}
-              >
-                
-              </div>
-
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <a
-                  href={not2}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    textDecoration: "none",
-                    border: "1px solid #bbf7d0",
-                    background: "#d1fae5",
-                    color: "#065f46",
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    fontSize: 12,
-                    fontWeight: 950,
-                  }}
-                >
-                  PDF Görüntüle →
-                </a>
-
-                <a
-                  href={not2}
-                  target="_blank"
-                  rel="noreferrer"
-                  download
-                  style={{
-                    textDecoration: "none",
-                    border: "1px solid #e5e7eb",
-                    background: "#ffffff",
-                    color: "#111827",
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    fontSize: 12,
-                    fontWeight: 900,
-                  }}
-                >
-                  İndir
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                border: "1px solid #fde68a",
-                background: "#fffbeb",
-                color: "#92400e",
-                padding: "10px 12px",
-                borderRadius: 12,
-                fontSize: 12,
-                fontWeight: 800,
-                lineHeight: 1.5,
-              }}
-            >
-              
-             
-            </div>
-          )}
-        </div>
-      </div>
+      <SatinalmaFaturaPdfDurumCard faturaShareUrl={faturaShareUrl} not2Raw={not2Raw} />
 
       {/* ÜST GRID */}
       <div
@@ -670,143 +423,27 @@ export default function SatinAlmaTekliflerPage() {
         <SatinalmaOnaylayanPersoneller onaylayanPersoneller={onaylayanPersoneller} />
       </div>
 
-      {/* DURUM SEÇENEKLERİ */}
-      <div
-        style={{
-          border: "1px solid #e5e7eb",
-          borderRadius: 10,
-          padding: "10px 12px",
-          marginBottom: 12,
-          backgroundColor: "#ffffff",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: "#111827" }}>
-              Satın Alım Durumu:
-            </span>
+      {/* ✅ Satın Alım Durumu (Not_1) */}
+      <SatinalmaDurumCard
+        localNot1={localNot1}
+        setLocalNot1={setLocalNot1}
+        satinAlindiYetkiliMi={satinAlindiYetkiliMi}
+        id={id}
+        postDataAsync={postDataAsync}
+        fetchData={fetchData}
+        router={router}
+      />
 
-            {satinAlimStatus === "ALINDI" ? (
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 800,
-                  padding: "5px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #86efac",
-                  backgroundColor: "#ecfdf5",
-                  color: "#065f46",
-                }}
-                title={localNot1}
-              >
-                ✅ Satın Alındı
-              </span>
-            ) : satinAlimStatus === "ALINMADI" ? (
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 800,
-                  padding: "5px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #fed7aa",
-                  backgroundColor: "#fff7ed",
-                  color: "#9a3412",
-                }}
-                title={localNot1}
-              >
-                🚫 Satın Alınmadı
-              </span>
-            ) : (
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 800,
-                  padding: "5px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #e5e7eb",
-                  backgroundColor: "#f8fafc",
-                  color: "#334155",
-                }}
-              >
-                ⏳ İşaretlenmedi
-              </span>
-            )}
-          </div>
-
-          {satinAlindiYetkiliMi ? (
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <button
-                type="button"
-                onClick={() => handleDurumDegistir("SATIN_ALINDI")}
-                disabled={durumLoading || !canSetAlindi}
-                style={{
-                  cursor:
-                    durumLoading || !canSetAlindi ? "not-allowed" : "pointer",
-                  opacity: durumLoading || !canSetAlindi ? 0.6 : 1,
-                  border: "1px solid #16a34a",
-                  backgroundColor: "#16a34a",
-                  color: "#fff",
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 800,
-                }}
-              >
-                Satın Alındı
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDurumDegistir("SATIN_ALINMADI")}
-                disabled={durumLoading || !canSetAlinmadi}
-                style={{
-                  cursor:
-                    durumLoading || !canSetAlinmadi ? "not-allowed" : "pointer",
-                  opacity: durumLoading || !canSetAlinmadi ? 0.6 : 1,
-                  border: "1px solid #334155",
-                  backgroundColor: "#ffffff",
-                  color: "#0f172a",
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 800,
-                }}
-              >
-                Satın Alınmadı
-              </button>
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
-              .
-            </div>
-          )}
-        </div>
-
-        {(durumError || durumSuccess) && (
-          <div
-            style={{
-              marginTop: 10,
-              padding: "10px 12px",
-              borderRadius: 8,
-              border: durumError ? "1px solid #fecaca" : "1px solid #bbf7d0",
-              backgroundColor: durumError ? "#fef2f2" : "#ecfdf5",
-              color: durumError ? "#b91c1c" : "#065f46",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {durumError || durumSuccess}
-          </div>
-        )}
-      </div>
+      {/* ✅ Süreç Durumu (Not_5) — Talep Açan */}
+      <SatinalmaSurecDurumCard
+        id={id}
+        localNot5={localNot5}
+        setLocalNot5={setLocalNot5}
+        surecIsaretYetkiliMi={surecIsaretYetkiliMi}
+        postDataAsync={postDataAsync}
+        fetchData={fetchData}
+        router={router}
+      />
 
       <SatinalmaTedarikciOzet
         tedarikciOzetList={tedarikciOzetList}
