@@ -175,7 +175,7 @@ export default function TeknikIsEmriEkle() {
     if (!form.kisaBaslik.trim())
       return "Kısa başlık zorunlu. (Örn: Ortak alan – A Blok elektrik arızası)";
     if (!form.siteId) return "Site seçmelisin.";
-    // if (!form.aptId) return "Bölüm / blok seçmelisin.";
+    if (!form.aptId) return "Bölüm / blok seçmelisin.";
     // evId opsiyonel
     return "";
   };
@@ -530,12 +530,12 @@ export default function TeknikIsEmriEkle() {
         {/* <div className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">
           İş Emri Endpoint:{" "}
           <span className="font-semibold">
-            https://pilotapisrc.com/api/is-emirleri/only
+            https://localhost:7289/api/is-emirleri/only
           </span>
           <br />
           Personel Atama Endpoint:{" "}
           <span className="font-semibold">
-            https://pilotapisrc.com/api/Personeller/{"{isEmriId}"}/personeller
+            https://localhost:7289/api/Personeller/{"{isEmriId}"}/personeller
           </span>
         </div> */}
       </div>

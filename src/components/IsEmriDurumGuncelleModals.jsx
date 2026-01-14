@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { postDataAsync } from "@/utils/apiService";
 
-// Backend enum ile uyumlu adımlar (10,20,30,50,60,75,90,100)
 const DURUM_STEPS = [
   { value: 10, label: "10% - Beklemede" },
   { value: 20, label: "20% - İşe Başlandı" },
@@ -20,14 +19,14 @@ export default function IsEmriDurumGuncelleModals({
   isEmriKod,
   currentDurumKod,
   personelId,
-  onUpdated, // optional: parent listeyi yenilesin diye
+  onUpdated,
 }) {
   const [selectedDurum, setSelectedDurum] = useState(currentDurumKod || 10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  // Modal her açıldığında mevcut duruma göre seçimi yenile
+  // ✅ Modal açılınca state reset
   useEffect(() => {
     if (isOpen) {
       setSelectedDurum(currentDurumKod || 10);
@@ -36,8 +35,33 @@ export default function IsEmriDurumGuncelleModals({
     }
   }, [isOpen, currentDurumKod]);
 
-  if (!isOpen) return null;
-  if (!personelId || !isEmriId) return null;
+  const current = Number(currentDurumKod || 0);
+
+  /**
+   * ✅ KURAL:
+   * - current 10 (Beklemede) iken:
+   *   - 20 seçilene kadar sadece 20 butonu aktif
+   *   - 20 seçilince 20 ve üzeri adımlar aktif
+   * - current >= 20 iken:
+   *   - geriye gitmek yasak (current altı pasif)
+   */
+  const isStepDisabled = (stepValue) => {
+    if (loading) return true;
+
+    // Beklemede ise:
+    if (current <= 10) {
+      const started = selectedDurum >= 20; // kullanıcı 20'yi seçti mi?
+      if (!started) {
+        // sadece 20 açık, diğer her şey kapalı (10 dahil)
+        return stepValue !== 20;
+      }
+      // 20 seçildiyse 20 ve üstü açık
+      return stepValue < 20;
+    }
+
+    // Normal akış: geriye gitme yok
+    return stepValue < current;
+  };
 
   const handleSubmit = async () => {
     try {
@@ -45,42 +69,41 @@ export default function IsEmriDurumGuncelleModals({
       setError("");
       setSuccessMsg("");
 
-      // Geriye gitmeye çalışma kontrolünü front-end'de de yapalım
-      const current = Number(currentDurumKod || 0);
+      // ✅ Geriye gitme kontrolü
       if (selectedDurum < current) {
-        setError(
-          `Mevcut durum ${current}% iken daha düşük bir değere dönemezsiniz.`
-        );
+        setError(`Mevcut durum ${current}% iken daha düşük bir değere dönemezsiniz.`);
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Beklemede iken 20 altı gönderme
+      if (current <= 10 && selectedDurum < 20) {
+        setError("İş emri başlatılmadan diğer durumlara geçemezsiniz. Önce 20% - İşe Başlandı seçin.");
         setLoading(false);
         return;
       }
 
       const path = `Personeller/${personelId}/is-emirleri/${isEmriId}/durum`;
-
-      // Backend JSON case-insensitive ama yine de düzgün gönderelim
       await postDataAsync(path, { yeniDurumKod: selectedDurum });
 
       setSuccessMsg("Durum başarıyla güncellendi.");
-      if (typeof onUpdated === "function") {
-        onUpdated(selectedDurum);
-      }
+      if (typeof onUpdated === "function") onUpdated(selectedDurum);
 
-      // Küçük bir gecikmeyle modal kapat
-      setTimeout(() => {
-        onClose?.();
-      }, 800);
+      setTimeout(() => onClose?.(), 800);
     } catch (err) {
       console.error("Durum güncellenirken hata:", err);
-      setError(
-        err?.message || "Durum güncelleme sırasında beklenmeyen bir hata oluştu."
-      );
+      setError(err?.message || "Durum güncelleme sırasında beklenmeyen bir hata oluştu.");
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Early return'ları HOOK'lardan sonra yapıyoruz (hook hatası çözümü)
+  if (!isOpen) return null;
+  if (!personelId || !isEmriId) return null;
+
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black p-2">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-2">
       <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
         {/* Başlık */}
         <div className="mb-3 flex items-start justify-between gap-2">
@@ -91,10 +114,16 @@ export default function IsEmriDurumGuncelleModals({
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               {isEmriKod || `İş Emri #${isEmriId}`}
             </p>
+
             {typeof currentDurumKod === "number" && (
               <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Mevcut durum:{" "}
-                <span className="font-semibold">{currentDurumKod}%</span>
+                Mevcut durum: <span className="font-semibold">{currentDurumKod}%</span>
+              </p>
+            )}
+
+            {current <= 10 && (
+              <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Başlamak için önce <span className="font-semibold">20% - İşe Başlandı</span> seç.
               </p>
             )}
           </div>
@@ -108,25 +137,23 @@ export default function IsEmriDurumGuncelleModals({
           </button>
         </div>
 
-        {/* Durum seçim listesi */}
+        {/* Liste */}
         <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-xl border border-zinc-200 p-2 dark:border-zinc-800">
           {DURUM_STEPS.map((step) => {
             const isCurrent = step.value === currentDurumKod;
             const isSelected = step.value === selectedDurum;
-            const isDisabled =
-              typeof currentDurumKod === "number" &&
-              step.value < currentDurumKod; // geriye gitme yok
+            const disabled = isStepDisabled(step.value);
 
             return (
               <button
                 key={step.value}
                 type="button"
-                disabled={isDisabled || loading}
+                disabled={disabled}
                 onClick={() => setSelectedDurum(step.value)}
                 className={[
                   "flex w-full items-center justify-between gap-2 rounded-lg border px-2 py-1.5 text-left text-xs transition",
                   "dark:border-zinc-700",
-                  isDisabled
+                  disabled
                     ? "cursor-not-allowed border-dashed border-zinc-200 text-zinc-400 dark:border-zinc-800 dark:text-zinc-500"
                     : isSelected
                     ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
@@ -134,11 +161,20 @@ export default function IsEmriDurumGuncelleModals({
                 ].join(" ")}
               >
                 <span>{step.label}</span>
-                {isCurrent && (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                    Mevcut
-                  </span>
-                )}
+
+                <div className="flex items-center gap-2">
+                  {isCurrent && (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                      Mevcut
+                    </span>
+                  )}
+
+                  {current <= 10 && step.value === 20 && selectedDurum < 20 && (
+                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                      İlk seçim
+                    </span>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -158,7 +194,7 @@ export default function IsEmriDurumGuncelleModals({
           )}
         </div>
 
-        {/* Alt butonlar */}
+        {/* Butonlar */}
         <div className="mt-3 flex items-center justify-end gap-2">
           <button
             type="button"
@@ -168,6 +204,7 @@ export default function IsEmriDurumGuncelleModals({
           >
             İptal
           </button>
+
           <button
             type="button"
             onClick={handleSubmit}
