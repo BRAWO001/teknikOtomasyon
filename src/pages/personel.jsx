@@ -1,8 +1,3 @@
-
-
-
-
-
 // pages/personel.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -35,6 +30,9 @@ export default function PersonelPage() {
   });
 
   const [siteId, setSiteId] = useState("");
+
+  // ✅ Seçili hızlı filtre butonu (başlangıçta 7 gün seçili)
+  const [selectedQuick, setSelectedQuick] = useState(7);
 
   // Site listesi
   const [sites, setSites] = useState([]);
@@ -135,11 +133,6 @@ export default function PersonelPage() {
 
   // ✅ Hızlı tarih butonları
   const applyQuickRange = async (daysBack) => {
-    // daysBack:
-    // 0 = bugün (start=end=today)
-    // 1 = dün
-    // 2 = son 2 gün (bugün + dün)
-    // 7 = son 7 gün
     const end = new Date();
     const start = new Date();
     start.setDate(end.getDate() - daysBack);
@@ -147,6 +140,7 @@ export default function PersonelPage() {
     const s = toDateInputValue(start);
     const e = toDateInputValue(end);
 
+    setSelectedQuick(daysBack); // ✅ seçili butonu güncelle
     setStartDate(s);
     setEndDate(e);
 
@@ -154,6 +148,7 @@ export default function PersonelPage() {
   };
 
   const handleFilterApply = async () => {
+    setSelectedQuick(null); // manuel filtre
     await fetchIsEmirleri();
   };
 
@@ -165,6 +160,7 @@ export default function PersonelPage() {
     const defaultStart = toDateInputValue(d1);
     const defaultEnd = toDateInputValue(d2);
 
+    setSelectedQuick(7); // ✅ reset sonrası tekrar 7 gün seçili
     setStartDate(defaultStart);
     setEndDate(defaultEnd);
     setSiteId("");
@@ -174,6 +170,20 @@ export default function PersonelPage() {
       endDate: defaultEnd,
       siteId: "",
     });
+  };
+
+  // ✅ buton class helper (sadece bu görünümü değiştiriyoruz)
+  const quickBtnClass = (key, isPrimary = false) => {
+    const selected = selectedQuick === key;
+
+    if (selected) {
+      return "rounded-md bg-emerald-600 px-3 py-0.5 text-[12px] font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60";
+    }
+
+    // seçili değilse eski stil kalsın
+    return isPrimary
+      ? "rounded-md bg-emerald-600 px-3 py-0.5 text-[12px] font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+      : "rounded-md border border-zinc-200 bg-zinc-50 px-3 py-0.5 text-[12px] font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-800";
   };
 
   return (
@@ -244,7 +254,10 @@ export default function PersonelPage() {
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedQuick(null); // manuel değişince seçili quick kalksın
+                  setStartDate(e.target.value);
+                }}
                 className="w-full rounded-md border border-zinc-300 py-0.5 py-0.5 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
               />
             </div>
@@ -256,7 +269,10 @@ export default function PersonelPage() {
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedQuick(null); // manuel değişince seçili quick kalksın
+                  setEndDate(e.target.value);
+                }}
                 className="w-full rounded-md border border-zinc-300 py-0.5 py-0.5 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
               />
             </div>
@@ -264,10 +280,12 @@ export default function PersonelPage() {
 
           {/* Site filtresi */}
           <div className="mt-2">
-            
             <select
               value={siteId}
-              onChange={(e) => setSiteId(e.target.value)}
+              onChange={(e) => {
+                setSelectedQuick(null); // manuel değişince seçili quick kalksın
+                setSiteId(e.target.value);
+              }}
               className="w-full rounded-md border border-zinc-300 py-0.5 py-0.5 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
             >
               <option value="">Tüm Siteler</option>
@@ -289,7 +307,7 @@ export default function PersonelPage() {
               type="button"
               onClick={() => applyQuickRange(7)}
               disabled={loading || !currentPersonelId}
-              className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-0.5 text-[12px] font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              className={quickBtnClass(7)}
             >
               Son 7 gün
             </button>
@@ -298,7 +316,7 @@ export default function PersonelPage() {
               type="button"
               onClick={() => applyQuickRange(2)}
               disabled={loading || !currentPersonelId}
-              className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-0.5 text-[12px] font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              className={quickBtnClass(2)}
             >
               Son 2 gün
             </button>
@@ -307,7 +325,7 @@ export default function PersonelPage() {
               type="button"
               onClick={() => applyQuickRange(1)}
               disabled={loading || !currentPersonelId}
-              className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-0.5 text-[12px] font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              className={quickBtnClass(1)}
             >
               Dün
             </button>
@@ -316,7 +334,7 @@ export default function PersonelPage() {
               type="button"
               onClick={() => applyQuickRange(0)}
               disabled={loading || !currentPersonelId}
-              className="rounded-md bg-emerald-600 px-3 py-0.5 text-[12px] font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+              className={quickBtnClass(0)}
             >
               Bugün
             </button>

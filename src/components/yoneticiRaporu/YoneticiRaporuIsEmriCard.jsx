@@ -122,7 +122,7 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
             {headers.map((h) => (
               <th
                 key={h}
-                className="px-2 py-[3px] text-left font-semibold border-b border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 whitespace-nowrap"
+                className="px-2 py-[2px] text-left font-semibold border-b border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 whitespace-nowrap"
               >
                 {h}
               </th>
@@ -192,7 +192,7 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
 
                 {/* Personeller - satır içinde ama çoksa taşmasın */}
                 <td className="px-2 py-[2px]">
-                  <div className="max-w-[320px] truncate text-zinc-700 dark:text-zinc-200">
+                  <div className="max-w-[250px] truncate text-zinc-700 dark:text-zinc-200">
                     {joinPeople(r?.personeller)}
                   </div>
                 </td>
