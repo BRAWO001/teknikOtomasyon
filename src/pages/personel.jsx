@@ -1,3 +1,8 @@
+
+
+
+
+
 // pages/personel.jsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -24,14 +29,11 @@ export default function PersonelPage() {
     return toDateInputValue(d);
   });
 
-  const [endDate, setEndDate] = useState(() => {
-    const d = new Date();
-    return toDateInputValue(d);
-  });
+  const [endDate, setEndDate] = useState(() => toDateInputValue(new Date()));
 
   const [siteId, setSiteId] = useState("");
 
-  // ✅ Seçili hızlı filtre butonu (başlangıçta 7 gün seçili)
+  // ✅ Seçili hızlı filtre (başlangıçta 7 gün seçili)
   const [selectedQuick, setSelectedQuick] = useState(7);
 
   // Site listesi
@@ -42,10 +44,7 @@ export default function PersonelPage() {
     if (typeof window === "undefined") return;
     try {
       const personelCookie = getClientCookie("PersonelUserInfo");
-      if (personelCookie) {
-        const parsed = JSON.parse(personelCookie);
-        setPersonel(parsed);
-      }
+      if (personelCookie) setPersonel(JSON.parse(personelCookie));
     } catch (err) {
       console.error("PersonelUserInfo parse error:", err);
     }
@@ -57,17 +56,15 @@ export default function PersonelPage() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadSites = async () => {
+    (async () => {
       try {
         const res = await getDataAsync("SiteAptEvControllerSet/sites");
-        if (cancelled) return;
-        setSites(res || []);
+        if (!cancelled) setSites(res || []);
       } catch (err) {
         console.error("SITES FETCH ERROR:", err);
       }
-    };
+    })();
 
-    loadSites();
     return () => {
       cancelled = true;
     };
@@ -92,7 +89,7 @@ export default function PersonelPage() {
       if (eDate) qs.push(`endDate=${encodeURIComponent(eDate)}`);
       if (sId) qs.push(`siteId=${encodeURIComponent(sId)}`);
 
-      const queryString = qs.length > 0 ? `?${qs.join("&")}` : "";
+      const queryString = qs.length ? `?${qs.join("&")}` : "";
       const path = `personeller/teknikPersonelFilterGet${queryString}`;
 
       const data = await getDataAsync(path);
@@ -140,7 +137,7 @@ export default function PersonelPage() {
     const s = toDateInputValue(start);
     const e = toDateInputValue(end);
 
-    setSelectedQuick(daysBack); // ✅ seçili butonu güncelle
+    setSelectedQuick(daysBack);
     setStartDate(s);
     setEndDate(e);
 
@@ -160,7 +157,7 @@ export default function PersonelPage() {
     const defaultStart = toDateInputValue(d1);
     const defaultEnd = toDateInputValue(d2);
 
-    setSelectedQuick(7); // ✅ reset sonrası tekrar 7 gün seçili
+    setSelectedQuick(7);
     setStartDate(defaultStart);
     setEndDate(defaultEnd);
     setSiteId("");
@@ -172,38 +169,32 @@ export default function PersonelPage() {
     });
   };
 
-  // ✅ buton class helper (sadece bu görünümü değiştiriyoruz)
-  const quickBtnClass = (key, isPrimary = false) => {
+  // ✅ seçili buton yeşil
+  const quickBtnClass = (key) => {
     const selected = selectedQuick === key;
-
-    if (selected) {
-      return "rounded-md bg-emerald-600 px-3 py-0.5 text-[12px] font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60";
-    }
-
-    // seçili değilse eski stil kalsın
-    return isPrimary
-      ? "rounded-md bg-emerald-600 px-3 py-0.5 text-[12px] font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
-      : "rounded-md border border-zinc-200 bg-zinc-50 px-3 py-0.5 text-[12px] font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-800";
+    return selected
+      ? "rounded-md bg-emerald-600 px-2 py-1 text-[12px] font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+      : "rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[12px] font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-800";
   };
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 p-4">
-        {/* ÜST BAR */}
-        <header className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-white px-3 py-0.5 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-3 p-3">
+        {/* ÜST BAR (daha dar) */}
+        <header className="flex flex-col gap-1 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-center md:justify-between">
+          <div className="leading-tight">
+            <p className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Teknik Personel Paneli
             </p>
             {personel ? (
-              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <p className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">
                 {personel.ad} {personel.soyad}{" "}
-                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                <span className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">
                   ({personel.personelKodu})
                 </span>
               </p>
             ) : (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-[12px] text-zinc-500 dark:text-zinc-400">
                 Personel bilgisi yükleniyor...
               </p>
             )}
@@ -211,82 +202,62 @@ export default function PersonelPage() {
 
           <button
             onClick={handleLogout}
-            className="self-start rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 md:self-auto"
+            className="self-start rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-red-700 md:self-auto"
           >
             Çıkış Yap
           </button>
         </header>
 
-        {/* FİLTRE KARTI */}
-        <section className="rounded-md border border-zinc-200 bg-white px-3 py-3 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="mb-2 flex items-center text-center justify-center gap-2">
-            <h2 className="text-[12px] text-center font-extrabold tracking-wide text-emerald-800 dark:text-emerald-300">
+        {/* FİLTRE KARTI (kompakt + mobil alan kazancı) */}
+        <section className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mb-2 text-center">
+            <h2 className="text-[13px] font-extrabold tracking-wide text-emerald-800 dark:text-emerald-300">
               Atandığım İş Emirleri
             </h2>
-
-            {/* Sağ üst mini butonlar */}
-            <div className="hidden gap-2 md:flex">
-              <button
-                type="button"
-                onClick={handleFilterApply}
-                disabled={loading || !currentPersonelId}
-                className="rounded-md bg-emerald-600 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Filtrele
-              </button>
-              <button
-                type="button"
-                onClick={handleFilterReset}
-                disabled={loading || !currentPersonelId}
-                className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-              >
-                Temizle
-              </button>
-            </div>
           </div>
 
-          {/* ÜST: Başlangıç / Bitiş */}
-          <div className="grid grid-row-1 gap-3 sm:grid-cols-2">
-            <div className="grid grid-cols-2  ">
-              <label className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
-                Başlangıç Tarihi
+          {/* Tarihler (kompakt satır) */}
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-[110px_1fr] items-center gap-2">
+              <label className="text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
+                Başlangıç
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => {
-                  setSelectedQuick(null); // manuel değişince seçili quick kalksın
+                  setSelectedQuick(null);
                   setStartDate(e.target.value);
                 }}
-                className="w-full rounded-md border border-zinc-300 py-0.5 py-0.5 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
               />
             </div>
 
-            <div className="grid grid-cols-2  ">
-              <label className="mb-1 block text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
-                Bitiş Tarihi
+            <div className="grid grid-cols-[110px_1fr] items-center gap-2">
+              <label className="text-[11px] font-medium text-zinc-700 dark:text-zinc-200">
+                Bitiş
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => {
-                  setSelectedQuick(null); // manuel değişince seçili quick kalksın
+                  setSelectedQuick(null);
                   setEndDate(e.target.value);
                 }}
-                className="w-full rounded-md border border-zinc-300 py-0.5 py-0.5 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
               />
             </div>
           </div>
 
-          {/* Site filtresi */}
+          {/* Site (kompakt) */}
           <div className="mt-2">
             <select
               value={siteId}
               onChange={(e) => {
-                setSelectedQuick(null); // manuel değişince seçili quick kalksın
+                setSelectedQuick(null);
                 setSiteId(e.target.value);
               }}
-              className="w-full rounded-md border border-zinc-300 py-0.5 py-0.5 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-full rounded-md border border-zinc-300 px-2 py-1 text-[13px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
             >
               <option value="">Tüm Siteler</option>
               {sites.map((s) => {
@@ -301,7 +272,7 @@ export default function PersonelPage() {
             </select>
           </div>
 
-          {/* ALT: 4 hızlı buton */}
+          {/* Hızlı butonlar (kompakt) */}
           <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-4">
             <button
               type="button"
@@ -311,7 +282,6 @@ export default function PersonelPage() {
             >
               Son 7 gün
             </button>
-
             <button
               type="button"
               onClick={() => applyQuickRange(2)}
@@ -320,7 +290,6 @@ export default function PersonelPage() {
             >
               Son 2 gün
             </button>
-
             <button
               type="button"
               onClick={() => applyQuickRange(1)}
@@ -329,7 +298,6 @@ export default function PersonelPage() {
             >
               Dün
             </button>
-
             <button
               type="button"
               onClick={() => applyQuickRange(0)}
@@ -340,13 +308,13 @@ export default function PersonelPage() {
             </button>
           </div>
 
-          {/* Mobilde Filtrele / Temizle altta görünsün */}
-          <div className="mt-3 flex gap-2 md:hidden">
+          {/* Filtrele/Temizle (kompakt) */}
+          <div className="mt-2 grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={handleFilterApply}
               disabled={loading || !currentPersonelId}
-              className="flex-1 rounded-md bg-emerald-600 px-3 py-0.5 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-emerald-600 px-3 py-1 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Filtrele
             </button>
@@ -354,7 +322,7 @@ export default function PersonelPage() {
               type="button"
               onClick={handleFilterReset}
               disabled={loading || !currentPersonelId}
-              className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-0.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
             >
               Temizle
             </button>
@@ -381,9 +349,13 @@ export default function PersonelPage() {
             </p>
           )}
 
+          {/* ✅ SCROLL FIX:
+              - Mobilde nested scroll YOK (body scroll) => zıplama biter
+              - Desktop'ta (md+) istersen yine 70vh içinde scroll var
+           */}
           {!loading && !error && isEmirleri.length > 0 && (
-            <div className="mt-2 max-h-[70vh] overflow-y-auto pr-1">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-2 pr-1 md:max-h-[70vh] md:overflow-y-auto">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {isEmirleri.map((item) => (
                   <TeknikIsEmriCard
                     key={item.isEmriId || item.id || item.Id}
