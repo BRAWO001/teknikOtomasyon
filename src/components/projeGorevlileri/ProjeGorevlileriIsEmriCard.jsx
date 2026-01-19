@@ -3,10 +3,10 @@
 
 
 
-// components/YoneticiRaporuIsEmriCard.jsx
+// components/projeGorevlileri/ProjeGorevlileriIsEmriCard.jsx
 import React, { useMemo } from "react";
 
-/* ===== helpers (AYNEN TARZ) ===== */
+/* ===== helpers (senin tarzınla aynı) ===== */
 function safeText(v) {
   if (v === null || v === undefined) return "-";
   const s = String(v).trim();
@@ -17,7 +17,7 @@ function formatDateTR(iso) {
   if (!iso) return "-";
   try {
     const d = new Date(iso);
-    d.setHours(d.getHours() + 3); // ⬅️ +3 saat ekle
+    d.setHours(d.getHours() + 3); // +3 saat (sen böyle istiyorsun)
 
     return d.toLocaleString("tr-TR", {
       day: "2-digit",
@@ -31,8 +31,6 @@ function formatDateTR(iso) {
   }
 }
 
-
-
 function moneyTR(val, currency = "TRY") {
   if (val === null || val === undefined || Number.isNaN(Number(val))) return "-";
   return new Intl.NumberFormat("tr-TR", {
@@ -43,41 +41,22 @@ function moneyTR(val, currency = "TRY") {
 }
 
 function durumChipClassByKod(durumKod) {
-  switch (durumKod) {
-    case 10: // Beklemede
-      return "bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-200";
-
-    case 30: // Devam Ediyor
-      return "bg-sky-100 text-sky-700 dark:bg-sky-900/35 dark:text-sky-200";
-
-    case 50: // Malzeme Temini
-      return "bg-violet-100 text-violet-700 dark:bg-violet-900/35 dark:text-violet-200";
-
-    case 100: // İş Bitirildi
-      return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200";
-
-    case 90: // İptal / Reddedildi (ileride lazım olur)
-      return "bg-red-100 text-red-700 dark:bg-red-900/35 dark:text-red-200";
-
-    default:
-      return "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100";
-  }
+  if (durumKod === 10)
+    return "bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-200";
+  if (durumKod === 30)
+    return "bg-sky-100 text-sky-700 dark:bg-sky-900/35 dark:text-sky-200";
+  if (durumKod === 50)
+    return "bg-violet-100 text-violet-700 dark:bg-violet-900/35 dark:text-violet-200";
+  if (durumKod === 100)
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200";
+  return "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100";
 }
-
-
-
-
-
 
 function joinPeople(list) {
   if (!Array.isArray(list) || list.length === 0) return "—";
   return list.join(" • ");
 }
 
-/** Başlangıç/Bitiş arası süreyi hesaplar
- *  - eksikse null döner
- *  - negatifse 0’a çeker
- */
 function calcDurationMs(startIso, endIso) {
   if (!startIso || !endIso) return null;
   const s = new Date(startIso).getTime();
@@ -86,7 +65,6 @@ function calcDurationMs(startIso, endIso) {
   return Math.max(0, e - s);
 }
 
-/** 1s 25dk gibi kısa TR format */
 function formatDurationTR(ms) {
   if (ms === null || ms === undefined) return "—";
   const totalMinutes = Math.floor(ms / 60000);
@@ -97,7 +75,6 @@ function formatDurationTR(ms) {
   const parts = [];
   if (days > 0) parts.push(`${days}g`);
   if (hours > 0) parts.push(`${hours}s`);
-  // 0 dakika bile olsa (süre 0 ise) "0dk" gösterelim
   if (minutes > 0 || parts.length === 0) parts.push(`${minutes}dk`);
   return parts.join(" ");
 }
@@ -106,9 +83,49 @@ function durationMinutes(ms) {
   if (ms === null || ms === undefined) return null;
   return Math.floor(ms / 60000);
 }
-/* ================================= */
 
-export default function YoneticiRaporuIsEmriCard({ data = [] }) {
+/** ✅ Süreç metnini "incelemede/görüldü/..." gibi daha okunur chip yap */
+function surecChipClass(text) {
+  const t = (text ?? "").toString().trim().toLowerCase();
+  if (!t) return "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200";
+
+  // "incelemede"
+  if (t.includes("inceleme"))
+    return "bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-200";
+
+  // "görüldü"
+  if (t.includes("görüld") || t.includes("goruld"))
+    return "bg-sky-100 text-sky-700 dark:bg-sky-900/35 dark:text-sky-200";
+
+  // "incelendi"
+  if (t.includes("incelend"))
+    return "bg-violet-100 text-violet-700 dark:bg-violet-900/35 dark:text-violet-200";
+
+  // tamam / onay / bitti
+  if (t.includes("onay") || t.includes("tamam") || t.includes("bitti") || t.includes("kapandı"))
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200";
+
+  // red / iptal
+  if (t.includes("red") || t.includes("iptal"))
+    return "bg-rose-100 text-rose-700 dark:bg-rose-900/35 dark:text-rose-200";
+
+  // default
+  return "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100";
+}
+
+function SurecCell({ value }) {
+  const text = safeText(value);
+  if (text === "-") return <span className="text-zinc-500">-</span>;
+
+  return (
+    <span className={`rounded-full px-2 py-[1px] font-semibold ${surecChipClass(text)}`}>
+      {text}
+    </span>
+  );
+}
+/* ======================================= */
+
+export default function ProjeGorevlileriIsEmriCard({ data = [] }) {
   const headers = useMemo(
     () => [
       "No",
@@ -121,10 +138,10 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
       "Durum",
       "Site",
       "Personeller",
+      "Proje Süreç",
+      "Op.Tek Süreç",
+      "Op.Gen Süreç",
       "Toplam",
-      "Depo",
-      "Yeni Alım",
-      "İşveren",
     ],
     []
   );
@@ -155,7 +172,7 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
           {data.map((r, i) => {
             const ms = calcDurationMs(r?.baslangicTarihi, r?.bitisTarihi);
             const sureText = formatDurationTR(ms);
-            const sureDk = durationMinutes(ms); // istersen tooltip veya debug için
+            const sureDk = durationMinutes(ms);
 
             return (
               <tr
@@ -164,20 +181,17 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                 className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
                 title={sureDk !== null ? `Süre: ${sureDk} dk` : ""}
               >
-                {/* satır dar */}
                 <td className="px-2 py-[2px] text-zinc-600 dark:text-zinc-300">
                   {i + 1}
                 </td>
+
                 <td className="px-2 py-[2px] whitespace-nowrap">
                   {formatDateTR(r?.olusturmaTarihi)}
                 </td>
 
-                
-
                 <td className="px-2 py-[2px] whitespace-nowrap">
                   {formatDateTR(r?.baslangicTarihi)}
                 </td>
-                
 
                 <td className="px-2 py-[2px] whitespace-nowrap">
                   {formatDateTR(r?.bitisTarihi)}
@@ -188,7 +202,6 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                 </td>
 
                 <td className="px-2 py-[2px] font-semibold whitespace-nowrap">
-                  
                   <span className="text-zinc-500 dark:text-zinc-400 font-medium">
                     ({safeText(r?.kod)})
                   </span>
@@ -203,7 +216,7 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
 
                 <td className="px-2 py-[2px] whitespace-nowrap">
                   <span
-                    className={`rounded-full  px-2 py-[1px] font-semibold ${durumChipClassByKod(
+                    className={`rounded-full px-2 py-[1px] font-semibold ${durumChipClassByKod(
                       r?.durumKod
                     )}`}
                   >
@@ -215,30 +228,27 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                   {safeText(r?.siteAdi)}
                 </td>
 
-                {/* Personeller - satır içinde ama çoksa taşmasın */}
                 <td className="px-1 py-[2px]">
-                  <div className="max-w-[150px] truncate text-zinc-700 dark:text-zinc-200">
+                  <div className="max-w-[160px] truncate text-zinc-700 dark:text-zinc-200">
                     {joinPeople(r?.personeller)}
                   </div>
                 </td>
 
+                {/* ✅ süreç durumları: ne geliyorsa aynen göster */}
+                <td className="px-2 py-[2px] whitespace-nowrap">
+                  <SurecCell value={r?.projeYoneticiSurecDurumu} />
+                </td>
+                <td className="px-2 py-[2px] whitespace-nowrap">
+                  <SurecCell value={r?.operasyonTeknikMudurSurecDurumu} />
+                </td>
+                <td className="px-2 py-[2px] whitespace-nowrap">
+                  <SurecCell value={r?.operasyonGenelMudurSurecDurumu} />
+                </td>
+
+                {/* tutar */}
                 <td className="px-2 py-[2px] whitespace-nowrap font-semibold">
                   {moneyTR(r?.malzemeToplamTutar, "TRY")}
                 </td>
-
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {moneyTR(r?.depoTutar, "TRY")}
-                </td>
-
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {moneyTR(r?.yeniAlimTutar, "TRY")}
-                </td>
-
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {moneyTR(r?.isverenTeminiTutar, "TRY")}
-                </td>
-
-               
               </tr>
             );
           })}

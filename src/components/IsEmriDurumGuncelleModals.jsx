@@ -13,7 +13,6 @@ const DURUM_STEPS = [
   { value: 50, label: "50% - Malzeme Temini" },
   { value: 60, label: "60% - Devam Ediyor" },
   { value: 75, label: "75% - Son Kontroller" },
-  { value: 90, label: "90% - Bitmek Üzere" },
   { value: 100, label: "100% - İş Bitti" },
 ];
 

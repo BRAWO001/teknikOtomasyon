@@ -10,6 +10,7 @@ import { useRouter } from "next/router";
 import YoneticiRaporuIsEmriCard from "@/components/yoneticiRaporu/YoneticiRaporuIsEmriCard";
 import YoneticiRaporuSatinAlmaCard from "@/components/yoneticiRaporu/YoneticiRaporuSatinAlmaCard";
 import YoneticiRaporuSatinAlmaGrafikPanel from "@/components/yoneticiRaporu/YoneticiRaporuSatinAlmaGrafikPanel";
+import YoneticiRaporuIsEmriGrafikPanel from "@/components/yoneticiRaporu/YoneticiRaporuIsEmriGrafikPanel";
 
 export default function YoneticiRaporuPage() {
   // =========================
@@ -457,6 +458,9 @@ const [end, setEnd] = useState(defaults.endDate);
           </div>
         </div>
       </div>
+
+
+      <YoneticiRaporuIsEmriGrafikPanel />
 
       {/* ===== İş Emri Pagination ===== */}
       <div className="flex items-center justify-between gap-2">

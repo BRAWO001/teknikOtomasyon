@@ -24,7 +24,15 @@ export default function ProjeGorevlileriPage() {
 
   // Yeni satın alma talebi → satinalma/yeni.jsx
   const handleYeniTalep = () => {
-    router.push("/satinalma/yeni");
+    router.push("/projeGorevlileri/yeni");
+  };
+
+  const handleYeniIsEmri = () => {
+    router.push("/projeGorevlileri/projeSorumlusuISemriOlustur");
+  };
+
+  const handleProjemIsEmirleri = () => {
+    router.push("/projeGorevlileri/projeGorevlileriIsEmirleri");
   };
 
   // Taleplerim → aynı klasör altındaki sayfa
@@ -82,7 +90,7 @@ export default function ProjeGorevlileriPage() {
                 {personel && (
                   <>
                     <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Merhaba {" "}
+                      Merhaba{" "}
                       <span className="font-bold">
                         {personel.ad} {personel.soyad}
                       </span>
@@ -112,13 +120,14 @@ export default function ProjeGorevlileriPage() {
         </section>
 
         {/* ANA İÇERİK */}
-        <main className="flex-1 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-4">
+        <main className="flex-1 items-center rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-4">
           <div>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            <h1 className="text-lg font-semibold justify-center text-center text-zinc-900 dark:text-zinc-50">
               Talep Yönetim Paneli
             </h1>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-              Bu bölümden <strong>talep</strong> oluşturabilir ve <strong>teknik</strong> isteklerinizi ekibimize iletebilirsiniz.  
+              Bu bölümden <strong>talep</strong> oluşturabilir ve{" "}
+              <strong>teknik</strong> isteklerinizi ekibimize iletebilirsiniz.
             </p>
           </div>
 
@@ -142,9 +151,7 @@ export default function ProjeGorevlileriPage() {
           {/* Profesyonel site yönetimi için diğer modüller (pilot) */}
           <section className="mt-4 space-y-3">
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                Diğer Site Yönetimi Modülleri
-              </h2>
+              
               <p className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
                 Aşağıdaki modüller profesyonel site yönetimi için
                 planlanmaktadır. Şu an pilot deneme sürecinde olduğundan sadece
@@ -154,25 +161,31 @@ export default function ProjeGorevlileriPage() {
 
             <div className="grid gap-3 md:grid-cols-2">
               {/* Arıza & İş Emirleri */}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+              <div className="flex flex-col justify-center rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
-                    Arıza & İş Emirleri
+                  <h3 className="flex items-center justify-center gap-1 text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
+                    🛠️ İş Emirleri
                   </h3>
-                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
+                  <p className="mt-1 text-[11px] justify-center text-center  text-zinc-600 dark:text-zinc-300">
                     Site içindeki tüm arıza ve bakım taleplerinin takibi, iş
                     emirleri ve teknisyen görevlendirmeleri.
                   </p>
                 </div>
-                <div className="mt-2 flex justify-end">
+
+                {/* ✅ Butonlar yan yana */}
+                <div className="mt-3 flex justify-evenly gap-2">
                   <button
-                    type="button"
-                    onClick={() =>
-                      handlePilotFeatureClick("Arıza & İş Emirleri")
-                    }
-                    className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={handleYeniIsEmri}
+                    className="flex items-center gap-1 rounded-md bg-amber-200 px-3 py-1.5 text-xs font-semibold text-black hover:bg-amber-300"
                   >
-                    Modülü Görüntüle
+                    ➕ İş Emri Oluştur
+                  </button>
+
+                  <button
+                    onClick={handleProjemIsEmirleri}
+                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                  >
+                    📋 Projemin İş Emirleri
                   </button>
                 </div>
               </div>

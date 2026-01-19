@@ -1,3 +1,8 @@
+
+
+
+
+
 // src/pages/satinalma/fiyatlandir/[token].jsx
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -58,6 +63,25 @@ export default function SatinAlmaFiyatlandirPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
+  // ✅ Modal açıkken body scroll kilidi (sekme / zıplama sorununu ciddi azaltır)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (successModal) {
+      // arka plan scroll olmasın
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+  }, [successModal]);
+
   const handleInputChange = (malzemeId, field, value) => {
     setTeklifForm((prev) => ({
       ...prev,
@@ -98,9 +122,7 @@ export default function SatinAlmaFiyatlandirPage() {
 
       const kdvYuzdeNum = parseFloat(formRow.kdvOraniYuzde || "0");
       const kdvOrani =
-        !isNaN(kdvYuzdeNum) && kdvYuzdeNum > 0
-          ? kdvYuzdeNum / 100
-          : 0; // 0.20 vs
+        !isNaN(kdvYuzdeNum) && kdvYuzdeNum > 0 ? kdvYuzdeNum / 100 : 0;
 
       payload.push({
         satinAlmaMalzemeId: malzemeId,
@@ -108,7 +130,6 @@ export default function SatinAlmaFiyatlandirPage() {
         birimFiyat: birimFiyatNum,
         paraBirimi: formRow.paraBirimi || "TRY",
         not: formRow.not || null,
-        // 🔧 JSX dosyasında TS cast olmaz, direkt null gönderiyoruz
         kdvOrani: kdvOrani > 0 ? kdvOrani : null,
       });
     }
@@ -225,6 +246,12 @@ export default function SatinAlmaFiyatlandirPage() {
         fontSize: 14,
         color: "#000000",
         backgroundColor: "#ffffff",
+
+        // ✅ kritik: mobilde URL bar zıplamasını engeller
+        minHeight: "100dvh",
+
+        // ✅ isteğe bağlı: iOS/Chrome overscroll davranışını toparlar
+        overscrollBehavior: "none",
       }}
     >
       {/* Profesyonel giriş metni */}
@@ -551,7 +578,6 @@ export default function SatinAlmaFiyatlandirPage() {
                         )}
                       </td>
 
-                      {/* Birim Fiyat */}
                       <td
                         style={{
                           borderBottom: "1px solid #e5e7eb",
@@ -579,7 +605,6 @@ export default function SatinAlmaFiyatlandirPage() {
                         />
                       </td>
 
-                      {/* Para Birimi */}
                       <td
                         style={{
                           borderBottom: "1px solid #e5e7eb",
@@ -605,7 +630,6 @@ export default function SatinAlmaFiyatlandirPage() {
                         </select>
                       </td>
 
-                      {/* KDV Oranı (%) */}
                       <td
                         style={{
                           borderBottom: "1px solid #e5e7eb",
@@ -618,11 +642,7 @@ export default function SatinAlmaFiyatlandirPage() {
                           step="1"
                           value={formRow.kdvOraniYuzde}
                           onChange={(e) =>
-                            handleInputChange(
-                              id,
-                              "kdvOraniYuzde",
-                              e.target.value
-                            )
+                            handleInputChange(id, "kdvOraniYuzde", e.target.value)
                           }
                           placeholder="20"
                           style={{
@@ -636,7 +656,6 @@ export default function SatinAlmaFiyatlandirPage() {
                         />
                       </td>
 
-                      {/* Not */}
                       <td
                         style={{
                           borderBottom: "1px solid #e5e7eb",
@@ -667,7 +686,6 @@ export default function SatinAlmaFiyatlandirPage() {
             </table>
           </div>
 
-          {/* Toplam ve KDV gösterim + Gönder butonu */}
           <div
             style={{
               marginTop: "0.9rem",
@@ -700,13 +718,7 @@ export default function SatinAlmaFiyatlandirPage() {
               </button>
 
               {netTotal <= 0 && (
-                <div
-                  style={{
-                    marginTop: "0.35rem",
-                    fontSize: 11,
-                    color: "#6b7280",
-                  }}
-                >
+                <div style={{ marginTop: "0.35rem", fontSize: 11, color: "#6b7280" }}>
                   Toplamı görebilmek için en az bir ürün için geçerli birim fiyat
                   giriniz.
                 </div>
@@ -724,13 +736,7 @@ export default function SatinAlmaFiyatlandirPage() {
                   fontSize: 13,
                 }}
               >
-                <div
-                  style={{
-                    fontWeight: 600,
-                    marginBottom: "0.25rem",
-                    color: "#111827",
-                  }}
-                >
+                <div style={{ fontWeight: 600, marginBottom: "0.25rem", color: "#111827" }}>
                   Toplam Özet (Satır bazlı KDV)
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -753,15 +759,8 @@ export default function SatinAlmaFiyatlandirPage() {
                   <span>Genel Toplam (KDV Dahil):</span>
                   <span>{formatCurrency(genelToplam)}</span>
                 </div>
-                <div
-                  style={{
-                    marginTop: "0.35rem",
-                    fontSize: 11,
-                    color: "#6b7280",
-                  }}
-                >
-                  Hesaplamalar, satır bazında girilen KDV oranlarına göre
-                  yapılmıştır.
+                <div style={{ marginTop: "0.35rem", fontSize: 11, color: "#6b7280" }}>
+                  Hesaplamalar, satır bazında girilen KDV oranlarına göre yapılmıştır.
                 </div>
               </div>
             )}
@@ -788,7 +787,6 @@ export default function SatinAlmaFiyatlandirPage() {
         </>
       )}
 
-      {/* Başarılı modal */}
       {successModal && (
         <div
           style={{
@@ -824,13 +822,7 @@ export default function SatinAlmaFiyatlandirPage() {
             >
               Teşekkürler
             </h2>
-            <p
-              style={{
-                marginTop: 0,
-                marginBottom: "1rem",
-                color: "#111827",
-              }}
-            >
+            <p style={{ marginTop: 0, marginBottom: "1rem", color: "#111827" }}>
               Teklifiniz başarıyla gönderildi.
             </p>
             <button

@@ -2,6 +2,8 @@ export function formatTR(iso) {
   if (!iso) return "-";
   try {
     const d = new Date(iso);
+    d.setHours(d.getHours() + 3); // ⬅️ +3 saat ekle
+
     return d.toLocaleString("tr-TR", {
       day: "2-digit",
       month: "2-digit",
@@ -13,6 +15,8 @@ export function formatTR(iso) {
     return "-";
   }
 }
+
+
 
 export function initials(name = "") {
   const parts = name.trim().split(" ").filter(Boolean);

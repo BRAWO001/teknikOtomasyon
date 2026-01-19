@@ -2,7 +2,7 @@
 
 
 
-
+//pages/teknik/isEmriDetay/[id].jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { getDataAsync } from "../../../utils/apiService";
@@ -19,6 +19,7 @@ import IsEmriDetayNotlar from "../../../components/isEmriDetay/IsEmriDetayNotlar
 import IsEmriDetayDosyalar from "../../../components/isEmriDetay/IsEmriDetayDosyalar";
 import IsEmriDetayPersoneller from "../../../components/isEmriDetay/IsEmriDetayPersoneller";
 import IsEmriDetayMalzemeler from "../../../components/isEmriDetay/IsEmriDetayMalzemeler";
+import IsEmriDetaySurecDurumlari from "@/components/isEmriDetay/IsEmriDetaySurecDurumlari";
 
 // ✅ cookie okuma helper (client-side)
 function getCookie(name) {
@@ -255,6 +256,7 @@ export default function IsEmriDetayPage() {
             aciklama={aciklama}
             aciklama_2={aciklama_2}
           />
+          <IsEmriDetaySurecDurumlari record={record} />
 
           {/* ALT GRID */}
           <section className="mt-3 grid gap-3 lg:grid-cols-[1.7fr,1.3fr]">

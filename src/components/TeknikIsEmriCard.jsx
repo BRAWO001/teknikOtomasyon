@@ -12,6 +12,7 @@ import PersonelDuzenleModals from "./PersonelDuzenleModals";
 import NotEkleModals from "./NotEkleModals";
 import MalzemeEkleModals from "./MalzemeEkleModals";
 import IsEmriDurumGuncelleModals from "./IsEmriDurumGuncelleModals";
+import IsEmriCardSurecOzet from "./IsEmriCardSurecOzet";
 
 function formatTR(iso) {
   if (!iso) return "-";
@@ -306,7 +307,9 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 <div className="line-clamp-6">{aciklama}</div>
               </div>
             )}
+            
           </div>
+          
 
           {/* BELGELER / FOTOĞRAFLAR */}
           <div className="mt-2">
@@ -520,6 +523,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
             )}
           </div>
 
+          
+
           {/* NOTLAR (ilk 2) */}
           <div className="mt-2">
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -566,6 +571,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               </div>
             )}
           </div>
+          
+          <IsEmriCardSurecOzet data={data} />
 
           {/* ALT AKSİYON */}
           <div className="mt-3 flex items-center justify-between">
