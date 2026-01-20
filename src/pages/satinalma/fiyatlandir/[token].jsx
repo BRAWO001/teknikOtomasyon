@@ -296,10 +296,10 @@ export default function SatinAlmaFiyatlandirPage() {
           borderRadius: 12,
           padding: "0.9rem 1rem",
           marginBottom: "1rem",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#f8fafc",
         }}
       >
-        <label style={{ display: "block", fontWeight: 900, marginBottom: "0.35rem", color: "#0f172a" }}>
+        <label  className="text-center" style={{ display: "block", fontWeight: 900, marginBottom: "0.35rem", color: "#0f172a" }}>
           Tedarikçi Adı / Firma Adı <span style={{ color: "#b91c1c" }}>*</span>
         </label>
 
@@ -319,21 +319,19 @@ export default function SatinAlmaFiyatlandirPage() {
           }}
         />
 
-        <div style={{ marginTop: 6, fontSize: 12, color: "#64748b", lineHeight: 1.4 }}>
-          Girilen firma adı otomatik olarak BÜYÜK harfe çevrilir ve tüm malzemeler için aynı tedarikçi adı ile kayıt edilir.
-        </div>
+        
       </div>
 
       {/* Ürün kartları */}
-      <div style={{ marginTop: 6, marginBottom: 12 }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", marginBottom: 10 }}>
-          Malzemeler
+      <div style={{ marginTop: 6, marginBottom: 25 }}>
+        <div className="text-center" style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", marginBottom: 10 }}>
+          MALZEMELER
         </div>
 
         {malzemeler.length === 0 ? (
           <div style={{ fontSize: 14 }}>Bu satın almada henüz malzeme yok.</div>
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 30 }}>
             {malzemeler.map((m) => {
               const id = m.id ?? m.Id;
 
