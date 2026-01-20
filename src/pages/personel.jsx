@@ -128,13 +128,8 @@ export default function PersonelPage() {
     }
   };
   const handleBarcode = async () => {
-    try {
-      router.push("/barcode");
-    } catch (err) {
-      console.error("Barcode error:", err);
-    } finally {
-      router.push("/");
-    }
+    router.push("/barcode");
+    
   };
 
   // ✅ Hızlı tarih butonları

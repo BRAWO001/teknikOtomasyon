@@ -1,19 +1,32 @@
+
+
+
+
+
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 
 export default function BarcodePage() {
   const videoRef = useRef(null);
   const readerRef = useRef(null);
+
   const lastValueRef = useRef("");
+  const lastHitAtRef = useRef(0);
+
+  // 🔊 WebAudio (beep)
+  const audioCtxRef = useRef(null);
 
   const [scanning, setScanning] = useState(false);
   const [barcode, setBarcode] = useState("-");
   const [status, setStatus] = useState("Hazır");
   const [error, setError] = useState("");
 
+  // ✅ Okunanlar listesi
+  const [items, setItems] = useState([]); // { code, ts }
+
   // ✅ SSR-safe: ilk render'da "unknown", client'ta hesaplanır
   const [secureBadge, setSecureBadge] = useState({
-    ok: null, // null=bilinmiyor, true/false=client'ta set
+    ok: null,
     text: "Kontrol ediliyor...",
   });
 
@@ -24,6 +37,45 @@ export default function BarcodePage() {
       text: ok ? "HTTPS/Local OK" : "HTTPS Gerekli",
     });
   }, []);
+
+  const ensureAudioContext = () => {
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        audioCtxRef.current = new Ctx();
+      }
+      // iOS bazen suspended gelir
+      if (audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume?.();
+      }
+    } catch {
+      // ses desteklenmezse sessiz devam
+    }
+  };
+
+  const beep = () => {
+    try {
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      // kısa, net bip
+      osc.type = "sine";
+      osc.frequency.value = 880; // Hz
+      gain.gain.value = 0.06; // ses seviyesi
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const now = ctx.currentTime;
+      osc.start(now);
+      osc.stop(now + 0.07); // 70ms
+    } catch {
+      // sorun olursa sessiz devam
+    }
+  };
 
   const stopScan = () => {
     try {
@@ -49,6 +101,8 @@ export default function BarcodePage() {
     setError("");
     setStatus("Kamera hazırlanıyor...");
 
+    ensureAudioContext(); // 🔊 kullanıcı butona basınca hazırla
+
     const ok = window.isSecureContext || window.location.hostname === "localhost";
     if (!ok) {
       setStatus("Hata");
@@ -68,7 +122,8 @@ export default function BarcodePage() {
       video.muted = true;
       video.autoplay = true;
 
-      const reader = new BrowserMultiFormatReader();
+      // decode aralığı: daha hızlı deneme için 120ms iyi
+      const reader = new BrowserMultiFormatReader(undefined, 120);
       readerRef.current = reader;
 
       setScanning(true);
@@ -86,13 +141,23 @@ export default function BarcodePage() {
       await reader.decodeFromConstraints(constraints, video, (result, err) => {
         if (result) {
           const text = result.getText();
+          const now = Date.now();
 
-          // aynı değeri üst üste yazmasın
-          if (lastValueRef.current !== text) {
-            lastValueRef.current = text;
-            setBarcode(text);
-            setStatus("Okundu ✅ (tarama devam ediyor)");
-          }
+          // ✅ spam engeli (aynı barkodu 900ms içinde tekrar ekleme)
+          if (lastValueRef.current === text && now - lastHitAtRef.current < 900) return;
+
+          lastValueRef.current = text;
+          lastHitAtRef.current = now;
+
+          setBarcode(text);
+          setStatus("Okundu ✅ (tarama devam ediyor)");
+
+          // 🔊 bip
+          beep();
+
+          // ✅ listeye ekle (en yeni üstte)
+          setItems((prev) => [{ code: text, ts: now }, ...prev]);
+
           return;
         }
 
@@ -118,6 +183,22 @@ export default function BarcodePage() {
 
   useEffect(() => () => stopScan(), []);
 
+  function formatTR(ts) {
+    try {
+      const d = new Date(ts);
+      return d.toLocaleString("tr-TR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  }
+
   const s = {
     page: {
       minHeight: "100vh",
@@ -138,12 +219,7 @@ export default function BarcodePage() {
       marginBottom: 14,
     },
     title: { fontSize: 28, fontWeight: 900, margin: 0, letterSpacing: -0.2 },
-    sub: {
-      margin: "8px 0 0 0",
-      opacity: 0.85,
-      lineHeight: 1.55,
-      fontSize: 14,
-    },
+    sub: { margin: "8px 0 0 0", opacity: 0.85, lineHeight: 1.55, fontSize: 14 },
     badge: {
       display: "inline-flex",
       alignItems: "center",
@@ -164,11 +240,7 @@ export default function BarcodePage() {
         ok === null ? "rgba(255,255,255,0.45)" : ok ? "#34d399" : "#f87171",
       display: "inline-block",
     }),
-    grid: {
-      display: "grid",
-      gridTemplateColumns: "1fr",
-      gap: 14,
-    },
+    grid: { display: "grid", gridTemplateColumns: "1fr", gap: 14 },
     card: {
       background: "rgba(15, 23, 42, 0.88)",
       border: "1px solid rgba(255,255,255,0.10)",
@@ -274,6 +346,53 @@ export default function BarcodePage() {
       lineHeight: 1.45,
       fontSize: 13,
     },
+    listWrap: {
+      marginTop: 12,
+      padding: 12,
+      borderRadius: 16,
+      border: "1px solid rgba(255,255,255,0.10)",
+      background: "rgba(255,255,255,0.04)",
+    },
+    listHead: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      flexWrap: "wrap",
+      marginBottom: 10,
+    },
+    listTitle: { fontWeight: 900, fontSize: 14, opacity: 0.95 },
+    item: {
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 10,
+      padding: "10px 10px",
+      borderRadius: 12,
+      border: "1px solid rgba(255,255,255,0.08)",
+      background: "rgba(0,0,0,0.20)",
+      marginBottom: 8,
+    },
+    itemLeft: { display: "flex", flexDirection: "column", gap: 6, flex: 1 },
+    itemCode: {
+      fontFamily:
+        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+      fontWeight: 900,
+      letterSpacing: 0.4,
+      wordBreak: "break-all",
+    },
+    itemTs: { fontSize: 12, opacity: 0.75 },
+    smallBtn: {
+      padding: "8px 10px",
+      borderRadius: 10,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      color: "#fff",
+      cursor: "pointer",
+      fontSize: 12,
+      fontWeight: 900,
+      whiteSpace: "nowrap",
+    },
   };
 
   return (
@@ -283,8 +402,8 @@ export default function BarcodePage() {
           <div>
             <h1 style={s.title}>Barkod Okuyucu</h1>
             <p style={s.sub}>
-              “Taramayı Başlat” ile kamera açılır. Barkod okununca altta görünür,
-              tarama <b>devam eder</b>. Durdurmak için “Durdur”.
+              “Taramayı Başlat” ile kamera açılır. Barkod okununca bip sesi gelir
+              ve listeye eklenir. Tarama <b>devam eder</b>.
             </p>
           </div>
 
@@ -315,9 +434,19 @@ export default function BarcodePage() {
                     setError("");
                     setStatus("Hazır");
                     lastValueRef.current = "";
+                    lastHitAtRef.current = 0;
+                    setItems([]);
                   }}
                 >
                   Temizle
+                </button>
+
+                <button
+                  style={s.btn}
+                  onClick={() => ensureAudioContext()}
+                  title="iOS'ta ses kilidini açmak için"
+                >
+                  Ses Hazırla
                 </button>
               </div>
             </div>
@@ -332,7 +461,7 @@ export default function BarcodePage() {
 
               <div style={s.hint}>
                 İpucu: Barkodu yaklaştır (10–20cm), ışığı artır, parlama olmasın.
-                Market barkodu genelde 13 hanelidir (EAN-13).
+                Aynı barkodu üst üste yazmaması için 900ms kilit var.
               </div>
 
               <div style={s.stat}>
@@ -340,18 +469,74 @@ export default function BarcodePage() {
                 <div style={s.value}>{status}</div>
 
                 <div style={{ marginTop: 12 }}>
-                  <div style={s.label}>Okunan Barkod</div>
+                  <div style={s.label}>Son Okunan</div>
                   <div style={s.mono}>{barcode}</div>
                 </div>
 
                 {error ? <div style={s.err}>{error}</div> : null}
+              </div>
+
+              <div style={s.listWrap}>
+                <div style={s.listHead}>
+                  <div style={s.listTitle}>Okunanlar ({items.length})</div>
+                  <button
+                    style={s.smallBtn}
+                    onClick={() => setItems([])}
+                    disabled={items.length === 0}
+                  >
+                    Listeyi Temizle
+                  </button>
+                </div>
+
+                {items.length === 0 ? (
+                  <div style={{ opacity: 0.75, fontSize: 13 }}>
+                    Henüz okuma yok.
+                  </div>
+                ) : (
+                  items.slice(0, 30).map((x, idx) => (
+                    <div key={`${x.ts}-${idx}`} style={s.item}>
+                      <div style={s.itemLeft}>
+                        <div style={s.itemCode}>{x.code}</div>
+                        <div style={s.itemTs}>{formatTR(x.ts)}</div>
+                      </div>
+
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          style={s.smallBtn}
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(x.code);
+                            } catch {}
+                          }}
+                        >
+                          Kopyala
+                        </button>
+
+                        <button
+                          style={s.smallBtn}
+                          onClick={() =>
+                            setItems((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {items.length > 30 ? (
+                  <div style={{ marginTop: 8, opacity: 0.7, fontSize: 12 }}>
+                    Performans için sadece son 30 kayıt gösteriliyor.
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
         </div>
 
         <div style={{ marginTop: 12, opacity: 0.7, fontSize: 12 }}>
-          Next.js + ZXing — sürekli tarama modu
+          Next.js + ZXing — sürekli tarama + bip + liste
         </div>
       </div>
     </div>
