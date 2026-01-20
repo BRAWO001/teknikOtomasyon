@@ -542,179 +542,245 @@ export default function YeniSatinAlmaPage() {
           </section>
 
           {/* Malzemeler */}
-          <section
-            className={`space-y-3 ${
-              malzemeIstemiyorum ? "opacity-50 pointer-events-none" : ""
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-zinc-800">
-                Malzemeler
-              </h2>
-              <button
-                type="button"
-                onClick={handleAddRow}
-                className="rounded-md border border-sky-500 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100"
-              >
-                + Malzeme Ekle
-              </button>
+{/* Malzemeler (malzeme istemiyorum ise disable görünüm) */}
+<section
+  className={`space-y-3 ${
+    malzemeIstemiyorum ? "opacity-50 pointer-events-none" : ""
+  }`}
+>
+  <div className="flex items-center justify-between">
+    <h2 className="text-sm font-semibold text-zinc-800">Malzemeler</h2>
+    <button
+      type="button"
+      onClick={handleAddRow}
+      className="rounded-md border border-sky-500 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100"
+    >
+      + Malzeme Ekle
+    </button>
+  </div>
+
+  <div className="overflow-x-auto rounded-md border border-zinc-200">
+    <table className="min-w-full border-separate border-spacing-0 text-[11px] text-zinc-900">
+      <thead className="bg-zinc-100">
+        <tr>
+          <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
+            Malzeme Adı *
+          </th>
+
+          <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
+            Marka *
+            <div className="mt-[2px] text-[10px] font-normal text-zinc-500">
+              (Bilinmiyorsa “Marka belirtmiyorum”)
             </div>
+          </th>
 
-            <div className="overflow-x-auto rounded-md border border-zinc-200">
-              <table className="min-w-full border-separate border-spacing-0 text-[11px] text-zinc-900">
-                <thead className="bg-zinc-100">
-                  <tr>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
-                      Malzeme Adı *
-                    </th>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
-                      Marka *
-                    </th>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-right font-medium">
-                      Adet - Metre *
-                    </th>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
-                      Birim *
-                    </th>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
-                      Kullanım Amacı *
-                    </th>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
-                      Örnek Ürün Linki
-                    </th>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
-                      Not *
-                    </th>
-                    <th className="border-b border-zinc-200 px-2 py-1 text-center font-medium">
-                      Sil
-                    </th>
-                  </tr>
-                </thead>
+          <th className="border-b border-zinc-200 px-2 py-1 text-right font-medium">
+            Adet - Metre *
+          </th>
+          <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
+            Birim *
+          </th>
+          <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
+            Kullanım Amacı *
+          </th>
+          <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
+            Örnek Ürün Linki
+          </th>
 
-                <tbody>
-                  {malzemeler.map((row, index) => (
-                    <tr key={index} className="odd:bg-white even:bg-zinc-50">
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top">
-                        <input
-                          type="text"
-                          value={row.malzemeAdi}
-                          onChange={(e) =>
-                            handleRowChange(index, "malzemeAdi", e.target.value)
-                          }
-                          required={!malzemeIstemiyorum}
-                          placeholder="Malzeme adı"
-                          className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                      </td>
-
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top">
-                        <input
-                          type="text"
-                          value={row.marka}
-                          onChange={(e) =>
-                            handleRowChange(index, "marka", e.target.value)
-                          }
-                          required={!malzemeIstemiyorum}
-                          placeholder="Marka"
-                          className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                      </td>
-
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={row.adet}
-                          onChange={(e) =>
-                            handleRowChange(index, "adet", e.target.value)
-                          }
-                          required={!malzemeIstemiyorum}
-                          placeholder="0"
-                          className="w-full rounded border border-zinc-300 px-1 py-[3px] text-right text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                      </td>
-
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top">
-                        <input
-                          type="text"
-                          value={row.birim}
-                          onChange={(e) =>
-                            handleRowChange(index, "birim", e.target.value)
-                          }
-                          required={!malzemeIstemiyorum}
-                          placeholder="Adet / Paket / Metre..."
-                          className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                      </td>
-
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top">
-                        <input
-                          type="text"
-                          value={row.kullanimAmaci}
-                          onChange={(e) =>
-                            handleRowChange(
-                              index,
-                              "kullanimAmaci",
-                              e.target.value
-                            )
-                          }
-                          required={!malzemeIstemiyorum}
-                          placeholder="Kullanım amacı"
-                          className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                      </td>
-
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top">
-                        <input
-                          type="text"
-                          value={row.ornekUrunLinki}
-                          onChange={(e) =>
-                            handleRowChange(
-                              index,
-                              "ornekUrunLinki",
-                              e.target.value
-                            )
-                          }
-                          placeholder="https://..."
-                          className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                      </td>
-
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top">
-                        <input
-                          type="text"
-                          value={row.not}
-                          onChange={(e) =>
-                            handleRowChange(index, "not", e.target.value)
-                          }
-                          required={!malzemeIstemiyorum}
-                          placeholder="İsteğe bağlı not"
-                          className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                        />
-                      </td>
-
-                      <td className="border-b border-zinc-200 px-2 py-1 align-top text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRow(index)}
-                          disabled={malzemeler.length === 1}
-                          className="rounded border border-red-400 px-2 py-[1px] text-[11px] text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-400"
-                        >
-                          Sil
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <th className="border-b border-zinc-200 px-2 py-1 text-left font-medium">
+            Not *
+            <div className="mt-[2px] text-[10px] font-normal text-zinc-500">
+              (Yoksa “Not belirtmiyorum”)
             </div>
+          </th>
 
-            <p className="text-[10px] text-zinc-500">
-              * Her satır için <strong>örnek ürün linki hariç</strong> tüm
-              alanlar zorunludur.
-            </p>
-          </section>
+          <th className="border-b border-zinc-200 px-2 py-1 text-center font-medium">
+            Sil
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {malzemeler.map((row, index) => {
+          const markaBelirtmiyorum = row.marka === "BELİRTİLMEMİŞ";
+          const notBelirtmiyorum = row.not === "BELİRTİLMEMİŞ";
+
+          return (
+            <tr key={index} className="odd:bg-white even:bg-zinc-50">
+              {/* Malzeme adı */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top">
+                <input
+                  type="text"
+                  value={row.malzemeAdi}
+                  onChange={(e) =>
+                    handleRowChange(index, "malzemeAdi", e.target.value)
+                  }
+                  required={!malzemeIstemiyorum}
+                  placeholder="Malzeme adı"
+                  className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </td>
+
+              {/* Marka + tick */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top">
+                <input
+                  type="text"
+                  value={markaBelirtmiyorum ? "" : row.marka}
+                  onChange={(e) =>
+                    handleRowChange(index, "marka", e.target.value)
+                  }
+                  required={!malzemeIstemiyorum && !markaBelirtmiyorum}
+                  placeholder="Marka"
+                  disabled={markaBelirtmiyorum}
+                  className={`w-full rounded border px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
+                    markaBelirtmiyorum
+                      ? "border-zinc-200 bg-zinc-100 text-zinc-500"
+                      : "border-zinc-300 bg-white text-zinc-900"
+                  }`}
+                />
+
+                <label className="mt-1 flex items-center gap-2 text-[10px] text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={markaBelirtmiyorum}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        // işaretlendi → BELİRTİLMEMİŞ yaz
+                        handleRowChange(index, "marka", "BELİRTİLMEMİŞ");
+                      } else {
+                        // kaldırıldı → boşalt
+                        handleRowChange(index, "marka", "");
+                      }
+                    }}
+                    className="h-3 w-3 accent-sky-600"
+                  />
+                  Marka belirtmiyorum
+                </label>
+
+                {markaBelirtmiyorum && (
+                  <div className="mt-0.5 text-[10px] font-medium text-sky-700">
+                    Marka: BELİRTİLMEMİŞ
+                  </div>
+                )}
+              </td>
+
+              {/* Adet */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top text-right">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={row.adet}
+                  onChange={(e) => handleRowChange(index, "adet", e.target.value)}
+                  required={!malzemeIstemiyorum}
+                  placeholder="0"
+                  className="w-full rounded border border-zinc-300 px-1 py-[3px] text-right text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </td>
+
+              {/* Birim */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top">
+                <input
+                  type="text"
+                  value={row.birim}
+                  onChange={(e) =>
+                    handleRowChange(index, "birim", e.target.value)
+                  }
+                  required={!malzemeIstemiyorum}
+                  placeholder="Adet / Paket / Metre..."
+                  className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </td>
+
+              {/* Kullanım amacı */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top">
+                <input
+                  type="text"
+                  value={row.kullanimAmaci}
+                  onChange={(e) =>
+                    handleRowChange(index, "kullanimAmaci", e.target.value)
+                  }
+                  required={!malzemeIstemiyorum}
+                  placeholder="Kullanım amacı"
+                  className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </td>
+
+              {/* Örnek link */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top">
+                <input
+                  type="text"
+                  value={row.ornekUrunLinki}
+                  onChange={(e) =>
+                    handleRowChange(index, "ornekUrunLinki", e.target.value)
+                  }
+                  placeholder="https://..."
+                  className="w-full rounded border border-zinc-300 px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </td>
+
+              {/* Not + tick */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top">
+                <input
+                  type="text"
+                  value={notBelirtmiyorum ? "" : row.not}
+                  onChange={(e) => handleRowChange(index, "not", e.target.value)}
+                  required={!malzemeIstemiyorum && !notBelirtmiyorum}
+                  placeholder="Not"
+                  disabled={notBelirtmiyorum}
+                  className={`w-full rounded border px-1 py-[3px] text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 ${
+                    notBelirtmiyorum
+                      ? "border-zinc-200 bg-zinc-100 text-zinc-500"
+                      : "border-zinc-300 bg-white text-zinc-900"
+                  }`}
+                />
+
+                <label className="mt-1 flex items-center gap-2 text-[10px] text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={notBelirtmiyorum}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        handleRowChange(index, "not", "BELİRTİLMEMİŞ");
+                      } else {
+                        handleRowChange(index, "not", "");
+                      }
+                    }}
+                    className="h-3 w-3 accent-sky-600"
+                  />
+                  Not belirtmiyorum
+                </label>
+
+                {notBelirtmiyorum && (
+                  <div className="mt-0.5 text-[10px] font-medium text-sky-700">
+                    Not: BELİRTİLMEMİŞ
+                  </div>
+                )}
+              </td>
+
+              {/* Sil */}
+              <td className="border-b border-zinc-200 px-2 py-1 align-top text-center">
+                <button
+                  type="button"
+                  onClick={() => handleRemoveRow(index)}
+                  disabled={malzemeler.length === 1}
+                  className="rounded border border-red-400 px-2 py-[1px] text-[11px] text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-400"
+                >
+                  Sil
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  <p className="text-[10px] text-zinc-500">
+    * Her satır için <strong>örnek ürün linki hariç</strong> tüm alanlar zorunludur.
+    Marka veya Not bilinmiyorsa ilgili “belirtmiyorum” seçeneğini işaretleyebilirsiniz.
+  </p>
+</section>
 
           {/* Kaydet butonu */}
           <div className="flex items-center justify-end gap-3 pt-2">
