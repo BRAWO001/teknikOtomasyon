@@ -127,6 +127,15 @@ export default function PersonelPage() {
       router.push("/");
     }
   };
+  const handleBarcode = async () => {
+    try {
+      router.push("/barcode");
+    } catch (err) {
+      console.error("Barcode error:", err);
+    } finally {
+      router.push("/");
+    }
+  };
 
   // ✅ Hızlı tarih butonları
   const applyQuickRange = async (daysBack) => {
@@ -205,6 +214,12 @@ export default function PersonelPage() {
             className="self-start rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-red-700 md:self-auto"
           >
             Çıkış Yap
+          </button>
+          <button
+            onClick={handleBarcode}
+            className="self-start rounded-md bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-red-700 md:self-auto"
+          >
+            Barcode
           </button>
         </header>
 
