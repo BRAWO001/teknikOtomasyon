@@ -54,7 +54,7 @@ function MalzemelerTable({
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorX: "contain",
           overscrollBehaviorY: "none",
-          touchAction: "pan-y", // ✅ dikey swipe body’ye gitsin (kritik)
+          touchAction: "auto", // ✅ dikey swipe body’ye gitsin (kritik)
           border: "1px solid #e5e7eb",
           borderRadius: 6,
         }}
