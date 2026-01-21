@@ -3,7 +3,7 @@
 
 
 
-// src/pages/satinalma/teklifler/[id].jsx
+// ✅ src/pages/satinalma/teklifler/[id].jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
@@ -301,7 +301,8 @@ export default function SatinAlmaTekliflerPage() {
     };
   });
 
-  // Onay / Red işlemi (sayfada kalsın)
+  // ✅ Onay / Red / Yorum (tek endpoint)
+  // onaylandiMi: true=Onay, false=Red, null=Yorum (durum değişmez)
   const handleOnayIslem = async (onaylandiMi) => {
     if (!id || !currentPersonelId) return;
 
@@ -312,16 +313,18 @@ export default function SatinAlmaTekliflerPage() {
     try {
       const res = await postDataAsync(`satinalma/onay`, {
         satinAlmaId: Number(id),
-        personelId: currentPersonelId,
-        onaylandiMi,
-        not: onayNot || null,
+        personelId: Number(currentPersonelId),
+        onaylandiMi: onaylandiMi === undefined ? null : onaylandiMi, // true/false/null
+        not: (onayNot || "").trim() || null,
       });
 
       const apiMessage =
         res?.Message ??
-        (onaylandiMi
+        (onaylandiMi === true
           ? "Onayınız kaydedildi / güncellendi."
-          : "Red işleminiz kaydedildi / güncellendi.");
+          : onaylandiMi === false
+          ? "Red işleminiz kaydedildi / güncellendi."
+          : "Yorum güncellendi (durum değişmedi).");
 
       setOnaySuccess(apiMessage);
       setOnayNot("");
@@ -329,8 +332,12 @@ export default function SatinAlmaTekliflerPage() {
       await fetchData(id);
       await router.replace(router.asPath);
     } catch (err) {
-      console.error("ONAY POST ERROR:", err);
-      setOnayError("Onay işlemi sırasında bir hata oluştu.");
+      console.error("ONAY POST ERROR:", err?.response?.data || err);
+      setOnayError(
+        err?.response?.data?.message ||
+          err?.response?.data?.Message ||
+          "Onay/Yorum işlemi sırasında bir hata oluştu."
+      );
     } finally {
       setOnayLoading(false);
     }

@@ -194,7 +194,7 @@ export default function ProjeGorevlileriPage() {
               <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
                   <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
-                    Duyurular & Dokümanlar
+                    Dokümanlar
                   </h3>
                   <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
                     Yönetim duyuruları, karar defterleri, toplantı tutanakları
