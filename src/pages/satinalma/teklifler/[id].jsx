@@ -15,6 +15,8 @@ import SatinalmaOnaylayanPersoneller from "@/components/SatinalmaOnaylayanPerson
 import SatinalmaOnayPanel from "@/components/SatinalmaOnayPanel";
 import SatinalmaTedarikciOzet from "@/components/SatinalmaTedarikciOzet";
 import SatinalmaMalzemeTeklifList from "@/components/SatinalmaMalzemeTeklifList";
+import SatinalmaYorumlarCard from "@/components/satinalma/SatinalmaYorumlarCard";
+
 
 // ✅ yeni componentler
 import SatinalmaFaturaPdfDurumCard from "@/components/satinalma/SatinalmaFaturaPdfDurumCard";
@@ -151,6 +153,7 @@ export default function SatinAlmaTekliflerPage() {
   const talepCinsi = data.talepCinsi ?? data.TalepCinsi;
   const aciklama = data.aciklama ?? data.Aciklama;
   const talepEden = data.talepEden ?? data.TalepEden;
+  const yorumlar = data.yorumlar ?? data.Yorumlar ?? [];
 
   const malzemeler = data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
   const fiyatTeklifleri = data.fiyatTeklifleri ?? data.FiyatTeklifleri ?? [];
@@ -382,16 +385,25 @@ export default function SatinAlmaTekliflerPage() {
           Sıra No: <span style={{ fontWeight: 900 }}>{id}</span>
         </div>
 
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0b1220" }}>
+        <h1
+          style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0b1220" }}
+        >
           Satın Alma Teklifleri
         </h1>
       </div>
 
       {/* PAYLAŞIM LINK */}
-      <SatinalmaShareLinkBar shareUrl={shareUrl} copied={copied} onCopy={copyLink} />
+      <SatinalmaShareLinkBar
+        shareUrl={shareUrl}
+        copied={copied}
+        onCopy={copyLink}
+      />
 
       {/* ✅ FATURA + PDF DURUM KARTI */}
-      <SatinalmaFaturaPdfDurumCard faturaShareUrl={faturaShareUrl} not2Raw={not2Raw} />
+      <SatinalmaFaturaPdfDurumCard
+        faturaShareUrl={faturaShareUrl}
+        not2Raw={not2Raw}
+      />
 
       {/* ÜST GRID */}
       <div
@@ -404,7 +416,9 @@ export default function SatinAlmaTekliflerPage() {
           marginBottom: "0.75rem",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+        >
           <SatinalmaHeaderCard
             seriNo={seriNo}
             tarih={tarih}
@@ -426,8 +440,21 @@ export default function SatinAlmaTekliflerPage() {
             handleOnayIslem={handleOnayIslem}
           />
         </div>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+        >
+          <SatinalmaOnaylayanPersoneller
+            onaylayanPersoneller={onaylayanPersoneller}
+          />
 
-        <SatinalmaOnaylayanPersoneller onaylayanPersoneller={onaylayanPersoneller} />
+          <SatinalmaYorumlarCard
+            satinAlmaId={id}
+            yorumlar={yorumlar}
+            currentPersonelId={currentPersonelId}
+            postDataAsync={postDataAsync}
+            onAfterSaved={() => fetchData(id)}
+          />
+        </div>
       </div>
 
       {/* ✅ Satın Alım Durumu (Not_1) */}

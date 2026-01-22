@@ -39,7 +39,7 @@ export default function RaporExcelPage() {
     const token = getCookie("AuthToken_01");
 
     const res = await axios.get(
-      `https://pilotapisrc.com/api/yoneticiraporu/IS-EMIRLERI-DETAYLI-RAPOR-EXCEL`,
+      `https://localhost:7289/api/yoneticiraporu/IS-EMIRLERI-DETAYLI-RAPOR-EXCEL`,
       {
         params: paramsObj,
         responseType: "blob",
@@ -88,7 +88,7 @@ export default function RaporExcelPage() {
   const token = getCookie("AuthToken_01");
 
   const res = await axios.get(
-    "https://pilotapisrc.com/api/yoneticiraporu/SATIN-ALMA-DETAYLI-RAPOR-EXCEL",
+    "https://localhost:7289/api/yoneticiraporu/SATIN-ALMA-DETAYLI-RAPOR-EXCEL",
     {
       params: paramsObj,
       responseType: "blob",
@@ -190,7 +190,7 @@ export default function RaporExcelPage() {
         </div>
 
         <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-          Endpoint: https://pilotapisrc.com/api/yoneticiraporu/isEmirleriDetayliYoneticiRaporuExcel
+          Endpoint: https://localhost:7289/api/yoneticiraporu/isEmirleriDetayliYoneticiRaporuExcel
         </div>
 
 

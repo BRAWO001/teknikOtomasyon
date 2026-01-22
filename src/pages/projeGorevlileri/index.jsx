@@ -2,6 +2,8 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+import ProjeGorevlileriSonYorumOzetCard from "@/components/projeGorevlileri/ProjeGorevlileriSonYorumOzetCard";
+
 
 export default function ProjeGorevlileriPage() {
   const router = useRouter();
@@ -106,6 +108,9 @@ export default function ProjeGorevlileriPage() {
                 )}
               </div>
             </div>
+            {personel?.id && (
+              <ProjeGorevlileriSonYorumOzetCard personelId={personel.id} />
+            )}
 
             {/* ÇIKIŞ BUTONU */}
             <div className="flex items-center gap-2">
@@ -151,7 +156,6 @@ export default function ProjeGorevlileriPage() {
           {/* Profesyonel site yönetimi için diğer modüller (pilot) */}
           <section className="mt-4 space-y-3">
             <div>
-              
               <p className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
                 Aşağıdaki modüller profesyonel site yönetimi için
                 planlanmaktadır. Şu an pilot deneme sürecinde olduğundan sadece
