@@ -174,20 +174,18 @@ export default function ProjeGorevlileriSonYorumOzetCard({
                       "
                     >
                       <div className="text-[11px] leading-snug text-zinc-700 dark:text-zinc-200">
-                        
-
                         <div>
-                          <span className="font-bold">Yorum:</span> {yorumSayisi} adet
+                          <span className="font-bold">Yorum:</span>{" "}
+                          {yorumSayisi} adet
                         </div>
 
                         <div>
-                          <span className="font-bold">Son yorum:</span> {formatTR(dt)}{" "}
+                          <span className="font-bold">Son yorum:</span>{" "}
+                          {formatTR(dt)}{" "}
                           <span className="text-[10.5px] font-bold text-zinc-600 dark:text-zinc-300">
                             ({timeAgoTR(dt)})
                           </span>
                         </div>
-
-                        
                       </div>
                     </Link>
                   </div>
@@ -212,7 +210,6 @@ export default function ProjeGorevlileriSonYorumOzetCard({
           <div className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
             Son Notlar
           </div>
-          
         </div>
 
         <button
@@ -246,8 +243,6 @@ export default function ProjeGorevlileriSonYorumOzetCard({
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  
-
                   <div className="shrink-0 text-[11px] text-zinc-600 dark:text-zinc-300">
                     <strong>{headerInfo.total} Not</strong>
                   </div>
@@ -255,7 +250,9 @@ export default function ProjeGorevlileriSonYorumOzetCard({
                   {headerInfo.lastDt && (
                     <div className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                       • Son yorum: {formatTR(headerInfo.lastDt)}{" "}
-                      <span className="ml-1 font-bold">{headerInfo.lastAgo}</span>
+                      <span className="ml-1 font-bold">
+                        {headerInfo.lastAgo}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -269,9 +266,13 @@ export default function ProjeGorevlileriSonYorumOzetCard({
 
           {/* ✅ Açılan Liste */}
           <div
-            className={`absolute left-0 right-0 top-full bg-black z-20 overflow-hidden ${
-              openList ? "max-h-72" : "max-h-0"
-            }`}
+            className={`absolute left-0 right-0 top-full z-20 overflow-hidden
+    rounded-md
+    border border-zinc-300 bg-white shadow-xl
+    dark:border-zinc-700 dark:bg-zinc-950
+    transition-all duration-200
+    ${openList ? "max-h-72" : "max-h-0"}
+  `}
           >
             <div className="mt-2 max-h-72 overflow-auto pr-1">
               {sorted.length === 0 ? (
@@ -281,10 +282,12 @@ export default function ProjeGorevlileriSonYorumOzetCard({
               ) : (
                 <div className="space-y-2">
                   {sorted.map((x) => {
-                    const id = x?.satinAlmaId ?? x?.SatinAlmaId ?? Math.random();
+                    const id =
+                      x?.satinAlmaId ?? x?.SatinAlmaId ?? Math.random();
                     const talepCinsi = x?.talepCinsi ?? x?.TalepCinsi ?? "-";
                     const yorumSayisi = x?.yorumSayisi ?? x?.YorumSayisi ?? 0;
-                    const dt = x?.sonYorumTarihiUtc ?? x?.SonYorumTarihiUtc ?? null;
+                    const dt =
+                      x?.sonYorumTarihiUtc ?? x?.SonYorumTarihiUtc ?? null;
 
                     return (
                       <button
@@ -314,7 +317,9 @@ export default function ProjeGorevlileriSonYorumOzetCard({
                               {talepCinsi}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-                              <span className="shrink-0 whitespace-nowrap">{formatTR(dt)}</span>
+                              <span className="shrink-0 whitespace-nowrap">
+                                {formatTR(dt)}
+                              </span>
                               <span className="shrink-0 whitespace-nowrap font-bold text-zinc-600 dark:text-zinc-300">
                                 {timeAgoTR(dt)}
                               </span>
@@ -322,7 +327,9 @@ export default function ProjeGorevlileriSonYorumOzetCard({
                           </div>
 
                           <div className="shrink-0 text-right">
-                            <div className="text-[11px] text-zinc-600 dark:text-zinc-300">Not</div>
+                            <div className="text-[11px] text-zinc-600 dark:text-zinc-300">
+                              Not
+                            </div>
                             <div className="text-[13px] font-bold text-zinc-900 dark:text-zinc-50">
                               {yorumSayisi}
                             </div>
