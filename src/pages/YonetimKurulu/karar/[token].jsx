@@ -402,7 +402,7 @@ export default function KararTokenDetayPage() {
 
               {isRol11 && myOnerenKaydi && !duzenlemeAcikMi && (
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[12px] text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                  Patron düzenlemeyi kapattığı için şu an oy/düşünce girişi
+                  Düzenleme kapalı olduğu için şu an oy/düşünce girişi
                   kapalı.
                 </div>
               )}
@@ -584,9 +584,7 @@ export default function KararTokenDetayPage() {
                   <div className="font-semibold text-zinc-800 dark:text-zinc-200">
                     Yönetici Paneli
                   </div>
-                  <div className="mt-1">
-                    Bu alan sadece <b>rol 90</b> kullanıcılar için görünür.
-                  </div>
+                  
                 </div>
               )}
             </div>
