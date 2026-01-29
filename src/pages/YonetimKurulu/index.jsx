@@ -121,6 +121,17 @@ export default function YonetimKuruluIndexPage() {
     }
   };
 
+      // Çıkış
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      router.push("/");
+    }
+  };
+
   const formatTR = (iso) => {
     if (!iso) return "-";
     try {
@@ -183,6 +194,14 @@ export default function YonetimKuruluIndexPage() {
                 disabled={!siteId}
               >
                 Yenile
+              </button>
+
+
+              <button
+                onClick={handleLogout}
+                className="rounded-md bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
+              >
+                Çıkış Yap
               </button>
 
               <button
