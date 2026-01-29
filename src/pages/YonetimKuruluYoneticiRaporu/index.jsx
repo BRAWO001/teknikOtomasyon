@@ -161,13 +161,7 @@ export default function YonetimKuruluYoneticiRaporuPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            <button
-              type="button"
-              onClick={() => router.push("/YonetimKurulu")}
-              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              ← Yönetim Kurulu
-            </button>
+            
 
             <button
               type="button"
