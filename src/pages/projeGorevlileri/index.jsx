@@ -1,9 +1,14 @@
 // pages/projeGorevlileri/index.jsx
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
-import ProjeGorevlileriSonYorumOzetCard from "@/components/projeGorevlileri/ProjeGorevlileriSonYorumOzetCard";
 
+import ProjeGorevlileriSonYorumOzetCard from "@/components/projeGorevlileri/ProjeGorevlileriSonYorumOzetCard";
+import ProjeDosyaModals from "@/components/ProjeDosyaModals";
+
+// ✅ apiService kullanıyorsan bunu tercih et (token vb. otomatik gidiyorsa çok iyi)
+// Eğer sende farklı path ise düzelt
+import { getDataAsync } from "@/utils/apiService";
 
 export default function ProjeGorevlileriPage() {
   const router = useRouter();
@@ -13,49 +18,23 @@ export default function ProjeGorevlileriPage() {
   // Pilot modüller için uyarı mesajı
   const [pilotInfo, setPilotInfo] = useState("");
 
-  // Çıkış
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/logout", { method: "POST" });
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      router.push("/");
-    }
-  };
+  // ✅ Doküman modal state
+  const [isDosyaModalOpen, setIsDosyaModalOpen] = useState(false);
 
-  // Yeni satın alma talebi → satinalma/yeni.jsx
-  const handleYeniTalep = () => {
-    router.push("/projeGorevlileri/yeni");
-  };
+  // ✅ Personelin bağlı olduğu site(ler)
+  const [siteList, setSiteList] = useState([]);
+  const [siteLoading, setSiteLoading] = useState(false);
+  const [siteError, setSiteError] = useState("");
 
-  const handleYeniIsEmri = () => {
-    router.push("/projeGorevlileri/projeSorumlusuISemriOlustur");
-  };
+  // ✅ Seçilen site
+  const [selectedSiteId, setSelectedSiteId] = useState(null);
 
-  const handleProjemIsEmirleri = () => {
-    router.push("/projeGorevlileri/projeGorevlileriIsEmirleri");
-  };
-
-  // Taleplerim → aynı klasör altındaki sayfa
-  const handleTaleplerim = () => {
-    router.push("/projeGorevlileri/taleplerim");
-  };
-
-  // Pilot modüller: sadece bilgilendirme gösterecek
-  const handlePilotFeatureClick = (featureName) => {
-    setPilotInfo(
-      `Şimdilik pilot deneme süreci olduğu için "${featureName}" modülü buradan hizmet verememektedir.`
-    );
-  };
-
-  // PersonelUserInfo cookie kontrolü
+  // Cookie’den personel al
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
       const personelCookie = getClientCookie("PersonelUserInfo");
-
       if (!personelCookie) {
         router.replace("/");
         return;
@@ -69,19 +48,123 @@ export default function ProjeGorevlileriPage() {
     }
   }, [router]);
 
+  // ✅ personelKodu bul (sende isim farklıysa burayı değiştir)
+  const personelKodu = useMemo(() => {
+    return (
+      personel?.personelKodu ||
+      personel?.PersonelKodu ||
+      personel?.kodu ||
+      personel?.Kodu ||
+      null
+    );
+  }, [personel]);
+
+  // ✅ SiteId cookie’de var mı? (varsa direkt seç)
+  useEffect(() => {
+    const directSiteId = personel?.siteId || personel?.SiteId || null;
+    if (directSiteId && !selectedSiteId) {
+      setSelectedSiteId(directSiteId);
+    }
+  }, [personel, selectedSiteId]);
+
+  // ✅ SiteId yoksa: personelKodu ile site(ler)i çek
+  useEffect(() => {
+    const directSiteId = personel?.siteId || personel?.SiteId || null;
+
+    // SiteId zaten varsa API'ye gerek yok
+    if (directSiteId) return;
+
+    if (!personelKodu) return;
+
+    const loadSites = async () => {
+      try {
+        setSiteLoading(true);
+        setSiteError("");
+
+        // endpoint: /api/projeYonetimKurulu/site/personel/{personelKodu}
+        const data = await getDataAsync(
+          `projeYonetimKurulu/site/personel/${encodeURIComponent(personelKodu)}`
+        );
+
+        const arr = Array.isArray(data) ? data : [];
+        setSiteList(arr);
+
+        // tek site varsa otomatik seç
+        if (arr.length === 1) {
+          setSelectedSiteId(arr[0]?.SiteId ?? arr[0]?.siteId ?? null);
+        }
+
+        // birden fazla site varsa ilkini seç (istersen null bırakıp seçtiririz)
+        if (arr.length > 1 && !selectedSiteId) {
+          const firstId = arr[0]?.SiteId ?? arr[0]?.siteId ?? null;
+          if (firstId) setSelectedSiteId(firstId);
+        }
+      } catch (err) {
+        console.error("Site listesi alınırken hata:", err);
+        setSiteError(
+          err?.response?.data ||
+            err?.message ||
+            "Site bilgisi alınırken bir hata oluştu."
+        );
+      } finally {
+        setSiteLoading(false);
+      }
+    };
+
+    loadSites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personelKodu]);
+
+  // Çıkış
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      router.push("/");
+    }
+  };
+
+  // Yeni satın alma talebi
+  const handleYeniTalep = () => router.push("/projeGorevlileri/yeni");
+
+  const handleYeniIsEmri = () =>
+    router.push("/projeGorevlileri/projeSorumlusuISemriOlustur");
+
+  const handleProjemIsEmirleri = () =>
+    router.push("/projeGorevlileri/projeGorevlileriIsEmirleri");
+
+  const handleTaleplerim = () => router.push("/projeGorevlileri/taleplerim");
+
+  const handlePilotFeatureClick = (featureName) => {
+    setPilotInfo(
+      `Şimdilik pilot deneme süreci olduğu için "${featureName}" modülü buradan hizmet verememektedir.`
+    );
+  };
+
+  // ✅ Modal açmadan önce site seçili mi kontrol (opsiyonel)
+  const openDosyaModal = () => {
+    if (!selectedSiteId) {
+      setPilotInfo("Önce bir site seçmelisiniz (SiteId bulunamadı).");
+      return;
+    }
+    setIsDosyaModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
       <div className="mx-auto min-h-screen max-w-4xl p-4 flex flex-col gap-3">
         {/* ÜST PANEL */}
-
         <section className="rounded-md border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* LOGO + BAŞLIK */}
             <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/eos_management_logo.png"
                 alt="EOS Management"
-                className="h-10 w-auto object-contain"
+                className="h-10 w-auto object-contain rounded-md"
               />
 
               <div className="flex flex-col gap-1">
@@ -96,18 +179,19 @@ export default function ProjeGorevlileriPage() {
                       <span className="font-bold">
                         {personel.ad} {personel.soyad}
                       </span>
-                      ,
+                      
                     </p>
-                    <p className="text-[12px] text-zinc-600 dark:text-zinc-300">
-                      Bu sayfada şimdilik sadece{" "}
-                      <strong>satın alma talepleri</strong> oluşturabilir ve
-                      oluşturduğunuz talepleri <strong>Taleplerim</strong>{" "}
-                      ekranından kontrol edebilirsiniz.
+                    <p className="text-xs font-extralight  text-zinc-900 dark:text-zinc-50">
+                      Bu site bir Demo sürümüdür. Bazı modüller henüz aktif değildir.
+                      
+                      
                     </p>
+                    
                   </>
                 )}
               </div>
             </div>
+
             {personel?.id && (
               <ProjeGorevlileriSonYorumOzetCard personelId={personel.id} />
             )}
@@ -123,6 +207,8 @@ export default function ProjeGorevlileriPage() {
             </div>
           </div>
         </section>
+
+     
 
         {/* ANA İÇERİK */}
         <main className="flex-1 items-center rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-4">
@@ -153,7 +239,7 @@ export default function ProjeGorevlileriPage() {
             </button>
           </div>
 
-          {/* Profesyonel site yönetimi için diğer modüller (pilot) */}
+          {/* Pilot modüller */}
           <section className="mt-4 space-y-3">
             <div>
               <p className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
@@ -164,19 +250,18 @@ export default function ProjeGorevlileriPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              {/* Arıza & İş Emirleri */}
+              {/* İş Emirleri */}
               <div className="flex flex-col justify-center rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
                   <h3 className="flex items-center justify-center gap-1 text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
                     🛠️ İş Emirleri
                   </h3>
-                  <p className="mt-1 text-[11px] justify-center text-center  text-zinc-600 dark:text-zinc-300">
+                  <p className="mt-1 text-[11px] justify-center text-center text-zinc-600 dark:text-zinc-300">
                     Site içindeki tüm arıza ve bakım taleplerinin takibi, iş
                     emirleri ve teknisyen görevlendirmeleri.
                   </p>
                 </div>
 
-                {/* ✅ Butonlar yan yana */}
                 <div className="mt-3 flex justify-evenly gap-2">
                   <button
                     onClick={handleYeniIsEmri}
@@ -194,28 +279,33 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </div>
 
-              {/* Duyurular & Dokümanlar */}
+              {/* ✅ Dokümanlar (MODAL) */}
               <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
-                    Dokümanlar
+                  <h3 className="text-[13px] font-semibold justify-center text-center text-zinc-900 dark:text-zinc-50">
+                    📎  Dokümanlar
                   </h3>
-                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
+                  <p className="mt-1 text-[11px] justify-center text-center text-zinc-600 dark:text-zinc-300">
                     Yönetim duyuruları, karar defterleri, toplantı tutanakları
                     ve önemli dokümanların paylaşımı.
                   </p>
                 </div>
-                <div className="mt-2 flex justify-end">
+
+                <div className="mt-3 flex items-center justify-center gap-2">
                   <button
                     type="button"
-                    onClick={() =>
-                      handlePilotFeatureClick("Duyurular & Dokümanlar")
-                    }
-                    className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    Modülü Görüntüle
+                    onClick={openDosyaModal}
+                    disabled={!selectedSiteId}
+                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200">
+                    📎 Dosya Ekle / Gör
                   </button>
                 </div>
+
+                {!selectedSiteId && (
+                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200">
+                    Site seçilmeden doküman yüklenemez.
+                  </div>
+                )}
               </div>
 
               {/* Gelir Gider & Faturalar */}
@@ -242,7 +332,7 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </div>
 
-              {/* Ziyaretçi & Güvenlik Kayıtları */}
+              {/* Ziyaretçi & Güvenlik */}
               <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
                   <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
@@ -281,6 +371,14 @@ export default function ProjeGorevlileriPage() {
           </div>
         </main>
       </div>
+
+      {/* ✅ MODAL (siteId artık selectedSiteId) */}
+      <ProjeDosyaModals
+        isOpen={isDosyaModalOpen}
+        onClose={() => setIsDosyaModalOpen(false)}
+        siteId={selectedSiteId}
+        baslik="Dokümanlar"
+      />
     </div>
   );
 }

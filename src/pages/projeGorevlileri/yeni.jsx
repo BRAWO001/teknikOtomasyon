@@ -772,9 +772,16 @@ export default function YeniSatinAlmaPage() {
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   value={row.adet}
-                  onChange={(e) => handleRowChange(index, "adet", e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+
+                    // sadece tam sayı
+                    if (/^\d*$/.test(val)) {
+                      handleRowChange(index, "adet", val);
+                    }
+                  }}
                   required={!malzemeIstemiyorum}
                   placeholder="0"
                   className="w-full rounded border border-zinc-300 px-1 py-[3px] text-right text-[11px] focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
@@ -827,7 +834,9 @@ export default function YeniSatinAlmaPage() {
                 <input
                   type="text"
                   value={notBelirtmiyorum ? "" : row.not}
-                  onChange={(e) => handleRowChange(index, "not", e.target.value)}
+                  onChange={(e) =>
+                    handleRowChange(index, "not", e.target.value)
+                  }
                   required={!malzemeIstemiyorum && !notBelirtmiyorum}
                   placeholder="Not"
                   disabled={notBelirtmiyorum}
