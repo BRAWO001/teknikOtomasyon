@@ -1,9 +1,5 @@
-
-
-
-
-
 // src/pages/YonetimKurulu/karar/[token].jsx
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
@@ -15,7 +11,6 @@ const OPTIONS = [
   { value: "Çekimser/Fikrim Yok", label: "Çekimser / Fikrim Yok" },
 ];
 
-// ✅ Nihai Sonuç seçenekleri (Rol 90)
 const NIHAI_OPTIONS = [
   { value: "Beklemede", label: "Beklemede" },
   { value: "Onaylandı", label: "Onaylandı" },
@@ -46,8 +41,8 @@ export default function KararTokenDetayPage() {
   const [saveMsg, setSaveMsg] = useState(null);
 
   // Rol90 patron paneli
-  const [nihai, setNihai] = useState(""); // serbest metin (opsiyonel)
-  const [nihaiSelect, setNihaiSelect] = useState(""); // ✅ dropdown
+  const [nihai, setNihai] = useState("");
+  const [nihaiSelect, setNihaiSelect] = useState("");
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminMsg, setAdminMsg] = useState(null);
 
@@ -70,6 +65,7 @@ export default function KararTokenDetayPage() {
     return isRol11 && !!myOnerenKaydi && duzenlemeAcikMi;
   }, [isRol11, myOnerenKaydi, duzenlemeAcikMi]);
 
+  // cookie -> personel
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -83,6 +79,7 @@ export default function KararTokenDetayPage() {
     }
   }, []);
 
+  // token -> dto
   useEffect(() => {
     if (!token) return;
 
@@ -97,11 +94,10 @@ export default function KararTokenDetayPage() {
 
         setData(dto || null);
 
-        // ✅ Nihai sonuc defaultları
+        // Nihai sonuc defaultları
         const nih = dto?.nihaiSonuc ?? "";
         const nihStr = nih ? String(nih) : "";
 
-        // dropdown içinde varsa seç, yoksa serbest metin alanına koy
         const known = NIHAI_OPTIONS.some((x) => x.value === nihStr) ? nihStr : "";
         setNihaiSelect(known);
         setNihai(known ? "" : nihStr);
@@ -121,6 +117,7 @@ export default function KararTokenDetayPage() {
     };
   }, [token]);
 
+  // benim kayıt -> seçim & açıklama
   useEffect(() => {
     if (!myOnerenKaydi) return;
 
@@ -175,9 +172,7 @@ export default function KararTokenDetayPage() {
 
       setData((prev) => {
         if (!prev) return prev;
-        const list = Array.isArray(prev.onerenKisiler)
-          ? [...prev.onerenKisiler]
-          : [];
+        const list = Array.isArray(prev.onerenKisiler) ? [...prev.onerenKisiler] : [];
         const idx = list.findIndex(
           (x) => Number(x.personelId) === Number(personel.id)
         );
@@ -200,7 +195,7 @@ export default function KararTokenDetayPage() {
     }
   };
 
-  // ✅ Rol90: NihaiSonuc güncelle (dropdown + serbest metin)
+  // Rol90: NihaiSonuc güncelle
   const handleUpdateNihai = async () => {
     if (!data?.id) return;
 
@@ -209,7 +204,6 @@ export default function KararTokenDetayPage() {
       return;
     }
 
-    // dropdown seçildiyse onu gönder, yoksa serbest metin
     const finalVal = (nihaiSelect || nihai || "").trim();
     const payload = { nihaiSonuc: finalVal ? finalVal : null };
 
@@ -225,7 +219,6 @@ export default function KararTokenDetayPage() {
       const newVal = res?.nihaiSonuc ?? payload.nihaiSonuc;
       setData((prev) => (prev ? { ...prev, nihaiSonuc: newVal } : prev));
 
-      // ✅ UI uyumu: yeni değer option ise select'e koy, değilse input'a koy
       const newStr = newVal ? String(newVal) : "";
       const isKnown = NIHAI_OPTIONS.some((x) => x.value === newStr);
       setNihaiSelect(isKnown ? newStr : "");
@@ -236,9 +229,7 @@ export default function KararTokenDetayPage() {
       console.error("NIHAI SONUC UPDATE ERROR:", e);
       const status = e?.response?.status;
       setAdminMsg(
-        status
-          ? `Nihai sonuç güncellenemedi (HTTP ${status}).`
-          : "Nihai sonuç güncellenemedi."
+        status ? `Nihai sonuç güncellenemedi (HTTP ${status}).` : "Nihai sonuç güncellenemedi."
       );
     } finally {
       setAdminSaving(false);
@@ -279,34 +270,42 @@ export default function KararTokenDetayPage() {
       console.error("DUZENLEME DURUMU UPDATE ERROR:", e);
       const status = e?.response?.status;
       setAdminMsg(
-        status
-          ? `Düzenleme güncellenemedi (HTTP ${status}).`
-          : "Düzenleme güncellenemedi."
+        status ? `Düzenleme güncellenemedi (HTTP ${status}).` : "Düzenleme güncellenemedi."
       );
     } finally {
       setAdminSaving(false);
     }
   };
 
-  const StatusPill = ({ ok, label }) => (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-        ok
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/15 dark:text-emerald-200"
-          : "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/15 dark:text-red-200"
-      }`}
-    >
-      {label}
-    </span>
-  );
+  const StatusPill = ({ tone = "neutral", label }) => {
+    const cls =
+      tone === "ok"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/15 dark:text-emerald-200"
+        : tone === "warn"
+        ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
+        : tone === "bad"
+        ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/15 dark:text-red-200"
+        : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200";
 
-  const SoftCard = ({ title, right, children }) => (
+    return (
+      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${cls}`}>
+        {label}
+      </span>
+    );
+  };
+
+  const SoftCard = ({ title, subtitle, right, children }) => (
     <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
         <div className="min-w-0">
           <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             {title}
           </div>
+          {subtitle ? (
+            <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              {subtitle}
+            </div>
+          ) : null}
         </div>
         {right ? <div className="shrink-0">{right}</div> : null}
       </div>
@@ -316,10 +315,64 @@ export default function KararTokenDetayPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      {/* ✅ daha geniş */}
+      {/* =========================================================
+          ✅ KURUMSAL STICKY HEADER (logo her zaman açık)
+         ========================================================= */}
+      <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-zinc-200 dark:bg-white dark:ring-zinc-200">
+              <Image
+                src="/eos_management_logo.png"
+                alt="EOS Management"
+                width={160}
+                height={44}
+                priority
+                className="h-10 w-auto object-contain"
+              />
+            </div>
+
+            <div className="leading-tight">
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                Yönetim Kurulu • Karar Detayı
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden items-center gap-2 md:flex">
+            <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve
+              arşivlenir.
+            </span>
+            <button
+              type="button"
+              onClick={() => router.push("/YonetimKurulu")}
+              className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+            >
+              ← Listeye Dön
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* içerik */}
       <div className="mx-auto max-w-6xl px-3 py-5 sm:px-5 sm:py-6">
         {/* üst mini bar */}
-        <div className="mb-3 flex items-start justify-end">
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <StatusPill
+              tone={duzenlemeAcikMi ? "ok" : "bad"}
+              label={duzenlemeAcikMi ? "Düzenleme Açık" : "Düzenleme Kapalı"}
+            />
+            <StatusPill
+              tone={data?.nihaiSonuc ? "neutral" : "warn"}
+              label={`Nihai: ${data?.nihaiSonuc ?? "-"}`}
+            />
+          </div>
+
           <div className="text-right text-[11px] text-zinc-500 dark:text-zinc-400">
             {personel ? (
               <>
@@ -346,46 +399,40 @@ export default function KararTokenDetayPage() {
 
         {!loading && data && (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-            {/* SOL: Karar */}
+            {/* SOL */}
             <div className="lg:col-span-8 space-y-3">
               <SoftCard
                 title="Karar Detayı"
+                subtitle={`${data.site?.ad ? `${data.site.ad} • ` : ""}${formatTR(data.tarih)}`}
                 right={
                   <div className="flex flex-col items-end gap-2">
-                    <StatusPill
-                      ok={duzenlemeAcikMi}
-                      label={
-                        duzenlemeAcikMi ? "Düzenleme Açık" : "Düzenleme Kapalı"
-                      }
-                    />
-                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                      Nihai:{" "}
-                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        {data.nihaiSonuc ?? "-"}
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Karar No:
+                      <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
+                        #{data.id}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Token:
+                      <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
+                        {String(token ?? "").slice(0, 8)}…
                       </span>
                     </div>
                   </div>
                 }
               >
-                <div className="flex flex-col gap-2">
-                  <div className="text-[14px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                    #{data.id} • {safeText(data.kararKonusu)}
-                  </div>
+                <div className="text-[14px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  {safeText(data.kararKonusu)}
+                </div>
 
-                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    {data.site?.ad ? `${data.site.ad} • ` : ""}
-                    {formatTR(data.tarih)}
-                  </div>
-
-                  <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[12px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
-                    <div className="whitespace-pre-wrap">
-                      {safeText(data.kararAciklamasi)}
-                    </div>
+                <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[12px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+                  <div className="whitespace-pre-wrap">
+                    {safeText(data.kararAciklamasi)}
                   </div>
                 </div>
               </SoftCard>
 
-              {/* Rol 11 form */}
+              {/* Yetki uyarıları */}
               {personel && !isRol11 && !isRol90 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
                   Bu ekranda oy/düşünce girişi sadece <b>rol 11</b>, yönetici
@@ -402,22 +449,39 @@ export default function KararTokenDetayPage() {
 
               {isRol11 && myOnerenKaydi && !duzenlemeAcikMi && (
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[12px] text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                  Düzenleme kapalı olduğu için şu an oy/düşünce girişi
-                  kapalı.
+                  Düzenleme kapalı olduğu için şu an oy/düşünce girişi kapalı.
                 </div>
               )}
 
+              {/* Rol11 form */}
               {canEdit && (
-                <SoftCard title="Karar Düşüncen">
+                <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                  {/* Başlık */}
+                  <div className="mb-3">
+                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      Karar Düşüncen
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Seçiminiz kayıt altına alınır. Düzenleme kapatıldığında
+                      değişiklik yapılamaz.
+                    </div>
+                  </div>
+
+                  {/* Form alanı */}
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {/* Seçim */}
                     <div>
                       <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                         Seçim
                       </label>
                       <select
-                        className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                         value={secim}
                         onChange={(e) => setSecim(e.target.value)}
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px]
+                     outline-none transition
+                     focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200
+                     dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
+                     dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                       >
                         <option value="">Seçiniz...</option>
                         {OPTIONS.map((o) => (
@@ -428,49 +492,71 @@ export default function KararTokenDetayPage() {
                       </select>
                     </div>
 
+                    {/* Açıklama */}
                     <div>
-                      <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                      <label
+                        htmlFor="aciklama"
+                        className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300"
+                      >
                         Açıklama (opsiyonel)
                       </label>
+
                       <input
-                        className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-                        value={aciklama}
+                        id="aciklama"
+                        type="text"
+                        value={aciklama ?? ""}
                         onChange={(e) => setAciklama(e.target.value)}
                         placeholder="Kısa not..."
-                        maxLength={500}
+                        autoComplete="off"
+                        className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-[12px] text-zinc-900
+                     outline-none transition
+                     focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200
+                     dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
+                     dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
                       />
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2">
+                  {/* Aksiyonlar */}
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <button
                       onClick={handleKaydet}
                       disabled={saving}
-                      className="h-9 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      className="h-10 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white
+                   shadow-sm transition hover:bg-zinc-800 active:scale-[0.99]
+                   disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                     >
                       {saving ? "Kaydediliyor..." : "Kaydet"}
                     </button>
 
                     {saveMsg && (
-                      <div className="text-[12px] text-zinc-700 dark:text-zinc-200">
+                      <div
+                        className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-700
+                        dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
+                      >
                         {saveMsg}
                       </div>
                     )}
                   </div>
-                </SoftCard>
+                </div>
               )}
 
-              {/* Öneren listesi */}
+              {/* Söz sahibi üyeler */}
               {Array.isArray(data.onerenKisiler) &&
                 data.onerenKisiler.length > 0 && (
-                  <SoftCard title="Söz Sahibi Üyeler">
+                  <SoftCard
+                    title="Söz Sahibi Üyeler"
+                    subtitle="Üyelerin seçimi ve açıklamaları bu kararın kayıt sürecinin parçasıdır."
+                  >
                     <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                       {data.onerenKisiler.map((o) => {
                         const isMe =
                           Number(o.personelId) === Number(personel?.id);
+                        const dusunce = o.kararDusuncesi ?? "-";
+
                         return (
                           <div key={o.id} className="px-4 py-3">
-                            <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <div className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
@@ -496,7 +582,7 @@ export default function KararTokenDetayPage() {
                               </div>
 
                               <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                                {o.kararDusuncesi ?? "-"}
+                                {dusunce}
                               </span>
                             </div>
                           </div>
@@ -507,17 +593,18 @@ export default function KararTokenDetayPage() {
                 )}
             </div>
 
-            {/* SAĞ: Rol90 panel */}
+            {/* SAĞ: Yönetici paneli */}
             <div className="lg:col-span-4 space-y-3">
-              {isRol90 && (
+              {isRol90 ? (
                 <SoftCard
-                  title=" Yönetici Paneli "
+                  title="Yönetici Paneli"
+                  subtitle="Düzenleme durumu ve nihai sonuç yalnızca rol 90 tarafından yönetilir."
                   right={
                     <button
                       type="button"
                       disabled={adminSaving}
                       onClick={handleToggleDuzenleme}
-                      className={`h-9 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
+                      className={`h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
                         duzenlemeAcikMi
                           ? "bg-red-600 hover:bg-red-700"
                           : "bg-emerald-600 hover:bg-emerald-700"
@@ -526,26 +613,24 @@ export default function KararTokenDetayPage() {
                       {adminSaving
                         ? "İşleniyor..."
                         : duzenlemeAcikMi
-                        ? "Düzenlemeyi Kapat"
-                        : "Düzenlemeyi Aç"}
+                          ? "Düzenlemeyi Kapat"
+                          : "Düzenlemeyi Aç"}
                     </button>
                   }
                 >
                   <div className="space-y-3">
-                    {/* ✅ Nihai Sonuç - dropdown */}
                     <div>
-                      <label className="mb-1 block text-[12px]  justify-center text-center font-bold text-zinc-600 dark:text-zinc-300">
-                        NİHAİ SONUÇ 
+                      <label className="mb-1 block text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">
+                        Nihai Sonuç
                       </label>
                       <select
                         value={nihaiSelect}
                         onChange={(e) => {
                           const v = e.target.value;
                           setNihaiSelect(v);
-                          // seçilince serbest metni temizle ki çakışmasın
                           if (v) setNihai("");
                         }}
-                        className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                       >
                         <option value="">Seçiniz...</option>
                         {NIHAI_OPTIONS.map((o) => (
@@ -554,42 +639,58 @@ export default function KararTokenDetayPage() {
                           </option>
                         ))}
                       </select>
-                      
-                    </div>
 
-                    
+                      {/* Serbest metin opsiyonel (senin state var, UI'yi korudum) */}
+                      <div className="mt-2">
+                        <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                          Serbest Not (opsiyonel)
+                        </label>
+                        <input
+                          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                          value={nihai}
+                          onChange={(e) => setNihai(e.target.value)}
+                          placeholder="Gerekirse ek not..."
+                          maxLength={200}
+                        />
+                        <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                          Dropdown seçerseniz serbest not alanı kullanılmaz.
+                        </div>
+                      </div>
+                    </div>
 
                     <button
                       type="button"
                       disabled={adminSaving}
                       onClick={handleUpdateNihai}
-                      className="h-9 w-full rounded-md bg-indigo-600 px-4 text-[12px] font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-60"
+                      className="h-10 w-full rounded-md bg-indigo-600 px-4 text-[12px] font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-60"
                     >
-                      {adminSaving ? "Kaydediliyor..." : "Nihai Kaydet"}
+                      {adminSaving ? "Kaydediliyor..." : "Nihai Sonucu Kaydet"}
                     </button>
 
                     {adminMsg ? (
-                      <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+                      <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
                         {adminMsg}
                       </div>
                     ) : null}
-
-                    
                   </div>
                 </SoftCard>
-              )}
-
-              {!isRol90 && (
+              ) : (
                 <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-[12px] text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
                   <div className="font-semibold text-zinc-800 dark:text-zinc-200">
                     Yönetici Paneli
                   </div>
-                  
+                  <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Bu alan yalnızca rol 90 için görüntülenir.
+                  </div>
                 </div>
               )}
             </div>
           </div>
         )}
+
+        <div className="mt-6 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+          SAYGILARIMIZLA, <span className="font-semibold">EOS MANAGEMENT</span>
+        </div>
       </div>
     </div>
   );
