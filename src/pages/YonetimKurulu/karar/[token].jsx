@@ -347,13 +347,7 @@ export default function KararTokenDetayPage() {
               Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve
               arşivlenir.
             </span>
-            <button
-              type="button"
-              onClick={() => router.push("/YonetimKurulu")}
-              className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
-            >
-              ← Listeye Dön
-            </button>
+           
           </div>
         </div>
       </div>
