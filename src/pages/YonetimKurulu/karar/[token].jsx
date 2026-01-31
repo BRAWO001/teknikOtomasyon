@@ -412,12 +412,7 @@ export default function KararTokenDetayPage() {
                         #{data.id}
                       </span>
                     </div>
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Token:
-                      <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
-                        {String(token ?? "").slice(0, 8)}…
-                      </span>
-                    </div>
+                    
                   </div>
                 }
               >
@@ -461,10 +456,7 @@ export default function KararTokenDetayPage() {
                     <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                       Karar Düşüncen
                     </div>
-                    <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Seçiminiz kayıt altına alınır. Düzenleme kapatıldığında
-                      değişiklik yapılamaz.
-                    </div>
+                    
                   </div>
 
                   {/* Form alanı */}
@@ -640,22 +632,7 @@ export default function KararTokenDetayPage() {
                         ))}
                       </select>
 
-                      {/* Serbest metin opsiyonel (senin state var, UI'yi korudum) */}
-                      <div className="mt-2">
-                        <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                          Serbest Not (opsiyonel)
-                        </label>
-                        <input
-                          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-                          value={nihai}
-                          onChange={(e) => setNihai(e.target.value)}
-                          placeholder="Gerekirse ek not..."
-                          maxLength={200}
-                        />
-                        <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                          Dropdown seçerseniz serbest not alanı kullanılmaz.
-                        </div>
-                      </div>
+                     
                     </div>
 
                     <button
@@ -679,9 +656,7 @@ export default function KararTokenDetayPage() {
                   <div className="font-semibold text-zinc-800 dark:text-zinc-200">
                     Yönetici Paneli
                   </div>
-                  <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Bu alan yalnızca rol 90 için görüntülenir.
-                  </div>
+                
                 </div>
               )}
             </div>
