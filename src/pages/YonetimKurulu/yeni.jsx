@@ -1,9 +1,5 @@
-
-
-
-
-
 // src/pages/YonetimKurulu/yeni.jsx
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
@@ -56,7 +52,9 @@ export default function YonetimKuruluYeniKararPage() {
     const loadSites = async () => {
       try {
         const list = await getDataAsync(
-          `ProjeYonetimKurulu/site/personel/${encodeURIComponent(personel.personelKodu)}`
+          `ProjeYonetimKurulu/site/personel/${encodeURIComponent(
+            personel.personelKodu
+          )}`
         );
         if (cancelled) return;
 
@@ -87,7 +85,9 @@ export default function YonetimKuruluYeniKararPage() {
         setUyelerLoading(true);
         setUyelerError(null);
 
-        const list = await getDataAsync(`ProjeYonetimKurulu/site/${siteId}/uyeler`);
+        const list = await getDataAsync(
+          `ProjeYonetimKurulu/site/${siteId}/uyeler`
+        );
         if (cancelled) return;
 
         const normalized = Array.isArray(list) ? list : list ? [list] : [];
@@ -161,7 +161,9 @@ export default function YonetimKuruluYeniKararPage() {
       setMsg(null);
 
       const sorumluLabel =
-        selectedUyeOptions.find((x) => Number(x.id) === Number(projeSorumlusuId))?.label || "";
+        selectedUyeOptions.find(
+          (x) => Number(x.id) === Number(projeSorumlusuId)
+        )?.label || "";
 
       const finalAciklama = `Proje Sorumlusu: ${sorumluLabel}\n\n${kararAciklamasi.trim()}`;
 
@@ -190,6 +192,44 @@ export default function YonetimKuruluYeniKararPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      {/* =========================================================
+          ✅ KURUMSAL STICKY HEADER (logo her zaman açık)
+         ========================================================= */}
+      <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
+        <div className="mx-auto flex max-w-6xl items-center justify-center gap-5 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-zinc-200 dark:bg-white dark:ring-zinc-200">
+              <Image
+                src="/eos_management_logo.png"
+                alt="EOS Management"
+                width={160}
+                height={44}
+                priority
+                className="h-10 w-auto object-contain"
+              />
+            </div>
+
+            <div className="leading-tight">
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                Yönetim Kurulu • Yeni Karar Oluşturma
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden max-w-xl items-center gap-2 md:flex">
+            <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              Kararlar onay süreçlerine uygun şekilde oluşturulur ve kayıt altına alınır.
+            </span>
+            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+              Yetkili üyeler görüş ve oy girişi yapabilir.
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="mx-auto max-w-5xl px-4 py-6">
         {/* Üst bar */}
         <div className="mb-4 flex items-start justify-between gap-2">
@@ -206,26 +246,36 @@ export default function YonetimKuruluYeniKararPage() {
                 <div className="font-medium text-zinc-700 dark:text-zinc-200">
                   {personel.ad ?? ""} {personel.soyad ?? ""}
                 </div>
-                <div className="text-[11px]">Rol: {personel.rol}</div>
+                
               </>
             ) : null}
           </div>
         </div>
 
         {/* Card */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-start justify-center gap-5">
-            <div className="hidden   sm:flex items-center gap-2">
-              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[12px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-                {selectedSite?.site?.ad ?? "Proje"}
-              </span>
-            </div>
-            <div>
-              <div className="text-base text-center font-semibold tracking-tight">Yeni Karar</div>
-              
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          {/* Başlık satırı */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="text-base font-semibold tracking-tight">
+                Yeni Karar
+              </div>
+              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Karar konusu, açıklama ve söz sahibi üyeleri belirleyerek kayıt oluşturun.
+              </div>
             </div>
 
-            
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                {selectedSite?.site?.ad ?? "Proje"}
+              </span>
+              <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                Seçili Üye:{" "}
+                <span className="font-semibold text-zinc-800 dark:text-zinc-100">
+                  {selectedPersonelIds.length}
+                </span>
+              </span>
+            </div>
           </div>
 
           {msg && (
@@ -235,13 +285,13 @@ export default function YonetimKuruluYeniKararPage() {
           )}
 
           {/* Proje + Sorumlu */}
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                 Proje
               </label>
 
-              <div className="h-9 w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm flex items-center text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+              <div className="flex h-10 w-full items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
                 {selectedSite?.site?.ad ?? "Site seçilmedi"}
               </div>
 
@@ -254,7 +304,7 @@ export default function YonetimKuruluYeniKararPage() {
               </label>
 
               <select
-                className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={projeSorumlusuId}
                 onChange={(e) => setProjeSorumlusuId(e.target.value)}
                 disabled={!selectedPersonelIds.length}
@@ -268,22 +318,19 @@ export default function YonetimKuruluYeniKararPage() {
               </select>
 
               <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Önce üyeleri seç.
+                Önce üyeleri seçiniz.
               </div>
             </div>
           </div>
 
           {/* Üyeler */}
-          <div className="mt-6">
+          <div className="mt-7">
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="text-sm font-semibold">Söz Sahibi Üyeler</div>
                 <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
                   Seçilen kişiler bu karar için düşünce/oy girebilir.
                 </div>
-              </div>
-              <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Seçili: <span className="font-semibold">{selectedPersonelIds.length}</span>
               </div>
             </div>
 
@@ -308,7 +355,7 @@ export default function YonetimKuruluYeniKararPage() {
                   return (
                     <label
                       key={u.id}
-                      className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm shadow-sm transition hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                      className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm shadow-sm transition hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
                         checked
                           ? "border-zinc-400 bg-white dark:border-zinc-600 dark:bg-zinc-950"
                           : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
@@ -324,7 +371,9 @@ export default function YonetimKuruluYeniKararPage() {
                         <div className="font-medium text-zinc-900 dark:text-zinc-100">
                           {formatUye(u)}
                         </div>
-                       
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                          Yetkili üye
+                        </div>
                       </div>
                     </label>
                   );
@@ -340,18 +389,21 @@ export default function YonetimKuruluYeniKararPage() {
           </div>
 
           {/* Form */}
-          <div className="mt-6 grid grid-cols-1 gap-4">
+          <div className="mt-7 grid grid-cols-1 gap-4">
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                 Karar Konusu
               </label>
               <input
-                className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={kararKonusu}
                 onChange={(e) => setKararKonusu(e.target.value)}
                 placeholder="Örn: Bütçe onayı"
                 maxLength={200}
               />
+              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Kısa ve resmi bir başlık kullanın.
+              </div>
             </div>
 
             <div>
@@ -359,26 +411,28 @@ export default function YonetimKuruluYeniKararPage() {
                 Karar Açıklaması
               </label>
               <textarea
-                className="min-h-[150px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                className="min-h-[160px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={kararAciklamasi}
                 onChange={(e) => setKararAciklamasi(e.target.value)}
                 placeholder="Detayları yaz..."
                 maxLength={2000}
               />
-              
+              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Detayları maddeleyerek yazmanız önerilir.
+              </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="mt-6 flex items-center justify-between gap-2">
+          <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Kaydetmeden önce seçimleri kontrol et.
+              Kaydetmeden önce seçimleri kontrol ediniz.
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => router.push("/YonetimKurulu")}
-                className="h-9 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
               >
                 Vazgeç
               </button>
@@ -386,7 +440,7 @@ export default function YonetimKuruluYeniKararPage() {
               <button
                 onClick={handleSubmit}
                 disabled={saving}
-                className="h-9 rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 {saving ? "Kaydediliyor..." : "Kararı Oluştur"}
               </button>

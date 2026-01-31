@@ -2,8 +2,8 @@
 
 
 
-
 // src/pages/YonetimKurulu/index.jsx
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
@@ -46,7 +46,9 @@ export default function YonetimKuruluIndexPage() {
     const loadSites = async () => {
       try {
         const list = await getDataAsync(
-          `ProjeYonetimKurulu/site/personel/${encodeURIComponent(personel.personelKodu)}`
+          `ProjeYonetimKurulu/site/personel/${encodeURIComponent(
+            personel.personelKodu
+          )}`
         );
         if (cancelled) return;
 
@@ -102,7 +104,9 @@ export default function YonetimKuruluIndexPage() {
     try {
       // optimistic
       setKararlar((prev) =>
-        prev.map((k) => (k.id === kararId ? { ...k, duzenlemeDurumu: nextValue } : k))
+        prev.map((k) =>
+          k.id === kararId ? { ...k, duzenlemeDurumu: nextValue } : k
+        )
       );
 
       await postDataAsync("ProjeYonetimKurulu/karar/duzenleme-durumu", {
@@ -114,14 +118,16 @@ export default function YonetimKuruluIndexPage() {
 
       // rollback
       setKararlar((prev) =>
-        prev.map((k) => (k.id === kararId ? { ...k, duzenlemeDurumu: !nextValue } : k))
+        prev.map((k) =>
+          k.id === kararId ? { ...k, duzenlemeDurumu: !nextValue } : k
+        )
       );
 
       alert("Düzenleme durumu güncellenemedi.");
     }
   };
 
-      // Çıkış
+  // Çıkış
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -151,6 +157,48 @@ export default function YonetimKuruluIndexPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      {/* =========================================================
+          ✅ KURUMSAL LOGO HEADER (logo alanı her zaman açık)
+         ========================================================= */}
+      <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
+        <div className="mx-auto flex max-w-6xl items-center justify-center gap-10 px-4 py-3">
+          <div className="flex items-center gap-3">
+            {/* Logo box: dark mode olsa bile her zaman açık */}
+            <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-zinc-200 dark:bg-white dark:ring-zinc-200">
+              <Image
+                src="/eos_management_logo.png"
+                alt="EOS Management"
+                width={160}
+                height={44}
+                priority
+                className="h-10 w-auto object-contain"
+              />
+            </div>
+
+            <div className="leading-tight">
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                Yönetim Kurulu Karar Paneli
+              </div>
+            </div>
+          </div>
+
+          {/* Kurumsal açıklama alanı */}
+          <div className="hidden max-w-xl items-center gap-2 md:flex">
+            <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              Yönetim kurulu kararları; şeffaflık, izlenebilirlik ve kurumsal
+              düzen ilkeleri doğrultusunda bu panel üzerinden yönetilir.
+            </span>
+
+            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+              Onay süreçlerine uygun olarak oluşturulur ve kayıt altına alınır.
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="mx-auto max-w-6xl px-4 py-6">
         {/* Top bar */}
         <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -169,20 +217,23 @@ export default function YonetimKuruluIndexPage() {
 
               <div className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
                 {personel
-                  ? `${personel.ad ?? ""} ${personel.soyad ?? ""} • Rol: ${personel.rol}`
+                  ? `${personel.ad ?? ""} ${personel.soyad ?? ""} `
                   : "Personel yükleniyor..."}
               </div>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
+                <button
+                  onClick={handleLogout}
+                  className="h-7 rounded-md bg-red-600 px-1.5 text-[10px] font-semibold text-white hover:bg-red-700"
+                >
+                  Çıkış Yap
+                </button>
                 <span className="text-[12px] text-zinc-500 dark:text-zinc-400">
                   Proje
                 </span>
-                <div
-                  className="h-9 flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm shadow-sm
-             dark:border-zinc-800 dark:bg-zinc-900"
-                >
+                <div className="flex h-9 items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   {sites.find((s) => String(s.siteId) === String(siteId))?.site
                     ?.ad ?? (siteId ? `Site #${siteId}` : "Seçiniz")}
                 </div>
@@ -194,14 +245,6 @@ export default function YonetimKuruluIndexPage() {
                 disabled={!siteId}
               >
                 Yenile
-              </button>
-
-
-              <button
-                onClick={handleLogout}
-                className="rounded-md bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
-              >
-                Çıkış Yap
               </button>
 
               <button
@@ -240,14 +283,24 @@ export default function YonetimKuruluIndexPage() {
           </div>
         )}
 
+        {/* =========================================================
+            ✅ KARARLAR 2 SÜTUN (wrapper grid)
+            Not: KararCards "list" alıp kendi içinde map'liyorsa bile
+            wrapper ile çoğu layout'ta 2 sütun görünüm elde edilir.
+           ========================================================= */}
         {!loading && !error && kararlar.length > 0 && (
-          <KararCards
-            list={kararlar}
-            isPatron={isPatron}
-            formatTR={formatTR}
-            onOpen={handleOpenKarar}
-            onToggleDuzenleme={handleToggleDuzenleme}
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              {/* Eğer KararCards tek bir container basıyorsa: */}
+              <KararCards
+                list={kararlar}
+                isPatron={isPatron}
+                formatTR={formatTR}
+                onOpen={handleOpenKarar}
+                onToggleDuzenleme={handleToggleDuzenleme}
+              />
+            </div>
+          </div>
         )}
 
         <div className="mt-6 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
