@@ -2,6 +2,7 @@
 
 
 
+
 // src/pages/YonetimKurulu/index.jsx
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -9,6 +10,9 @@ import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 import KararCards from "@/components/ProjeYonetimKurulu/KararCards";
+
+// ✅ Modal import
+import ProfilModals from "./Modals/ProfilModals";
 
 export default function YonetimKuruluIndexPage() {
   const router = useRouter();
@@ -23,6 +27,11 @@ export default function YonetimKuruluIndexPage() {
   const [error, setError] = useState(null);
 
   const isPatron = useMemo(() => Number(personel?.rol) === 90, [personel]);
+
+  // ✅ Profil modal state
+  const [profilOpen, setProfilOpen] = useState(false);
+  const handleOpenProfil = () => setProfilOpen(true);
+  const handleCloseProfil = () => setProfilOpen(false);
 
   // 1) Cookie -> personel
   useEffect(() => {
@@ -127,7 +136,7 @@ export default function YonetimKuruluIndexPage() {
     }
   };
 
-  // Çıkış
+  // ✅ Çıkış (modal success sonrası da burası çağrılacak)
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -157,13 +166,21 @@ export default function YonetimKuruluIndexPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      {/* ✅ PROFİL MODAL */}
+      <ProfilModals
+        open={profilOpen}
+        onClose={handleCloseProfil}
+        personelId={personel?.id ?? personel?.Id}
+        personelFromCookie={personel}
+        onLogout={handleLogout} // ✅ güncelleme tamam -> 1sn sonra logout
+      />
+
       {/* =========================================================
-          ✅ KURUMSAL LOGO HEADER (logo alanı her zaman açık)
+          ✅ KURUMSAL LOGO HEADER
          ========================================================= */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-10 px-4 py-3">
           <div className="flex items-center gap-3">
-            {/* Logo box: dark mode olsa bile her zaman açık */}
             <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-zinc-200 dark:bg-white dark:ring-zinc-200">
               <Image
                 src="/eos_management_logo.png"
@@ -185,7 +202,6 @@ export default function YonetimKuruluIndexPage() {
             </div>
           </div>
 
-          {/* Kurumsal açıklama alanı */}
           <div className="hidden max-w-xl items-center gap-2 md:flex">
             <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
               Yönetim kurulu kararları; şeffaflık, izlenebilirlik ve kurumsal
@@ -224,15 +240,23 @@ export default function YonetimKuruluIndexPage() {
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
+                {/* ✅ PROFİL: modal aç */}
+                <button
+                  onClick={handleOpenProfil}
+                  className="h-7 rounded-md bg-orange-600 px-1 text-[11px] font-semibold text-white hover:bg-orange-700"
+                >
+                  Profil Bilgileri
+                </button>
+
                 <button
                   onClick={handleLogout}
-                  className="h-7 rounded-md bg-red-600 px-1.5 text-[10px] font-semibold text-white hover:bg-red-700"
+                  className="h-7 rounded-md bg-red-600 px-1 text-[11px] font-semibold text-white hover:bg-red-700"
                 >
                   Çıkış Yap
                 </button>
-                <span className="text-[12px] text-zinc-500 dark:text-zinc-400">
-                  Proje
-                </span>
+
+                
+
                 <div className="flex h-9 items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   {sites.find((s) => String(s.siteId) === String(siteId))?.site
                     ?.ad ?? (siteId ? `Site #${siteId}` : "Seçiniz")}
@@ -258,8 +282,7 @@ export default function YonetimKuruluIndexPage() {
 
           {isPatron && (
             <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/15 dark:text-emerald-200">
-              Patron mod aktif: Kartlarda “Düzenleme” anahtarını
-              aç/kapatabilirsin.
+              Patron mod aktif: Kartlarda “Düzenleme” anahtarını aç/kapatabilirsin.
             </div>
           )}
         </div>
@@ -283,15 +306,9 @@ export default function YonetimKuruluIndexPage() {
           </div>
         )}
 
-        {/* =========================================================
-            ✅ KARARLAR 2 SÜTUN (wrapper grid)
-            Not: KararCards "list" alıp kendi içinde map'liyorsa bile
-            wrapper ile çoğu layout'ta 2 sütun görünüm elde edilir.
-           ========================================================= */}
         {!loading && !error && kararlar.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              {/* Eğer KararCards tek bir container basıyorsa: */}
               <KararCards
                 list={kararlar}
                 isPatron={isPatron}

@@ -127,6 +127,10 @@ export default function YonetimKuruluYoneticiRaporuPage() {
     setPage(1);
   };
 
+  const handleYeniKararTalebi = () => router.push("/YonetimKuruluYoneticiRaporu/YoneticiRaporuYeniKararOlustur");
+  const handleAnaSayfayaDon = () => router.push("/");
+
+
   const rowOpen = (token) => {
     if (!token) return;
     // senin sayfan: /src/pages/YonetimKurulu/karar/[token].jsx
@@ -160,8 +164,29 @@ export default function YonetimKuruluYoneticiRaporuPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            
+          <div className="flex items-center gap-5 flex-wrap justify-end">
+            <button
+              type="button"
+              onClick={handleAnaSayfayaDon}
+              className="
+    inline-flex items-center justify-center gap-2
+    rounded-md px-2 py-1 text-[11px] font-semibold
+    bg-blue-600 text-white shadow-sm
+    hover:bg-blue-700 active:scale-[0.99]
+    focus:outline-none focus:ring-2 focus:ring-blue-300
+    dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus:ring-blue-900/40
+  "
+            >
+              🏠 Ana Sayfaya Dön
+            </button>
+
+            <button
+              type="button"
+              onClick={handleYeniKararTalebi}
+              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              ➕ Yeni Karar Talebinde Bulun
+            </button>
 
             <button
               type="button"

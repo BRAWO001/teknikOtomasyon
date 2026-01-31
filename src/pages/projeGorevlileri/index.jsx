@@ -132,6 +132,8 @@ export default function ProjeGorevlileriPage() {
   const handleYeniIsEmri = () =>
     router.push("/projeGorevlileri/projeSorumlusuISemriOlustur");
 
+  const handleYeniKararTalebi = () => router.push("/projeGorevlileri/ProjeSorumlusuYeniKarar");
+
   const handleProjemIsEmirleri = () =>
     router.push("/projeGorevlileri/projeGorevlileriIsEmirleri");
 
@@ -179,14 +181,11 @@ export default function ProjeGorevlileriPage() {
                       <span className="font-bold">
                         {personel.ad} {personel.soyad}
                       </span>
-                      
                     </p>
                     <p className="text-xs font-extralight  text-zinc-900 dark:text-zinc-50">
-                      Bu site bir Demo sürümüdür. Bazı modüller henüz aktif değildir.
-                      
-                      
+                      Bu site bir Demo sürümüdür. Bazı modüller henüz aktif
+                      değildir.
                     </p>
-                    
                   </>
                 )}
               </div>
@@ -207,8 +206,6 @@ export default function ProjeGorevlileriPage() {
             </div>
           </div>
         </section>
-
-     
 
         {/* ANA İÇERİK */}
         <main className="flex-1 items-center rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-4">
@@ -283,7 +280,7 @@ export default function ProjeGorevlileriPage() {
               <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
                   <h3 className="text-[13px] font-semibold justify-center text-center text-zinc-900 dark:text-zinc-50">
-                    📎  Dokümanlar
+                    📎 Dokümanlar
                   </h3>
                   <p className="mt-1 text-[11px] justify-center text-center text-zinc-600 dark:text-zinc-300">
                     Yönetim duyuruları, karar defterleri, toplantı tutanakları
@@ -296,7 +293,8 @@ export default function ProjeGorevlileriPage() {
                     type="button"
                     onClick={openDosyaModal}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200">
+                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                  >
                     📎 Dosya Ekle / Gör
                   </button>
                 </div>
@@ -308,28 +306,39 @@ export default function ProjeGorevlileriPage() {
                 )}
               </div>
 
-              {/* Gelir Gider & Faturalar */}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
-                    Gelir Gider & Faturalar
-                  </h3>
-                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
-                    Aidat, tahsilat, gider kalemleri ve fatura hareketlerinin
-                    detaylı takibi.
-                  </p>
+              {/* Yönetim Kurulu Karar Talebi Oluştur */}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-gradient-to-br from-zinc-50 to-zinc-100 p-3 text-xs shadow-sm dark:border-zinc-800 dark:from-zinc-950/60 dark:to-zinc-900/40">
+                {/* Header */}
+                <div className="flex items-start gap-2">
+                  <div>
+                    <h3 className="text-[13px] text-center font-semibold text-zinc-900 dark:text-zinc-50">
+                      🏛️ Yönetim Kurulu Karar Talebi
+                    </h3>
+                    <p className="mt-0.5 text-[11px] leading-snug text-zinc-600 dark:text-zinc-300">
+                      Yönetim kuruluna iletilecek karar talebini açıklama ve
+                      ekleriyle kayıt altına alın.
+                    </p>
+                  </div>
                 </div>
-                <div className="mt-2 flex justify-end">
+
+                {/* Action */}
+                <div className="mt-3 flex items-center justify-center">
                   <button
                     type="button"
-                    onClick={() =>
-                      handlePilotFeatureClick("Gelir Gider & Faturalar")
-                    }
-                    className="rounded-md border border-zinc-300 bg-white px-3 py-1 text-[11px] font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    onClick={handleYeniKararTalebi}
+                    disabled={!selectedSiteId}
+                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
                   >
-                    Modülü Görüntüle
+                    ➕ Yeni Talepte Bulun
                   </button>
                 </div>
+
+                {/* Warning */}
+                {!selectedSiteId && (
+                  <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-200">
+                    ⚠️ Site seçilmeden karar talebi oluşturulamaz.
+                  </div>
+                )}
               </div>
 
               {/* Ziyaretçi & Güvenlik */}

@@ -347,7 +347,6 @@ export default function KararTokenDetayPage() {
               Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve
               arşivlenir.
             </span>
-           
           </div>
         </div>
       </div>
@@ -373,7 +372,7 @@ export default function KararTokenDetayPage() {
                 <div className="font-semibold text-zinc-700 dark:text-zinc-200">
                   {safeText(personel.ad)} {safeText(personel.soyad)}
                 </div>
-                <div className="text-[10px]">Rol: {personel.rol}</div>
+                
               </>
             ) : null}
           </div>
@@ -395,31 +394,34 @@ export default function KararTokenDetayPage() {
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
             {/* SOL */}
             <div className="lg:col-span-8 space-y-3">
-              <SoftCard
-                title="Karar Detayı"
-                subtitle={`${data.site?.ad ? `${data.site.ad} • ` : ""}${formatTR(data.tarih)}`}
-                right={
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Karar No:
-                      <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
-                        #{data.id}
-                      </span>
-                    </div>
-                    
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                {/* Üst bilgi */}
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-[12px] text-zinc-500 dark:text-zinc-400">
+                    {data.site?.ad ? `${data.site.ad} • ` : ""}
+                    {formatTR(data.tarih)}
                   </div>
-                }
-              >
-                <div className="text-[14px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Karar No:
+                    <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
+                      #{data.id}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Karar konusu */}
+                <div className="break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
                   {safeText(data.kararKonusu)}
                 </div>
 
-                <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[12px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
-                  <div className="whitespace-pre-wrap">
+                {/* Açıklama */}
+                <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[13px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+                  <div className="whitespace-pre-wrap break-words">
                     {safeText(data.kararAciklamasi)}
                   </div>
                 </div>
-              </SoftCard>
+              </div>
 
               {/* Yetki uyarıları */}
               {personel && !isRol11 && !isRol90 && (
@@ -450,7 +452,6 @@ export default function KararTokenDetayPage() {
                     <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                       Karar Düşüncen
                     </div>
-                    
                   </div>
 
                   {/* Form alanı */}
@@ -584,7 +585,7 @@ export default function KararTokenDetayPage() {
               {isRol90 ? (
                 <SoftCard
                   title="Yönetici Paneli"
-                  subtitle="Düzenleme durumu ve nihai sonuç yalnızca rol 90 tarafından yönetilir."
+                  
                   right={
                     <button
                       type="button"
@@ -625,8 +626,6 @@ export default function KararTokenDetayPage() {
                           </option>
                         ))}
                       </select>
-
-                     
                     </div>
 
                     <button
@@ -650,7 +649,6 @@ export default function KararTokenDetayPage() {
                   <div className="font-semibold text-zinc-800 dark:text-zinc-200">
                     Yönetici Paneli
                   </div>
-                
                 </div>
               )}
             </div>
