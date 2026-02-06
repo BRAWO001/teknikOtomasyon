@@ -1,9 +1,18 @@
+
+
+
+
+
 // src/components/ProjeYonetimKurulu/KararCards.jsx
 export default function KararCards({ list, isPatron, formatTR, onOpen, onToggleDuzenleme }) {
   return (
     <div className="grid grid-cols-1 gap-3">
       {list.map((k) => {
         const duz = !!k.duzenlemeDurumu;
+
+        // ✅ Site bazlı numara (yoksa global id’ye düş)
+        const kararNo = k.siteBazliNo ?? k.siteBazliNo === 0 ? k.siteBazliNo : null;
+        const showNo = (typeof kararNo === "number" && kararNo > 0) ? kararNo : k.id;
 
         return (
           <div
@@ -14,8 +23,10 @@ export default function KararCards({ list, isPatron, formatTR, onOpen, onToggleD
               {/* Left */}
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
+                  {/* ✅ Burayı değiştirdik */}
                   <div className="text-sm font-semibold tracking-tight">
-                    #{k.id} • {k.kararKonusu}
+                    {/* İstersen: #{k.siteId}-{showNo} şeklinde de yaparız */}
+                    Karar No: #   {showNo} • {k.kararKonusu}
                   </div>
 
                   <span
@@ -53,6 +64,16 @@ export default function KararCards({ list, isPatron, formatTR, onOpen, onToggleD
                       {k.onerenKisiSayisi ?? 0}
                     </span>
                   </span>
+
+                  {/* ✅ İstersen extra chip olarak da gösterebiliriz */}
+                  {typeof k.siteBazliNo === "number" && k.siteBazliNo > 0 && (
+                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 dark:border-zinc-800 dark:bg-zinc-950">
+                      Site No:{" "}
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-100">
+                        {k.siteBazliNo}
+                      </span>
+                    </span>
+                  )}
                 </div>
               </div>
 

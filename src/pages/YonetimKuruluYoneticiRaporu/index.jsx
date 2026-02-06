@@ -72,7 +72,6 @@ export default function YonetimKuruluYoneticiRaporuPage() {
 
     const loadSites = async () => {
       try {
-        // sende site endpointi bu şekildeydi:
         const siteRes = await getDataAsync("SiteAptEvControllerSet/sites");
         if (cancelled) return;
         setSites(Array.isArray(siteRes) ? siteRes : []);
@@ -96,7 +95,6 @@ export default function YonetimKuruluYoneticiRaporuPage() {
     try {
       const res = await getDataAsync(kararlarEndpoint);
 
-      // backend Ok(new { Page, PageSize, TotalCount, TotalPages, Items })
       const list = res?.items ?? res?.Items ?? [];
       setItems(Array.isArray(list) ? list : []);
 
@@ -127,13 +125,12 @@ export default function YonetimKuruluYoneticiRaporuPage() {
     setPage(1);
   };
 
-  const handleYeniKararTalebi = () => router.push("/YonetimKuruluYoneticiRaporu/YoneticiRaporuYeniKararOlustur");
+  const handleYeniKararTalebi = () =>
+    router.push("/YonetimKuruluYoneticiRaporu/YoneticiRaporuYeniKararOlustur");
   const handleAnaSayfayaDon = () => router.push("/");
-
 
   const rowOpen = (token) => {
     if (!token) return;
-    // senin sayfan: /src/pages/YonetimKurulu/karar/[token].jsx
     router.push(`/YonetimKurulu/karar/${token}`);
   };
 
@@ -169,13 +166,13 @@ export default function YonetimKuruluYoneticiRaporuPage() {
               type="button"
               onClick={handleAnaSayfayaDon}
               className="
-    inline-flex items-center justify-center gap-2
-    rounded-md px-2 py-1 text-[11px] font-semibold
-    bg-blue-600 text-white shadow-sm
-    hover:bg-blue-700 active:scale-[0.99]
-    focus:outline-none focus:ring-2 focus:ring-blue-300
-    dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus:ring-blue-900/40
-  "
+                inline-flex items-center justify-center gap-2
+                rounded-md px-2 py-1 text-[11px] font-semibold
+                bg-blue-600 text-white shadow-sm
+                hover:bg-blue-700 active:scale-[0.99]
+                focus:outline-none focus:ring-2 focus:ring-blue-300
+                dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus:ring-blue-900/40
+              "
             >
               🏠 Ana Sayfaya Dön
             </button>
@@ -294,7 +291,7 @@ export default function YonetimKuruluYoneticiRaporuPage() {
           <thead className="sticky top-0 z-10 bg-zinc-100 dark:bg-zinc-800">
             <tr>
               {[
-                "No",
+                "Karar No",
                 "Tarih",
                 "Site",
                 "Karar Konusu",
@@ -319,6 +316,13 @@ export default function YonetimKuruluYoneticiRaporuPage() {
               const siteName = r?.site?.ad ?? r?.Site?.Ad;
               const siteIdRow = r?.siteId ?? r?.SiteId;
 
+              // ✅ Site bazlı karar no (camelCase + PascalCase destekli)
+              const siteBazliNo = r?.siteBazliNo ?? r?.SiteBazliNo;
+              const kararNoText =
+                typeof siteBazliNo === "number" && siteBazliNo > 0
+                  ? `# ${siteBazliNo}` // örn: 6-18
+                  : `${safeText(id)}`; // fallback: global id
+
               const duzenleme =
                 typeof (r?.duzenlemeDurumu ?? r?.DuzenlemeDurumu) === "boolean"
                   ? (r?.duzenlemeDurumu ?? r?.DuzenlemeDurumu)
@@ -331,8 +335,11 @@ export default function YonetimKuruluYoneticiRaporuPage() {
                   className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
                   title={token ? "Detaya git" : "Token yok"}
                 >
-                  <td className="px-2 py-[4px] text-zinc-600 dark:text-zinc-300">
-                    {(page - 1) * pageSize + (i + 1)}
+                  {/* ✅ No: SiteId-SiteBazliNo */}
+                  <td className="px-2 py-[4px] text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
+                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                      {kararNoText}
+                    </span>
                   </td>
 
                   <td className="px-2 py-[4px] whitespace-nowrap">

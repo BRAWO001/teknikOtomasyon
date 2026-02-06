@@ -1,3 +1,8 @@
+
+
+
+
+
 // src/pages/YonetimKurulu/karar/[token].jsx
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -173,9 +178,7 @@ export default function KararTokenDetayPage() {
       setData((prev) => {
         if (!prev) return prev;
         const list = Array.isArray(prev.onerenKisiler) ? [...prev.onerenKisiler] : [];
-        const idx = list.findIndex(
-          (x) => Number(x.personelId) === Number(personel.id)
-        );
+        const idx = list.findIndex((x) => Number(x.personelId) === Number(personel.id));
         if (idx >= 0) {
           list[idx] = {
             ...list[idx],
@@ -254,15 +257,10 @@ export default function KararTokenDetayPage() {
         duzenlemeDurumu: !duzenlemeAcikMi,
       };
 
-      const res = await postDataAsync(
-        "projeYonetimKurulu/karar/duzenleme-durumu",
-        payload
-      );
+      const res = await postDataAsync("projeYonetimKurulu/karar/duzenleme-durumu", payload);
 
       const newVal =
-        typeof res?.duzenlemeDurumu === "boolean"
-          ? res.duzenlemeDurumu
-          : payload.duzenlemeDurumu;
+        typeof res?.duzenlemeDurumu === "boolean" ? res.duzenlemeDurumu : payload.duzenlemeDurumu;
 
       setData((prev) => (prev ? { ...prev, duzenlemeDurumu: newVal } : prev));
       setAdminMsg(newVal ? "Düzenleme açıldı." : "Düzenleme kapatıldı.");
@@ -372,7 +370,6 @@ export default function KararTokenDetayPage() {
                 <div className="font-semibold text-zinc-700 dark:text-zinc-200">
                   {safeText(personel.ad)} {safeText(personel.soyad)}
                 </div>
-                
               </>
             ) : null}
           </div>
@@ -402,10 +399,25 @@ export default function KararTokenDetayPage() {
                     {formatTR(data.tarih)}
                   </div>
 
+                  {/* ✅ Karar No: artık SiteId-SiteBazliNo (fallback id) */}
                   <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     Karar No:
                     <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
-                      #{data.id}
+                      #
+                      {(() => {
+                        const siteIdRow = data?.siteId ?? data?.SiteId;
+                        const siteBazliNo =
+                          data?.siteBazliNo ?? data?.SiteBazliNo;
+
+                        if (
+                          typeof siteBazliNo === "number" &&
+                          siteBazliNo > 0 &&
+                          siteIdRow
+                        ) {
+                          return ` ${siteBazliNo}`;
+                        }
+                        return safeText(data?.id ?? data?.Id);
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -465,10 +477,10 @@ export default function KararTokenDetayPage() {
                         value={secim}
                         onChange={(e) => setSecim(e.target.value)}
                         className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px]
-                     outline-none transition
-                     focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200
-                     dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
-                     dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                          outline-none transition
+                          focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200
+                          dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
+                          dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                       >
                         <option value="">Seçiniz...</option>
                         {OPTIONS.map((o) => (
@@ -496,10 +508,10 @@ export default function KararTokenDetayPage() {
                         placeholder="Kısa not..."
                         autoComplete="off"
                         className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-[12px] text-zinc-900
-                     outline-none transition
-                     focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200
-                     dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
-                     dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
+                          outline-none transition
+                          focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200
+                          dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
+                          dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
                       />
                     </div>
                   </div>
@@ -510,8 +522,8 @@ export default function KararTokenDetayPage() {
                       onClick={handleKaydet}
                       disabled={saving}
                       className="h-10 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white
-                   shadow-sm transition hover:bg-zinc-800 active:scale-[0.99]
-                   disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                        shadow-sm transition hover:bg-zinc-800 active:scale-[0.99]
+                        disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                     >
                       {saving ? "Kaydediliyor..." : "Kaydet"}
                     </button>
@@ -580,12 +592,11 @@ export default function KararTokenDetayPage() {
                 )}
             </div>
 
-            {/* SAĞ: Yönetici paneli */}
+            {/* SAĞ: Yönetici paneli (sadece Rol 90) */}
             <div className="lg:col-span-4 space-y-3">
               {isRol90 ? (
                 <SoftCard
                   title="Yönetici Paneli"
-                  
                   right={
                     <button
                       type="button"
@@ -646,9 +657,32 @@ export default function KararTokenDetayPage() {
                 </SoftCard>
               ) : (
                 <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-[12px] text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                  <div className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    Yönetici Paneli
+                  <div className="font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
+                    Yönetim Kurulu Karar Bilgilendirmesi
                   </div>
+
+                  <p className="text-[12px] leading-relaxed">
+                    Bu ekranda görüntülenen kararlar,{" "}
+                    <b>Kat Mülkiyeti Kanunu</b> ve ilgili mevzuat hükümleri
+                    çerçevesinde site/apartman yönetim kurulu tarafından
+                    oluşturulan resmi kararlardır. Karar metinleri ve üyelerin
+                    beyanları, kurumsal kayıt niteliğinde olup yönetim arşivinde
+                    saklanır ve yetkilendirilmiş kişiler tarafından
+                    görüntülenebilir.
+                  </p>
+
+                  <p className="mt-2 text-[12px] leading-relaxed">
+                    Nihai sonuç ve düzenleme yetkileri yalnızca yönetim planında
+                    tanımlı
+                    <b>yetkili yönetici</b> tarafından kullanılabilir. Üyelerin
+                    görüş ve oyları, karar sürecinin şeffaflığı ve KMK’ya
+                    uygunluğu açısından sistem üzerinde kayıt altına
+                    alınmaktadır.
+                  </p>
+
+                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
+                    EOS Management
+                  </p>
                 </div>
               )}
             </div>
