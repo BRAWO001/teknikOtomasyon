@@ -7,8 +7,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 
-import YoneticiRaporuKararlarTable from "@/components/YoneticiRaporu/YoneticiRaporuKararlarTable";
-import YoneticiRaporuIletilerTable from "@/components/YoneticiRaporu/YoneticiRaporuIletilerTable";
+import YoneticiRaporuKararlarTable from "@/components/yoneticiRaporu/YoneticiRaporuKararlarTable";
+import YoneticiRaporuIletilerTable from "@/components/yoneticiRaporu/YoneticiRaporuIletilerTable";
 
 /* ===== safe normalize ===== */
 function normalizePagedResponse(res) {

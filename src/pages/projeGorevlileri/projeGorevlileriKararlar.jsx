@@ -8,7 +8,7 @@ import { useRouter } from "next/router";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 import { getDataAsync } from "@/utils/apiService";
 
-import YoneticiRaporuKararlarTable from "@/components/YoneticiRaporu/YoneticiRaporuKararlarTable";
+import YoneticiRaporuKararlarTable from "@/components/yoneticiRaporu/YoneticiRaporuKararlarTable";
 
 /* ===== safe normalize ===== */
 function normalizePagedResponse(res) {
