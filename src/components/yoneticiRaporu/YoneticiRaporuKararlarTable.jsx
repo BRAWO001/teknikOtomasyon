@@ -1,7 +1,7 @@
 // src/components/YoneticiRaporu/YoneticiRaporuKararlarTable.jsx
 import React from "react";
 
-/* ===== helpers (aynı mantık) ===== */
+/* ===== helpers ===== */
 function safeText(v) {
   if (v === null || v === undefined) return "-";
   const s = String(v).trim();
@@ -12,7 +12,6 @@ function formatDateTR(iso) {
   if (!iso) return "-";
   try {
     const d = new Date(iso);
-    // backend UTC dönüyorsa TR için +3
     d.setHours(d.getHours() + 3);
     return d.toLocaleString("tr-TR", {
       day: "2-digit",
@@ -25,9 +24,39 @@ function formatDateTR(iso) {
     return "-";
   }
 }
+
+/* ✅ HTML temizleyici — div/br/p görünmeyecek */
+function stripHtml(html) {
+  if (!html) return "";
+
+  try {
+    if (typeof window !== "undefined" && window.document) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = String(html);
+      return (tmp.textContent || tmp.innerText || "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+  } catch {}
+
+  return String(html)
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/p>/gi, " ")
+    .replace(/<\/div>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* ✅ Kartta aşırı uzamasın diye */
+function clampText(text, max = 200) {
+  const s = (text || "").trim();
+  if (!s) return "-";
+  return s.length > max ? `${s.slice(0, max)}…` : s;
+}
+
 /* =================== */
 
-// ✅ Düzenleme durumu pill (birebir)
 const DuzenlemePill = ({ ok }) => (
   <span
     className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${
@@ -40,12 +69,6 @@ const DuzenlemePill = ({ ok }) => (
   </span>
 );
 
-/**
- * Props:
- * - items: karar listesi
- * - loading: boolean
- * - onRowOpen: (token) => void
- */
 export default function YoneticiRaporuKararlarTable({
   items = [],
   loading = false,
@@ -83,21 +106,26 @@ export default function YoneticiRaporuKararlarTable({
         <tbody>
           {items.map((r, i) => {
             const id = r?.id ?? r?.Id;
-            const token = r?.publicToken ?? r?.PublicToken; // backend PublicToken
+            const token = r?.publicToken ?? r?.PublicToken;
             const siteName = r?.site?.ad ?? r?.Site?.Ad;
             const siteIdRow = r?.siteId ?? r?.SiteId;
 
-            // ✅ Site bazlı karar no (camelCase + PascalCase destekli)
             const siteBazliNo = r?.siteBazliNo ?? r?.SiteBazliNo;
             const kararNoText =
               typeof siteBazliNo === "number" && siteBazliNo > 0
-                ? `# ${siteBazliNo}` // örn: 6-18
-                : `${safeText(id)}`; // fallback: global id
+                ? `# ${siteBazliNo}`
+                : `${safeText(id)}`;
 
             const duzenleme =
               typeof (r?.duzenlemeDurumu ?? r?.DuzenlemeDurumu) === "boolean"
                 ? (r?.duzenlemeDurumu ?? r?.DuzenlemeDurumu)
                 : null;
+
+            /* ✅ KRİTİK DÜZENLEME */
+            const plainAciklama = stripHtml(
+              r?.kararAciklamasi ?? r?.KararAciklamasi
+            );
+            const shortAciklama = clampText(plainAciklama, 240);
 
             return (
               <tr
@@ -106,7 +134,6 @@ export default function YoneticiRaporuKararlarTable({
                 className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
                 title={token ? "Detaya git" : "Token yok"}
               >
-                {/* ✅ No */}
                 <td className="px-2 py-[4px] text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
                   <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
                     {kararNoText}
@@ -125,8 +152,10 @@ export default function YoneticiRaporuKararlarTable({
                   <div className="max-w-[520px] truncate font-semibold text-zinc-800 dark:text-zinc-100">
                     {safeText(r?.kararKonusu ?? r?.KararKonusu)}
                   </div>
+
+                  {/* ✅ ARTIK DIV/BR GÖRÜNMEZ */}
                   <div className="max-w-[520px] truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                    {safeText(r?.kararAciklamasi ?? r?.KararAciklamasi)}
+                    {shortAciklama}
                   </div>
                 </td>
 
@@ -136,7 +165,6 @@ export default function YoneticiRaporuKararlarTable({
                   </span>
                 </td>
 
-                {/* ✅ Düzenleme Durumu */}
                 <td className="px-2 py-[4px] whitespace-nowrap">
                   {duzenleme === null ? (
                     <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">

@@ -398,14 +398,19 @@ export default function KararTokenDetayPage() {
             </div>
 
             <div className="leading-tight">
-              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
-              <div className="text-xs text-zinc-600 dark:text-zinc-400">Yönetim Kurulu • Karar Detayı</div>
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                Yönetim Kurulu • Karar Detayı
+              </div>
             </div>
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
             <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-              Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve arşivlenir.
+              Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve
+              arşivlenir.
             </span>
 
             {/* ✅✅✅ BURASI: YAZDIR YOK — PDF İNDİR VAR */}
@@ -432,8 +437,14 @@ export default function KararTokenDetayPage() {
         {/* üst mini bar */}
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <StatusPill tone={duzenlemeAcikMi ? "ok" : "bad"} label={duzenlemeAcikMi ? "Düzenleme Açık" : "Düzenleme Kapalı"} />
-            <StatusPill tone={data?.nihaiSonuc ? "neutral" : "warn"} label={`Nihai: ${data?.nihaiSonuc ?? "-"}`} />
+            <StatusPill
+              tone={duzenlemeAcikMi ? "ok" : "bad"}
+              label={duzenlemeAcikMi ? "Düzenleme Açık" : "Düzenleme Kapalı"}
+            />
+            <StatusPill
+              tone={data?.nihaiSonuc ? "neutral" : "warn"}
+              label={`Nihai: ${data?.nihaiSonuc ?? "-"}`}
+            />
           </div>
 
           <div className="text-right text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -463,30 +474,30 @@ export default function KararTokenDetayPage() {
             <div className="lg:col-span-8 space-y-3">
               <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-[12px] text-zinc-500 dark:text-zinc-400">
-                    {data.site?.ad ? `${data.site.ad} • ` : ""}
-                    {formatTR(data.tarih)}
-                  </div>
+                  
 
                   <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     Karar No:
                     <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
                       {(() => {
-                        const siteBazliNo = data?.siteBazliNo ?? data?.SiteBazliNo;
-                        if (typeof siteBazliNo === "number" && siteBazliNo > 0) return `#${siteBazliNo}`;
+                        const siteBazliNo =
+                          data?.siteBazliNo ?? data?.SiteBazliNo;
+                        if (typeof siteBazliNo === "number" && siteBazliNo > 0)
+                          return `# ${siteBazliNo}`;
                         return `#${safeText(data?.id ?? data?.Id)}`;
                       })()}
                     </span>
                   </div>
                 </div>
 
-                <div className="break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {safeText(data.kararKonusu)}
-                </div>
+                <div
+                  className="leading-relaxed text-[13px]"
+                  dangerouslySetInnerHTML={{
+                    __html: data?.kararAciklamasi || "-",
+                  }}
+                />
 
-                <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[13px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
-                  <div className="whitespace-pre-wrap break-words">{safeText(data.kararAciklamasi)}</div>
-                </div>
+                
 
                 {/* Mobilde PDF indir */}
                 <div className="mt-4 md:hidden">
@@ -504,15 +515,10 @@ export default function KararTokenDetayPage() {
               {/* (senin diğer bloklar aynı kalsın) */}
               {/* Rol11 / Rol90 blokların aşağıda aynen duruyor... */}
 
-              {personel && !isRol11 && !isRol90 && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
-                  Bu ekranda oy/düşünce girişi sadece <b>rol 11</b>, yönetici işlemleri sadece <b>rol 90</b>.
-                </div>
-              )}
-
               {isRol11 && !myOnerenKaydi && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
-                  Bu karar için “söz sahibi üye” listesinde değilsin. Oy/düşünce giremezsin.
+                  Bu karar için “söz sahibi üye” listesinde değilsin. Oy/düşünce
+                  giremezsin.
                 </div>
               )}
 
@@ -525,7 +531,9 @@ export default function KararTokenDetayPage() {
               {canEdit && (
                 <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="mb-3">
-                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Karar Düşüncen</div>
+                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      Karar Düşüncen
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -554,7 +562,10 @@ export default function KararTokenDetayPage() {
                     </div>
 
                     <div>
-                      <label htmlFor="aciklama" className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                      <label
+                        htmlFor="aciklama"
+                        className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300"
+                      >
                         Açıklama (opsiyonel)
                       </label>
                       <input
@@ -593,11 +604,16 @@ export default function KararTokenDetayPage() {
                 </div>
               )}
 
-              {Array.isArray(data.onerenKisiler) && data.onerenKisiler.length > 0 ? (
-                <SoftCard title="Söz Sahibi Üyeler" subtitle="Üyelerin seçimi ve açıklamaları bu kararın kayıt sürecinin parçasıdır.">
+              {Array.isArray(data.onerenKisiler) &&
+              data.onerenKisiler.length > 0 ? (
+                <SoftCard
+                  title="Söz Sahibi Üyeler"
+                  subtitle="Üyelerin seçimi ve açıklamaları bu kararın kayıt sürecinin parçasıdır."
+                >
                   <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                     {data.onerenKisiler.map((o) => {
-                      const isMe = Number(o.personelId) === Number(personel?.id);
+                      const isMe =
+                        Number(o.personelId) === Number(personel?.id);
                       const dusunce = o.kararDusuncesi ?? "-";
                       return (
                         <div key={o.id} className="px-4 py-3">
@@ -605,7 +621,8 @@ export default function KararTokenDetayPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <div className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
-                                  {o.personel?.ad ?? "-"} {o.personel?.soyad ?? ""}
+                                  {o.personel?.ad ?? "-"}{" "}
+                                  {o.personel?.soyad ?? ""}
                                 </div>
                                 {isMe ? (
                                   <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
@@ -615,9 +632,13 @@ export default function KararTokenDetayPage() {
                               </div>
 
                               {o.kararDusunceAciklamasi ? (
-                                <div className="mt-1 text-[11px] text-zinc-700 dark:text-zinc-200">{o.kararDusunceAciklamasi}</div>
+                                <div className="mt-1 text-[11px] text-zinc-700 dark:text-zinc-200">
+                                  {o.kararDusunceAciklamasi}
+                                </div>
                               ) : (
-                                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Açıklama yok</div>
+                                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                  Açıklama yok
+                                </div>
                               )}
                             </div>
 
@@ -645,16 +666,24 @@ export default function KararTokenDetayPage() {
                       onClick={handleToggleDuzenleme}
                       className={[
                         "h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60",
-                        duzenlemeAcikMi ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700",
+                        duzenlemeAcikMi
+                          ? "bg-red-600 hover:bg-red-700"
+                          : "bg-emerald-600 hover:bg-emerald-700",
                       ].join(" ")}
                     >
-                      {adminSaving ? "İşleniyor..." : duzenlemeAcikMi ? "Düzenlemeyi Kapat" : "Düzenlemeyi Aç"}
+                      {adminSaving
+                        ? "İşleniyor..."
+                        : duzenlemeAcikMi
+                          ? "Düzenlemeyi Kapat"
+                          : "Düzenlemeyi Aç"}
                     </button>
                   }
                 >
                   <div className="space-y-3">
                     <div>
-                      <label className="mb-1 block text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">Nihai Sonuç</label>
+                      <label className="mb-1 block text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">
+                        Nihai Sonuç
+                      </label>
                       <select
                         value={nihaiSelect}
                         onChange={(e) => {
@@ -695,16 +724,24 @@ export default function KararTokenDetayPage() {
                 </SoftCard>
               ) : (
                 <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-[12px] text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                  <div className="mb-1 font-semibold text-zinc-800 dark:text-zinc-200">Yönetim Kurulu Karar Bilgilendirmesi</div>
+                  <div className="mb-1 font-semibold text-zinc-800 dark:text-zinc-200">
+                    Yönetim Kurulu Karar Bilgilendirmesi
+                  </div>
                   <p className="text-[12px] leading-relaxed">
-                    Bu ekranda görüntülenen kararlar, <b>Kat Mülkiyeti Kanunu</b> ve ilgili mevzuat hükümleri çerçevesinde
-                    site/apartman yönetim kurulu tarafından oluşturulan resmi kararlardır.
+                    Bu ekranda görüntülenen kararlar,{" "}
+                    <b>Kat Mülkiyeti Kanunu</b> ve ilgili mevzuat hükümleri
+                    çerçevesinde site/apartman yönetim kurulu tarafından
+                    oluşturulan resmi kararlardır.
                   </p>
                   <p className="mt-2 text-[12px] leading-relaxed">
-                    Nihai sonuç ve düzenleme yetkileri yalnızca yönetim planında tanımlı <b>yetkili yönetici</b> tarafından kullanılabilir.
-                    Üyelerin görüş ve oyları sistem üzerinde kayıt altına alınır.
+                    Nihai sonuç ve düzenleme yetkileri yalnızca yönetim planında
+                    tanımlı <b>yetkili yönetici</b> tarafından kullanılabilir.
+                    Üyelerin görüş ve oyları sistem üzerinde kayıt altına
+                    alınır.
                   </p>
-                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">EOS Management</p>
+                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
+                    EOS Management
+                  </p>
                 </div>
               )}
             </div>

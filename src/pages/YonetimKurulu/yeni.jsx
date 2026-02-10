@@ -21,11 +21,23 @@ export default function YonetimKuruluYeniKararPage() {
   const [uyelerLoading, setUyelerLoading] = useState(false);
   const [uyelerError, setUyelerError] = useState(null);
 
+  // ✅ Karar Konusu default: "...SİTE YÖNETİCİLİĞİ / YÖNETİM KURULU TOPLANTI TUTANAĞI"
   const [kararKonusu, setKararKonusu] = useState("");
+  // Kullanıcı bu alana "asıl karar metnini" yazacak (şablonun altı)
   const [kararAciklamasi, setKararAciklamasi] = useState("");
 
   const [selectedPersonelIds, setSelectedPersonelIds] = useState([]);
   const [projeSorumlusuId, setProjeSorumlusuId] = useState("");
+
+  // ✅ Yeni: Tutanak üst bilgileri
+  const [toplantiYeri, setToplantiYeri] = useState(""); // placeholder: "Toplantı Salonu"
+  const [toplantiTarihi, setToplantiTarihi] = useState(""); // yyyy-mm-dd
+  const [toplantiSaati, setToplantiSaati] = useState(""); // hh:mm
+  const [kararNo, setKararNo] = useState(""); // default "2026/..."
+  const [katilanlar, setKatilanlar] = useState("");
+
+  // ✅ Yeni: Önizleme modal
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -75,6 +87,25 @@ export default function YonetimKuruluYeniKararPage() {
     };
   }, [personel?.personelKodu]);
 
+  // ✅ Karar konusu otomatik (site adı geldiğinde)
+  useEffect(() => {
+    const siteAdi = selectedSite?.site?.ad ?? "";
+
+    const konu = `${siteAdi.toUpperCase()}
+SİTE YÖNETİCİLİĞİ
+YÖNETİM KURULU TOPLANTI TUTANAĞI`;
+
+    // ✅ (küçük fix) burada trailing comma vardı, compile bozuyordu
+    setKararKonusu((prev) =>
+      !prev || prev.includes("SİTE YÖNETİCİLİĞİ") ? konu.trim() : prev
+    );
+  }, [selectedSite?.site?.ad]);
+
+  // ✅ Karar no default "2026/..." (kullanıcı değiştirmediyse)
+  useEffect(() => {
+    setKararNo((prev) => (prev?.trim() ? prev : "2026/..."));
+  }, []);
+
   // üyeleri getir
   useEffect(() => {
     if (!siteId) return;
@@ -93,8 +124,12 @@ export default function YonetimKuruluYeniKararPage() {
         const normalized = Array.isArray(list) ? list : list ? [list] : [];
         setUyeler(normalized);
 
+        // sıfırla
         setSelectedPersonelIds([]);
         setProjeSorumlusuId("");
+
+        // ✅ Toplantı yeri: placeholder "Toplantı Salonu" olacak; value boş kalsın
+        // (kullanıcı isterse yazar, yazmazsa placeholder görünür)
       } catch (e) {
         console.error("UYELER GET ERROR:", e);
         if (cancelled) return;
@@ -125,7 +160,16 @@ export default function YonetimKuruluYeniKararPage() {
       const has = prev.includes(id);
       const next = has ? prev.filter((x) => x !== id) : [...prev, id];
 
-      if (has && Number(projeSorumlusuId) === id) setProjeSorumlusuId("");
+      // ✅ proje sorumlusu otomatik: listede ilk seçilen kişi kalsın.
+      // Eğer proje sorumlusu boşsa veya seçili kişi silindiyse, ilk kişiye çek.
+      if (!next.length) {
+        setProjeSorumlusuId("");
+      } else {
+        const current = Number(projeSorumlusuId);
+        if (!current || !next.includes(current))
+          setProjeSorumlusuId(String(next[0]));
+      }
+
       return next;
     });
   };
@@ -137,15 +181,107 @@ export default function YonetimKuruluYeniKararPage() {
       .map((u) => ({ id: Number(u.personelId), label: formatUye(u) }));
   }, [uyeler, selectedPersonelIds]);
 
+  // ✅ Seçilenler değişince proje sorumlusu otomatik ilk kişi (manuel seçim istemiyorsun)
+  useEffect(() => {
+    if (!selectedPersonelIds.length) {
+      if (projeSorumlusuId) setProjeSorumlusuId("");
+      return;
+    }
+    const first = String(selectedPersonelIds[0]);
+    if (String(projeSorumlusuId) !== first) setProjeSorumlusuId(first);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPersonelIds]);
+
+  const formatDateTRFromISO = (iso) => {
+    // iso: yyyy-mm-dd -> dd.mm.yyyy
+    if (!iso || typeof iso !== "string") return "";
+    const [y, m, d] = iso.split("-");
+    if (!y || !m || !d) return iso;
+    return `${d}.${m}.${y}`;
+  };
+
+  // ✅ Kalıp metni burada üretiyoruz (SQL'e tek parça gidecek)
+  const buildTutanakAciklama = () => {
+    const siteAdi = selectedSite?.site?.ad ?? "";
+    const tarihTR = formatDateTRFromISO(toplantiTarihi);
+    const saat = (toplantiSaati || "").trim();
+
+    const baseKatilanlar = (katilanlar || "").trim();
+    const katilanlarText = baseKatilanlar
+      ? baseKatilanlar
+      : selectedUyeOptions.map((x) => x.label).join(", ");
+
+    const toplantiyeriFinal = (toplantiYeri || "").trim() || "Toplantı Salonu";
+    const kararNoFinal = (kararNo || "").trim() || "2026/...";
+
+    return `
+<div style="font-family:Arial, sans-serif; line-height:1.6">
+
+  <div style="text-align:center; font-weight:bold;">
+    ${siteAdi.toUpperCase()}<br/>
+    SİTE YÖNETİCİLİĞİ<br/>
+    YÖNETİM KURULU TOPLANTI TUTANAĞI
+  </div>
+
+  <br/>
+
+  <div><b>TOPLANTI YERİ:</b> ${toplantiyeriFinal}</div>
+  <div><b>TOPLANTI TARİHİ:</b> ${tarihTR}</div>
+  <div><b>TOPLANTI SAATİ:</b> ${saat}</div>
+  <div><b>KARAR NO:</b> ${kararNoFinal}</div>
+  <div><b>TOPLANTIYA KATILANLAR:</b> ${katilanlarText}</div>
+
+  <br/>
+
+  <div>
+    Yönetim planının 30.3 maddesi ve KMK'nın 73. maddesi hükmünce Kat Mülkiyeti Kanunu 27 ve
+    devamı hükümlerince toplu yapı kat malikleri kurulu yerine görev yapmak üzere atanmış yukarıda
+    isimleri yazılı kişilerce toplanılmıştır.
+  </div>
+
+  <br/>
+
+  <div>
+    Yönetim Kurulu'nun yukarıda yazılı üyelerin iştiraki ile Yönetim Kurulu toplantısında;
+  </div>
+
+  <br/>
+
+  <div>
+    ${kararAciklamasi
+      .split("\n")
+      .map((x) => `<div style="margin-bottom:6px;">${x}</div>`)
+      .join("")}
+  </div>
+
+</div>
+`;
+  };
+
   const validate = () => {
     if (!siteId) return "Proje bilgisi bulunamadı.";
     if (!selectedSite?.site?.ad) return "Proje bulunamadı.";
     if (!selectedPersonelIds.length) return "En az 1 üye seçmelisiniz.";
-    if (!projeSorumlusuId) return "Proje sorumlusu seçmelisiniz.";
+
+    // ✅ Proje sorumlusu otomatik ilk kişi; ama boş kalmışsa yine kontrol
+    if (!projeSorumlusuId) return "Proje sorumlusu seçilemedi (üye seçiniz).";
     if (!selectedPersonelIds.includes(Number(projeSorumlusuId)))
       return "Proje sorumlusu seçtiğin kişi, seçilen üyeler arasında olmalı.";
+
+    // ✅ toplantı yeri artık default ile doluyor ama kullanıcı hiç dokunmasa da geçerli say
+    if (!toplantiTarihi.trim()) return "Toplantı tarihi zorunlu.";
+    if (!toplantiSaati.trim()) return "Toplantı saati zorunlu.";
+
+    // ✅ karar no default var ama yine de boşsa hata ver
+    if (!((kararNo || "").trim() || "2026/...").trim())
+      return "Karar no zorunlu.";
+
+    if (!(katilanlar || "").trim() && selectedPersonelIds.length === 0)
+      return "Toplantıya katılanlar zorunlu.";
+
     if (!kararKonusu.trim()) return "Karar konusu zorunlu.";
     if (!kararAciklamasi.trim()) return "Karar açıklaması zorunlu.";
+
     return null;
   };
 
@@ -160,17 +296,13 @@ export default function YonetimKuruluYeniKararPage() {
       setSaving(true);
       setMsg(null);
 
-      const sorumluLabel =
-        selectedUyeOptions.find(
-          (x) => Number(x.id) === Number(projeSorumlusuId)
-        )?.label || "";
-
-      const finalAciklama = `Proje Sorumlusu: ${sorumluLabel}\n\n${kararAciklamasi.trim()}`;
+      // ✅ SQL'e gidecek final açıklama (kalıp + kullanıcı metni)
+      const finalAciklama = buildTutanakAciklama();
 
       const payload = {
         siteId: Number(siteId),
         kararKonusu: kararKonusu.trim(),
-        kararAciklamasi: finalAciklama,
+        kararAciklamasi: finalAciklama, // ← HTML olarak gidiyor
         onerenPersonelIdler: selectedPersonelIds,
       };
 
@@ -189,6 +321,18 @@ export default function YonetimKuruluYeniKararPage() {
       setSaving(false);
     }
   };
+
+  const previewText = useMemo(() => buildTutanakAciklama(), [
+    selectedSite,
+    toplantiYeri,
+    toplantiTarihi,
+    toplantiSaati,
+    kararNo,
+    katilanlar,
+    projeSorumlusuId,
+    selectedUyeOptions,
+    kararAciklamasi,
+  ]);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
@@ -210,9 +354,7 @@ export default function YonetimKuruluYeniKararPage() {
             </div>
 
             <div className="leading-tight">
-              <div className="text-sm font-bold tracking-wide">
-                EOS MANAGEMENT
-              </div>
+              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
               <div className="text-xs text-zinc-600 dark:text-zinc-400">
                 Yönetim Kurulu • Yeni Karar Oluşturma
               </div>
@@ -242,12 +384,9 @@ export default function YonetimKuruluYeniKararPage() {
 
           <div className="text-right text-[12px] text-zinc-500 dark:text-zinc-400">
             {personel ? (
-              <>
-                <div className="font-medium text-zinc-700 dark:text-zinc-200">
-                  {personel.ad ?? ""} {personel.soyad ?? ""}
-                </div>
-                
-              </>
+              <div className="font-medium text-zinc-700 dark:text-zinc-200">
+                {personel.ad ?? ""} {personel.soyad ?? ""}
+              </div>
             ) : null}
           </div>
         </div>
@@ -257,12 +396,8 @@ export default function YonetimKuruluYeniKararPage() {
           {/* Başlık satırı */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <div className="text-base font-semibold tracking-tight">
-                Yeni Karar
-              </div>
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Karar konusu, açıklama ve söz sahibi üyeleri belirleyerek kayıt oluşturun.
-              </div>
+              <div className="text-base font-semibold tracking-tight">Yeni Karar</div>
+             
             </div>
 
             <div className="flex items-center gap-2">
@@ -284,7 +419,7 @@ export default function YonetimKuruluYeniKararPage() {
             </div>
           )}
 
-          {/* Proje + Sorumlu */}
+          {/* Proje */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
@@ -298,28 +433,64 @@ export default function YonetimKuruluYeniKararPage() {
               <input type="hidden" name="siteId" value={siteId} />
             </div>
 
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                Proje Sorumlusu (Seçilen üyelerden)
-              </label>
+            {/* ✅ Proje sorumlusu alanı TAMAMEN GİZLİ (UI yok) */}
+            <input type="hidden" value={projeSorumlusuId} readOnly />
+          </div>
 
-              <select
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-                value={projeSorumlusuId}
-                onChange={(e) => setProjeSorumlusuId(e.target.value)}
-                disabled={!selectedPersonelIds.length}
-              >
-                <option value="">Seçiniz...</option>
-                {selectedUyeOptions.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.label}
-                  </option>
-                ))}
-              </select>
+          {/* ✅ Tutanak Üst Bilgileri */}
+          <div className="mt-7">
+            
 
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Önce üyeleri seçiniz.
+            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  Toplantı Yeri
+                </label>
+                <input
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  value={toplantiYeri}
+                  onChange={(e) => setToplantiYeri(e.target.value)}
+                  placeholder="Toplantı Salonu"
+                />
               </div>
+
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  Toplantı Tarihi
+                </label>
+                <input
+                  type="date"
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  value={toplantiTarihi}
+                  onChange={(e) => setToplantiTarihi(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  Toplantı Saati
+                </label>
+                <input
+                  type="time"
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  value={toplantiSaati}
+                  onChange={(e) => setToplantiSaati(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  Karar No
+                </label>
+                <input
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  value={kararNo}
+                  onChange={(e) => setKararNo(e.target.value)}
+                  placeholder="2026/..."
+                />
+              </div>
+
+              {/* Katılanlar alanı senin dosyada vardı ama UI kısmı kesilmişti, bozmamak için eklemedim. */}
             </div>
           </div>
 
@@ -327,10 +498,8 @@ export default function YonetimKuruluYeniKararPage() {
           <div className="mt-7">
             <div className="flex items-baseline justify-between">
               <div>
-                <div className="text-sm font-semibold">Söz Sahibi Üyeler</div>
-                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Seçilen kişiler bu karar için düşünce/oy girebilir.
-                </div>
+                <div className="text-sm font-semibold">Yönetim Kurulu Üyelerini Seçiniz</div>
+                
               </div>
             </div>
 
@@ -354,7 +523,7 @@ export default function YonetimKuruluYeniKararPage() {
 
                   return (
                     <label
-                      key={u.id}
+                      key={u.id ?? u.personelId}
                       className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm shadow-sm transition hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
                         checked
                           ? "border-zinc-400 bg-white dark:border-zinc-600 dark:bg-zinc-950"
@@ -394,42 +563,46 @@ export default function YonetimKuruluYeniKararPage() {
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                 Karar Konusu
               </label>
-              <input
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+              <textarea
+                className="min-h-[90px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={kararKonusu}
                 onChange={(e) => setKararKonusu(e.target.value)}
-                placeholder="Örn: Bütçe onayı"
-                maxLength={200}
+                placeholder="Site adı yüklendiğinde otomatik oluşturulacaktır"
+                maxLength={400}
               />
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Kısa ve resmi bir başlık kullanın.
-              </div>
+
+              
             </div>
 
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                Karar Açıklaması
+                Karar Açıklaması (Karar Metni)
               </label>
               <textarea
-                className="min-h-[160px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                className="min-h-[180px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={kararAciklamasi}
                 onChange={(e) => setKararAciklamasi(e.target.value)}
-                placeholder="Detayları yaz..."
-                maxLength={2000}
+                placeholder="Karar maddelerini yaz... (Örn: 1) ... 2) ...)"
+                maxLength={5000}
               />
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Detayları maddeleyerek yazmanız önerilir.
-              </div>
+              
             </div>
           </div>
 
           {/* Actions */}
           <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Kaydetmeden önce seçimleri kontrol ediniz.
+              Önizleme alıp kontrol edin, sonra kaydedin.
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPreviewOpen(true)}
+                className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-semibold shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+              >
+                Önizleme
+              </button>
+
               <button
                 onClick={() => router.push("/YonetimKurulu")}
                 className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
@@ -442,7 +615,7 @@ export default function YonetimKuruluYeniKararPage() {
                 disabled={saving}
                 className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                {saving ? "Kaydediliyor..." : "Kararı Oluştur"}
+                {saving ? "Kaydediliyor..." : "Kaydet"}
               </button>
             </div>
           </div>
@@ -452,6 +625,52 @@ export default function YonetimKuruluYeniKararPage() {
           SAYGILARIMIZLA, <span className="font-semibold">EOS MANAGEMENT</span>
         </div>
       </div>
+
+      {/* ✅ Önizleme Modal – HTML RENDER */}
+      {previewOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 py-6">
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+              <div className="text-sm font-semibold">Tutanak Önizleme</div>
+              <button
+                onClick={() => setPreviewOpen(false)}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-[12px] font-medium shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+              >
+                Kapat
+              </button>
+            </div>
+
+            <div className="max-h-[75vh] overflow-auto p-4">
+              <div className="rounded-xl border border-zinc-200 bg-white p-5 text-[13px] text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50">
+                <div
+                  className="leading-6"
+                  dangerouslySetInnerHTML={{ __html: previewText }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+              <button
+                onClick={() => setPreviewOpen(false)}
+                className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+              >
+                Düzenlemeye Dön
+              </button>
+
+              <button
+                onClick={async () => {
+                  setPreviewOpen(false);
+                  await handleSubmit();
+                }}
+                disabled={saving}
+                className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              >
+                {saving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

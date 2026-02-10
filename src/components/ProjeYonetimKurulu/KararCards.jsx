@@ -1,18 +1,45 @@
-
-
-
-
-
 // src/components/ProjeYonetimKurulu/KararCards.jsx
 export default function KararCards({ list, isPatron, formatTR, onOpen, onToggleDuzenleme }) {
+  // ✅ HTML'i güvenli/temiz şekilde kartta kısa metne çevir (div, br, p vs. görünüp uzamasın)
+  const stripHtml = (html) => {
+    if (!html) return "";
+    try {
+      // DOM varsa en temiz yol
+      if (typeof window !== "undefined" && window.document) {
+        const tmp = document.createElement("div");
+        tmp.innerHTML = String(html);
+        const text = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
+        return text;
+      }
+    } catch {}
+    // fallback: regex
+    return String(html)
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/p>/gi, " ")
+      .replace(/<\/div>/gi, " ")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const clampText = (text, max = 220) => {
+    const s = (text || "").trim();
+    if (!s) return "-";
+    return s.length > max ? `${s.slice(0, max)}…` : s;
+  };
+
   return (
     <div className="grid grid-cols-1 gap-3">
       {list.map((k) => {
         const duz = !!k.duzenlemeDurumu;
 
         // ✅ Site bazlı numara (yoksa global id’ye düş)
-        const kararNo = k.siteBazliNo ?? k.siteBazliNo === 0 ? k.siteBazliNo : null;
-        const showNo = (typeof kararNo === "number" && kararNo > 0) ? kararNo : k.id;
+        const kararNo = k.siteBazliNo ?? (k.siteBazliNo === 0 ? 0 : null);
+        const showNo = typeof kararNo === "number" && kararNo > 0 ? kararNo : k.id;
+
+        // ✅ Kart açıklaması: HTML varsa temizle + kısalt + 3 satır clamp
+        const plain = stripHtml(k.kararAciklamasi);
+        const short = clampText(plain, 240);
 
         return (
           <div
@@ -23,10 +50,8 @@ export default function KararCards({ list, isPatron, formatTR, onOpen, onToggleD
               {/* Left */}
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  {/* ✅ Burayı değiştirdik */}
                   <div className="text-sm font-semibold tracking-tight">
-                    {/* İstersen: #{k.siteId}-{showNo} şeklinde de yaparız */}
-                    Karar No: #   {showNo} • {k.kararKonusu}
+                    Karar No: #{showNo} • {k.kararKonusu}
                   </div>
 
                   <span
@@ -46,8 +71,9 @@ export default function KararCards({ list, isPatron, formatTR, onOpen, onToggleD
                   {formatTR(k.tarih)}
                 </div>
 
+                {/* ✅ Boy uzamasın: 3 satır + max karakter */}
                 <div className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-200">
-                  {k.kararAciklamasi}
+                  {short}
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -65,7 +91,6 @@ export default function KararCards({ list, isPatron, formatTR, onOpen, onToggleD
                     </span>
                   </span>
 
-                  {/* ✅ İstersen extra chip olarak da gösterebiliriz */}
                   {typeof k.siteBazliNo === "number" && k.siteBazliNo > 0 && (
                     <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 dark:border-zinc-800 dark:bg-zinc-950">
                       Site No:{" "}
