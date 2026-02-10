@@ -111,10 +111,10 @@ function durationMinutes(ms) {
 export default function YoneticiRaporuIsEmriCard({ data = [] }) {
   const headers = useMemo(
     () => [
-      "No",
+      
       "Oluşturma",
-      "Başlangıç",
-      "Bitiş",
+      "İş Başlangıç",
+      "iş Bitiş",
       "Süre",
       "SeriKod",
       "Kısa Başlık",
@@ -164,10 +164,7 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                 className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
                 title={sureDk !== null ? `Süre: ${sureDk} dk` : ""}
               >
-                {/* satır dar */}
-                <td className="px-2 py-[2px] text-zinc-600 dark:text-zinc-300">
-                  {i + 1}
-                </td>
+                
                 <td className="px-2 py-[2px] whitespace-nowrap">
                   {formatDateTR(r?.olusturmaTarihi)}
                 </td>

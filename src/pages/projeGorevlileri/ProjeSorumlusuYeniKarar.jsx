@@ -446,7 +446,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         <div className="mb-4 flex items-start justify-between gap-2">
           <button
             className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-            onClick={() => router.push("/YonetimKurulu")}
+            onClick={() => router.push("/")}
           >
             ← Geri
           </button>

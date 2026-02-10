@@ -1,8 +1,3 @@
-
-
-
-
-
 // pages/yoneticiRaporu.jsx
 import { useEffect, useMemo, useState } from "react";
 import { getDataAsync } from "@/utils/apiService";
@@ -13,6 +8,8 @@ import YoneticiRaporuSatinAlmaGrafikPanel from "@/components/yoneticiRaporu/Yone
 import YoneticiRaporuIsEmriGrafikPanel from "@/components/yoneticiRaporu/YoneticiRaporuIsEmriGrafikPanel";
 
 export default function YoneticiRaporuPage() {
+  const router = useRouter();
+
   // =========================
   // Ortak listeler (dropdown)
   // =========================
@@ -44,29 +41,29 @@ export default function YoneticiRaporuPage() {
   // =========================
   const [siteId, setSiteId] = useState("");
   const [personelId, setPersonelId] = useState("");
-function toDateInputValue(d) {
-  try {
-    return d.toISOString().slice(0, 10); // YYYY-MM-DD
-  } catch {
-    return "";
+  function toDateInputValue(d) {
+    try {
+      return d.toISOString().slice(0, 10); // YYYY-MM-DD
+    } catch {
+      return "";
+    }
   }
-}
 
-function getDefaultRange() {
-  const today = new Date();
-  const start = new Date(today);
-  start.setMonth(start.getMonth() - 1); // 1 ay önce
-  return {
-    startDate: toDateInputValue(start),
-    endDate: toDateInputValue(today),
-  };
-}
+  function getDefaultRange() {
+    const today = new Date();
+    const start = new Date(today);
+    start.setMonth(start.getMonth() - 1); // 1 ay önce
+    return {
+      startDate: toDateInputValue(start),
+      endDate: toDateInputValue(today),
+    };
+  }
 
-// ✅ default: 1 ay önce -> bugün
-const defaults = getDefaultRange();
+  // ✅ default: 1 ay önce -> bugün
+  const defaults = getDefaultRange();
 
-const [start, setStart] = useState(defaults.startDate);
-const [end, setEnd] = useState(defaults.endDate);
+  const [start, setStart] = useState(defaults.startDate);
+  const [end, setEnd] = useState(defaults.endDate);
 
   // =========================
   // Excel download state
@@ -216,26 +213,22 @@ const [end, setEnd] = useState(defaults.endDate);
   };
 
   function downloadBlob(blob, baseFilename) {
-  const d = new Date();
-  const gun = String(d.getDate()).padStart(2, "0");
-  const ay = String(d.getMonth() + 1).padStart(2, "0");
-  const yil = d.getFullYear();
+    const d = new Date();
+    const gun = String(d.getDate()).padStart(2, "0");
+    const ay = String(d.getMonth() + 1).padStart(2, "0");
+    const yil = d.getFullYear();
 
-  const filename = baseFilename.replace(
-    /\.xlsx$/i,
-    `-${gun}-${ay}-${yil}.xlsx`
-  );
+    const filename = baseFilename.replace(/\.xlsx$/i, `-${gun}-${ay}-${yil}.xlsx`);
 
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.URL.revokeObjectURL(url);
-}
-
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
 
   const handleDownloadIsEmriExcel = async () => {
     try {
@@ -243,10 +236,9 @@ const [end, setEnd] = useState(defaults.endDate);
       setDownloading(true);
 
       const qs = buildExcelQueryString();
-      const blob = await getDataAsync(
-        `yoneticiraporu/IS-EMIRLERI-DETAYLI-RAPOR-EXCEL${qs}`,
-        { responseType: "blob" }
-      );
+      const blob = await getDataAsync(`yoneticiraporu/IS-EMIRLERI-DETAYLI-RAPOR-EXCEL${qs}`, {
+        responseType: "blob",
+      });
 
       downloadBlob(blob, "is-emirleri-rapor.xlsx");
     } catch (e) {
@@ -266,19 +258,15 @@ const [end, setEnd] = useState(defaults.endDate);
     }
   };
 
-
-
-
   const handleDownloadSatinAlmaExcel = async () => {
     try {
       setDownloadErr("");
       setDownloading(true);
 
       const qs = buildExcelQueryString();
-      const blob = await getDataAsync(
-        `yoneticiraporu/SATIN-ALMA-DETAYLI-RAPOR-EXCEL${qs}`,
-        { responseType: "blob" }
-      );
+      const blob = await getDataAsync(`yoneticiraporu/SATIN-ALMA-DETAYLI-RAPOR-EXCEL${qs}`, {
+        responseType: "blob",
+      });
 
       downloadBlob(blob, "satinalma-rapor.xlsx");
     } catch (e) {
@@ -312,14 +300,29 @@ const [end, setEnd] = useState(defaults.endDate);
             </div>
 
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              İş Emri: {isEmriTotalCount} kayıt • Sayfa: {isEmriPage}/
-              {isEmriTotalPages}
+              İş Emri: {isEmriTotalCount} kayıt • Sayfa: {isEmriPage}/{isEmriTotalPages}
               <span className="mx-2">•</span>
               Satın Alma: {saTotalCount} kayıt • Sayfa: {saPage}/{saTotalPages}
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              ← Geri
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              ⌂ Anasayfa
+            </button>
+
             <button
               type="button"
               onClick={resetFilters}
@@ -352,9 +355,7 @@ const [end, setEnd] = useState(defaults.endDate);
               disabled={downloading}
               onClick={handleDownloadSatinAlmaExcel}
               className={`rounded-md px-2 py-1 text-[11px] font-semibold text-white ${
-                downloading
-                  ? "bg-zinc-400"
-                  : "bg-indigo-600 hover:bg-indigo-700"
+                downloading ? "bg-zinc-400" : "bg-indigo-600 hover:bg-indigo-700"
               }`}
             >
               {downloading ? "İndiriliyor..." : "SATIN ALMA EXCEL"}
@@ -462,20 +463,13 @@ const [end, setEnd] = useState(defaults.endDate);
         </div>
       </div>
 
-
       <YoneticiRaporuIsEmriGrafikPanel />
 
       {/* ===== İş Emri Pagination ===== */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
-            İş Emirleri
-          </div>
-          {isEmriLoading && (
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Yükleniyor…
-            </span>
-          )}
+          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">İş Emirleri</div>
+          {isEmriLoading && <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Yükleniyor…</span>}
         </div>
 
         <div className="flex items-center gap-2">
@@ -491,9 +485,7 @@ const [end, setEnd] = useState(defaults.endDate);
           <button
             type="button"
             disabled={isEmriPage >= isEmriTotalPages}
-            onClick={() =>
-              setIsEmriPage((p) => Math.min(isEmriTotalPages, p + 1))
-            }
+            onClick={() => setIsEmriPage((p) => Math.min(isEmriTotalPages, p + 1))}
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
             Sonraki ▶
@@ -501,7 +493,7 @@ const [end, setEnd] = useState(defaults.endDate);
         </div>
       </div>
 
-      <YoneticiRaporuIsEmriCard data={isEmriItems} />
+      <YoneticiRaporuIsEmriCard data={isEmriItems} page={isEmriPage} pageSize={isEmriPageSize} />
 
       {/* ✅ Satın Alma Grafik Özet (yukarıda olsun daha iyi) */}
       <YoneticiRaporuSatinAlmaGrafikPanel className="mt-2" />
@@ -509,14 +501,8 @@ const [end, setEnd] = useState(defaults.endDate);
       {/* ===== Satın Alma Pagination ===== */}
       <div className="flex items-center justify-between gap-2 pt-1">
         <div className="flex items-center gap-2">
-          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
-            Satın Alma
-          </div>
-          {saLoading && (
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Yükleniyor…
-            </span>
-          )}
+          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">Satın Alma</div>
+          {saLoading && <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Yükleniyor…</span>}
         </div>
 
         <div className="flex items-center gap-2">
@@ -540,7 +526,7 @@ const [end, setEnd] = useState(defaults.endDate);
         </div>
       </div>
 
-      <YoneticiRaporuSatinAlmaCard data={saItems} />
+      <YoneticiRaporuSatinAlmaCard data={saItems} page={saPage} pageSize={saPageSize} />
     </div>
   );
 }
