@@ -5,6 +5,29 @@ import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 
+/* ========================
+   Helpers
+======================== */
+const escHtml = (s) =>
+  String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+const formatDateTRFromISO = (iso) => {
+  if (!iso || typeof iso !== "string") return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}.${m}.${y}`;
+};
+
+const normalizeLine = (s) =>
+  String(s ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 export default function YonetimKuruluYeniKararPage() {
   const router = useRouter();
 
@@ -21,28 +44,35 @@ export default function YonetimKuruluYeniKararPage() {
   const [uyelerLoading, setUyelerLoading] = useState(false);
   const [uyelerError, setUyelerError] = useState(null);
 
-  // ✅ Karar Konusu default: "...SİTE YÖNETİCİLİĞİ / YÖNETİM KURULU TOPLANTI TUTANAĞI"
+  // Karar konusu
   const [kararKonusu, setKararKonusu] = useState("");
-  // Kullanıcı bu alana "asıl karar metnini" yazacak (şablonun altı)
-  const [kararAciklamasi, setKararAciklamasi] = useState("");
 
+  // ✅ Karar metni artık "madde madde" yönetilecek
+  const [kararItems, setKararItems] = useState([]); // string[]
+  const [kararDraft, setKararDraft] = useState("");
+  const [kararMsg, setKararMsg] = useState(null);
+
+  // Üyeler
   const [selectedPersonelIds, setSelectedPersonelIds] = useState([]);
   const [projeSorumlusuId, setProjeSorumlusuId] = useState("");
 
-  // ✅ Yeni: Tutanak üst bilgileri
-  const [toplantiYeri, setToplantiYeri] = useState(""); // placeholder: "Toplantı Salonu"
-  const [toplantiTarihi, setToplantiTarihi] = useState(""); // yyyy-mm-dd
-  const [toplantiSaati, setToplantiSaati] = useState(""); // hh:mm
-  const [kararNo, setKararNo] = useState(""); // default "2026/..."
-  const [katilanlar, setKatilanlar] = useState("");
+  // Üst bilgiler (hepsi zorunlu)
+  const [toplantiYeri, setToplantiYeri] = useState("");
+  const [toplantiTarihi, setToplantiTarihi] = useState("");
+  const [toplantiSaati, setToplantiSaati] = useState("");
+  const [kararNo, setKararNo] = useState(""); // placeholder var, girilmesi zorunlu
 
-  // ✅ Yeni: Önizleme modal
+  // ✅ Gündem metin olarak kalsın
+  const [gundemMetni, setGundemMetni] = useState("");
+
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  // cookie -> personel
+  /* ========================
+     Cookie -> Personel
+  ======================== */
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -56,7 +86,9 @@ export default function YonetimKuruluYeniKararPage() {
     }
   }, []);
 
-  // site listesi
+  /* ========================
+     Site listesi
+  ======================== */
   useEffect(() => {
     if (!personel?.personelKodu) return;
 
@@ -87,26 +119,23 @@ export default function YonetimKuruluYeniKararPage() {
     };
   }, [personel?.personelKodu]);
 
-  // ✅ Karar konusu otomatik (site adı geldiğinde)
+  /* ========================
+     Karar konusu otomatik
+  ======================== */
   useEffect(() => {
     const siteAdi = selectedSite?.site?.ad ?? "";
-
     const konu = `${siteAdi.toUpperCase()}
 SİTE YÖNETİCİLİĞİ
 YÖNETİM KURULU TOPLANTI TUTANAĞI`;
 
-    // ✅ (küçük fix) burada trailing comma vardı, compile bozuyordu
     setKararKonusu((prev) =>
       !prev || prev.includes("SİTE YÖNETİCİLİĞİ") ? konu.trim() : prev
     );
   }, [selectedSite?.site?.ad]);
 
-  // ✅ Karar no default "2026/..." (kullanıcı değiştirmediyse)
-  useEffect(() => {
-    setKararNo((prev) => (prev?.trim() ? prev : "2026/..."));
-  }, []);
-
-  // üyeleri getir
+  /* ========================
+     Üyeleri getir
+  ======================== */
   useEffect(() => {
     if (!siteId) return;
 
@@ -127,9 +156,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         // sıfırla
         setSelectedPersonelIds([]);
         setProjeSorumlusuId("");
-
-        // ✅ Toplantı yeri: placeholder "Toplantı Salonu" olacak; value boş kalsın
-        // (kullanıcı isterse yazar, yazmazsa placeholder görünür)
       } catch (e) {
         console.error("UYELER GET ERROR:", e);
         if (cancelled) return;
@@ -160,8 +186,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       const has = prev.includes(id);
       const next = has ? prev.filter((x) => x !== id) : [...prev, id];
 
-      // ✅ proje sorumlusu otomatik: listede ilk seçilen kişi kalsın.
-      // Eğer proje sorumlusu boşsa veya seçili kişi silindiyse, ilk kişiye çek.
+      // proje sorumlusu: ilk seçilen
       if (!next.length) {
         setProjeSorumlusuId("");
       } else {
@@ -169,7 +194,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         if (!current || !next.includes(current))
           setProjeSorumlusuId(String(next[0]));
       }
-
       return next;
     });
   };
@@ -181,7 +205,13 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       .map((u) => ({ id: Number(u.personelId), label: formatUye(u) }));
   }, [uyeler, selectedPersonelIds]);
 
-  // ✅ Seçilenler değişince proje sorumlusu otomatik ilk kişi (manuel seçim istemiyorsun)
+  // ✅ Katılanlar otomatik
+  const katilanlarText = useMemo(() => {
+    const s = selectedUyeOptions.map((x) => x.label).filter(Boolean);
+    return s.join(", ");
+  }, [selectedUyeOptions]);
+
+  // Seçilenler değişince proje sorumlusu otomatik ilk kişi
   useEffect(() => {
     if (!selectedPersonelIds.length) {
       if (projeSorumlusuId) setProjeSorumlusuId("");
@@ -192,44 +222,90 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPersonelIds]);
 
-  const formatDateTRFromISO = (iso) => {
-    // iso: yyyy-mm-dd -> dd.mm.yyyy
-    if (!iso || typeof iso !== "string") return "";
-    const [y, m, d] = iso.split("-");
-    if (!y || !m || !d) return iso;
-    return `${d}.${m}.${y}`;
+  /* ========================
+     ✅ Karar maddeleri yönetimi
+  ======================== */
+  const addKararItem = () => {
+    const line = normalizeLine(kararDraft);
+    if (!line) {
+      setKararMsg("Karar maddesi boş olamaz.");
+      return;
+    }
+
+    const exists = kararItems.some(
+      (x) => normalizeLine(x).toLowerCase() === line.toLowerCase()
+    );
+    if (exists) {
+      setKararMsg("Bu karar maddesi zaten eklendi.");
+      return;
+    }
+
+    setKararItems((prev) => [...prev, line]);
+    setKararDraft("");
+    setKararMsg(null);
   };
 
-  // ✅ Kalıp metni burada üretiyoruz (SQL'e tek parça gidecek)
+  const removeKararItem = (idx) => {
+    setKararItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const moveKararItem = (idx, dir) => {
+    setKararItems((prev) => {
+      const next = [...prev];
+      const to = idx + dir;
+      if (to < 0 || to >= next.length) return prev;
+      const tmp = next[idx];
+      next[idx] = next[to];
+      next[to] = tmp;
+      return next;
+    });
+  };
+
+  const onKararKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addKararItem();
+    }
+  };
+
+  /* ========================
+     ✅ Tutanak HTML üretimi
+  ======================== */
   const buildTutanakAciklama = () => {
     const siteAdi = selectedSite?.site?.ad ?? "";
     const tarihTR = formatDateTRFromISO(toplantiTarihi);
     const saat = (toplantiSaati || "").trim();
 
-    const baseKatilanlar = (katilanlar || "").trim();
-    const katilanlarText = baseKatilanlar
-      ? baseKatilanlar
-      : selectedUyeOptions.map((x) => x.label).join(", ");
+    const toplantiyeriFinal = (toplantiYeri || "").trim();
+    const kararNoFinal = (kararNo || "").trim();
+    const gundemFinal = normalizeLine(gundemMetni);
 
-    const toplantiyeriFinal = (toplantiYeri || "").trim() || "Toplantı Salonu";
-    const kararNoFinal = (kararNo || "").trim() || "2026/...";
+    const kararListHtml =
+      kararItems.length > 0
+        ? `<ol style="margin:8px 0 0 18px; padding:0;">
+            ${kararItems
+              .map((x) => `<li style="margin:6px 0;">${escHtml(x)}</li>`)
+              .join("")}
+          </ol>`
+        : `<div style="margin-top:6px; color:#666;">-</div>`;
 
     return `
 <div style="font-family:Arial, sans-serif; line-height:1.6">
 
   <div style="text-align:center; font-weight:bold;">
-    ${siteAdi.toUpperCase()}<br/>
+    ${escHtml(siteAdi.toUpperCase())}<br/>
     SİTE YÖNETİCİLİĞİ<br/>
     YÖNETİM KURULU TOPLANTI TUTANAĞI
   </div>
 
   <br/>
 
-  <div><b>TOPLANTI YERİ:</b> ${toplantiyeriFinal}</div>
-  <div><b>TOPLANTI TARİHİ:</b> ${tarihTR}</div>
-  <div><b>TOPLANTI SAATİ:</b> ${saat}</div>
-  <div><b>KARAR NO:</b> ${kararNoFinal}</div>
-  <div><b>TOPLANTIYA KATILANLAR:</b> ${katilanlarText}</div>
+  <div><b>TOPLANTI YERİ:</b> ${escHtml(toplantiyeriFinal)}</div>
+  <div><b>TOPLANTI TARİHİ:</b> ${escHtml(tarihTR)}</div>
+  <div><b>TOPLANTI SAATİ:</b> ${escHtml(saat)}</div>
+  <div><b>GÜNDEM:</b> ${escHtml(gundemFinal)}</div>
+  <div><b>KARAR NO:</b> ${escHtml(kararNoFinal)}</div>
+  <div><b>TOPLANTIYA KATILANLAR:</b> ${escHtml(katilanlarText)}</div>
 
   <br/>
 
@@ -242,45 +318,40 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
   <br/>
 
   <div>
-    Yönetim Kurulu'nun yukarıda yazılı üyelerin iştiraki ile Yönetim Kurulu toplantısında;
+    Yönetim Kurulu'nun yukarıda yazılı üyelerin iştiraki ile Yönetim Kurulu toplantısında aşağıdaki kararlar alınmıştır:
   </div>
 
-  <br/>
-
-  <div>
-    ${kararAciklamasi
-      .split("\n")
-      .map((x) => `<div style="margin-bottom:6px;">${x}</div>`)
-      .join("")}
-  </div>
+  ${kararListHtml}
 
 </div>
 `;
   };
 
+  /* ========================
+     ✅ Validasyon (hepsi zorunlu)
+  ======================== */
   const validate = () => {
     if (!siteId) return "Proje bilgisi bulunamadı.";
     if (!selectedSite?.site?.ad) return "Proje bulunamadı.";
-    if (!selectedPersonelIds.length) return "En az 1 üye seçmelisiniz.";
 
-    // ✅ Proje sorumlusu otomatik ilk kişi; ama boş kalmışsa yine kontrol
+    if (!selectedPersonelIds.length) return "En az 1 üye seçmelisiniz.";
     if (!projeSorumlusuId) return "Proje sorumlusu seçilemedi (üye seçiniz).";
     if (!selectedPersonelIds.includes(Number(projeSorumlusuId)))
       return "Proje sorumlusu seçtiğin kişi, seçilen üyeler arasında olmalı.";
 
-    // ✅ toplantı yeri artık default ile doluyor ama kullanıcı hiç dokunmasa da geçerli say
+    if (!toplantiYeri.trim()) return "Toplantı yeri zorunlu.";
     if (!toplantiTarihi.trim()) return "Toplantı tarihi zorunlu.";
     if (!toplantiSaati.trim()) return "Toplantı saati zorunlu.";
 
-    // ✅ karar no default var ama yine de boşsa hata ver
-    if (!((kararNo || "").trim() || "2026/...").trim())
-      return "Karar no zorunlu.";
+    if (!normalizeLine(gundemMetni)) return "Gündem zorunlu.";
+    if (!kararNo.trim()) return "Karar no zorunlu.";
 
-    if (!(katilanlar || "").trim() && selectedPersonelIds.length === 0)
-      return "Toplantıya katılanlar zorunlu.";
+    if (!katilanlarText.trim()) return "Toplantıya katılanlar otomatik üretilemedi.";
 
     if (!kararKonusu.trim()) return "Karar konusu zorunlu.";
-    if (!kararAciklamasi.trim()) return "Karar açıklaması zorunlu.";
+
+    // ✅ En az 1 karar maddesi zorunlu
+    if (!kararItems.length) return "En az 1 karar maddesi eklemelisiniz.";
 
     return null;
   };
@@ -296,13 +367,12 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       setSaving(true);
       setMsg(null);
 
-      // ✅ SQL'e gidecek final açıklama (kalıp + kullanıcı metni)
       const finalAciklama = buildTutanakAciklama();
 
       const payload = {
         siteId: Number(siteId),
         kararKonusu: kararKonusu.trim(),
-        kararAciklamasi: finalAciklama, // ← HTML olarak gidiyor
+        kararAciklamasi: finalAciklama, // HTML
         onerenPersonelIdler: selectedPersonelIds,
       };
 
@@ -327,18 +397,17 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
     toplantiYeri,
     toplantiTarihi,
     toplantiSaati,
+    gundemMetni,
     kararNo,
-    katilanlar,
+    katilanlarText,
     projeSorumlusuId,
     selectedUyeOptions,
-    kararAciklamasi,
+    kararItems,
   ]);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      {/* =========================================================
-          ✅ KURUMSAL STICKY HEADER (logo her zaman açık)
-         ========================================================= */}
+      {/* ✅ KURUMSAL STICKY HEADER */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-5 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -363,10 +432,10 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
 
           <div className="hidden max-w-xl items-center gap-2 md:flex">
             <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-              Kararlar onay süreçlerine uygun şekilde oluşturulur ve kayıt altına alınır.
+              Kararlar, kurumsal toplantı tutanağı formatında kayıt altına alınır.
             </span>
             <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-              Yetkili üyeler görüş ve oy girişi yapabilir.
+              Tüm alanlar zorunludur.
             </span>
           </div>
         </div>
@@ -397,7 +466,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="text-base font-semibold tracking-tight">Yeni Karar</div>
-             
+              
             </div>
 
             <div className="flex items-center gap-2">
@@ -408,6 +477,12 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 Seçili Üye:{" "}
                 <span className="font-semibold text-zinc-800 dark:text-zinc-100">
                   {selectedPersonelIds.length}
+                </span>
+              </span>
+              <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                Madde:{" "}
+                <span className="font-semibold text-zinc-800 dark:text-zinc-100">
+                  {kararItems.length}
                 </span>
               </span>
             </div>
@@ -433,15 +508,13 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
               <input type="hidden" name="siteId" value={siteId} />
             </div>
 
-            {/* ✅ Proje sorumlusu alanı TAMAMEN GİZLİ (UI yok) */}
+            {/* ✅ Proje sorumlusu UI yok */}
             <input type="hidden" value={projeSorumlusuId} readOnly />
           </div>
 
           {/* ✅ Tutanak Üst Bilgileri */}
           <div className="mt-7">
-            
-
-            <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                   Toplantı Yeri
@@ -478,6 +551,21 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 />
               </div>
 
+              {/* ✅ Gündem: metin */}
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  Gündem
+                </label>
+                <input
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  value={gundemMetni}
+                  onChange={(e) => setGundemMetni(e.target.value)}
+                  placeholder="Örn: 2026 bakım bütçesi, aidat planı, teknik bakım sözleşmesi"
+                  maxLength={250}
+                />
+              </div>
+
+              {/* ✅ Karar No */}
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                   Karar No
@@ -490,7 +578,25 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 />
               </div>
 
-              {/* Katılanlar alanı senin dosyada vardı ama UI kısmı kesilmişti, bozmamak için eklemedim. */}
+              {/* ✅ Katılanlar otomatik */}
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                    Toplantıya Katılanlar 
+                  </label>
+                  
+                </div>
+
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+                  {katilanlarText ? (
+                    <div className="leading-5">{katilanlarText}</div>
+                  ) : (
+                    <div className="text-zinc-500 dark:text-zinc-400">
+                      Henüz üye seçilmedi.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -540,9 +646,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                         <div className="font-medium text-zinc-900 dark:text-zinc-100">
                           {formatUye(u)}
                         </div>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                          Yetkili üye
-                        </div>
+                        
                       </div>
                     </label>
                   );
@@ -557,11 +661,11 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
             )}
           </div>
 
-          {/* Form */}
+          {/* Karar konusu + Karar Maddeleri */}
           <div className="mt-7 grid grid-cols-1 gap-4">
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                Karar Konusu
+                Karar Belgesi Başlığı
               </label>
               <textarea
                 className="min-h-[90px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
@@ -570,22 +674,122 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 placeholder="Site adı yüklendiğinde otomatik oluşturulacaktır"
                 maxLength={400}
               />
-
-              
             </div>
 
+            {/* ✅ Karar Metni -> MADDE MADDE EKLEME */}
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                Karar Açıklaması (Karar Metni)
-              </label>
-              <textarea
-                className="min-h-[180px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-                value={kararAciklamasi}
-                onChange={(e) => setKararAciklamasi(e.target.value)}
-                placeholder="Karar maddelerini yaz... (Örn: 1) ... 2) ...)"
-                maxLength={5000}
-              />
-              
+              <div className="flex items-end justify-between">
+                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  Karar Metni • Madde Madde
+                </label>
+                
+              </div>
+
+              {kararMsg ? (
+                <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
+                  {kararMsg}
+                </div>
+              ) : null}
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  value={kararDraft}
+                  onChange={(e) => setKararDraft(e.target.value)}
+                  onKeyDown={onKararKeyDown}
+                  placeholder="Örn: 2026 bakım bütçesinin ... TL olarak onaylanmasına"
+                  maxLength={350}
+                />
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={addKararItem}
+                    className="h-10 whitespace-nowrap rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    + Madde Ekle
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setKararItems([]);
+                      setKararDraft("");
+                      setKararMsg(null);
+                    }}
+                    className="h-10 whitespace-nowrap rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                  >
+                    Temizle
+                  </button>
+                </div>
+              </div>
+
+              {/* Liste */}
+              <div className="mt-3">
+                {kararItems.length === 0 ? (
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-[12px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                    Henüz karar maddesi eklenmedi.
+                  </div>
+                ) : (
+                  <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+                    <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                      Karar Maddeleri
+                    </div>
+
+                    <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                      {kararItems.map((item, idx) => (
+                        <div
+                          key={`${idx}-${item}`}
+                          className="flex items-start justify-between gap-3 px-4 py-3"
+                        >
+                          <div className="flex min-w-0 items-start gap-3">
+                            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-[11px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                              {idx + 1}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+                                {item}
+                              </div>
+                              <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                Karar maddesi
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveKararItem(idx, -1)}
+                              disabled={idx === 0}
+                              className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[12px] font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                              title="Yukarı taşı"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveKararItem(idx, +1)}
+                              disabled={idx === kararItems.length - 1}
+                              className="h-8 rounded-md border border-zinc-200 bg-white px-2 text-[12px] font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                              title="Aşağı taşı"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeKararItem(idx)}
+                              className="h-8 rounded-md border border-red-200 bg-white px-2 text-[12px] font-medium text-red-700 shadow-sm transition hover:bg-red-50 active:scale-[0.99] dark:border-red-800 dark:bg-zinc-950 dark:text-red-200 dark:hover:bg-red-900/20"
+                              title="Sil"
+                            >
+                              Sil
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -626,7 +830,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         </div>
       </div>
 
-      {/* ✅ Önizleme Modal – HTML RENDER */}
+      {/* ✅ Önizleme Modal */}
       {previewOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 py-6">
           <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
