@@ -158,10 +158,11 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
     : "İŞ EMRİ DETAY →";
 
   const ustButonClass = isAcil
-    ? "bg-red-600 hover:bg-red-700 text-white"
-    : isDisIs
-    ? "bg-amber-600 hover:bg-amber-700 text-white"
-    : "bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200";
+  ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+  : isDisIs
+  ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+  : "border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-200";
+
 
   return (
     <>
@@ -199,8 +200,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 progress < 30
                   ? "bg-red-500"
                   : progress < 75
-                  ? "bg-amber-500"
-                  : "bg-emerald-500"
+                    ? "bg-amber-500"
+                    : "bg-emerald-500"
               }`}
               style={{ width: `${progress}%` }}
             />
@@ -307,9 +308,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 <div className="line-clamp-6">{aciklama}</div>
               </div>
             )}
-            
           </div>
-          
 
           {/* BELGELER / FOTOĞRAFLAR */}
           <div className="mt-2">
@@ -319,7 +318,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Toplam: <span className="font-semibold">{toplamDosyaAdet}</span>
+                  Toplam:{" "}
+                  <span className="font-semibold">{toplamDosyaAdet}</span>
                 </div>
                 <button
                   type="button"
@@ -340,7 +340,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 <div className="grid grid-cols-2 gap-1.5">
                   {dosyalarPreview.map((f, idx) => {
                     const name = f.dosyaAdi || f.url || `Dosya #${idx + 1}`;
-                    const turLabel = f.turAd || (isImageFile(name) ? "Foto" : "Belge");
+                    const turLabel =
+                      f.turAd || (isImageFile(name) ? "Foto" : "Belge");
                     const isPhoto =
                       turLabel === "Foto" ||
                       isImageFile(f.url || "") ||
@@ -420,7 +421,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {people.map((p) => {
-                  const fullName = `${p?.personel?.ad ?? ""} ${p?.personel?.soyad ?? ""}`.trim();
+                  const fullName =
+                    `${p?.personel?.ad ?? ""} ${p?.personel?.soyad ?? ""}`.trim();
                   return (
                     <div
                       key={p.id}
@@ -430,9 +432,13 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                       <span className="grid h-5 w-5 place-items-center rounded-full bg-zinc-900 text-[9px] font-semibold text-white dark:bg-zinc-50 dark:text-black">
                         {initials(fullName)}
                       </span>
-                      <span className="max-w-[120px] truncate font-medium">{fullName}</span>
+                      <span className="max-w-[120px] truncate font-medium">
+                        {fullName}
+                      </span>
                       <span className="text-zinc-400">•</span>
-                      <span className="truncate text-zinc-500 dark:text-zinc-400">{p.rolAd}</span>
+                      <span className="truncate text-zinc-500 dark:text-zinc-400">
+                        {p.rolAd}
+                      </span>
                     </div>
                   );
                 })}
@@ -449,13 +455,16 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                 </div>
                 <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
                   Genel Tutar:{" "}
-                  <span className="font-semibold">₺ {toplamTutarGosterilen.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    ₺ {toplamTutarGosterilen.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Adet: <span className="font-semibold">{toplamMalzemeAdet}</span>
+                  Adet:{" "}
+                  <span className="font-semibold">{toplamMalzemeAdet}</span>
                 </div>
 
                 <button
@@ -498,7 +507,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
                           {m.malzemeAdi ?? m.ad ?? "Malzeme"}
                         </div>
                         <div className="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
-                          Adet: <span className="font-semibold">{adet || "-"}</span>
+                          Adet:{" "}
+                          <span className="font-semibold">{adet || "-"}</span>
                         </div>
                       </div>
 
@@ -523,8 +533,6 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
             )}
           </div>
 
-          
-
           {/* NOTLAR (ilk 2) */}
           <div className="mt-2">
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -547,7 +555,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
             ) : (
               <div className="space-y-1.5">
                 {notesPreview.map((n) => {
-                  const fullName = `${n?.personel?.ad ?? ""} ${n?.personel?.soyad ?? ""}`.trim();
+                  const fullName =
+                    `${n?.personel?.ad ?? ""} ${n?.personel?.soyad ?? ""}`.trim();
 
                   return (
                     <div
@@ -571,7 +580,7 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               </div>
             )}
           </div>
-          
+
           <IsEmriCardSurecOzet data={data} />
 
           {/* ALT AKSİYON */}
@@ -587,9 +596,12 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               href={`/teknik/isEmriDetay/${id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-200 active:scale-[0.99]"
             >
-              İş Emri Detay →
+              İş Emri Detay
+              <span aria-hidden className="text-zinc-400">
+                →
+              </span>
             </Link>
           </div>
         </div>

@@ -1,26 +1,39 @@
 @import "tailwindcss";
 
+/* =========================================================
+   ✅ ZORUNLU LIGHT MODE
+   - OS dark olsa bile dark: class'lar ASLA çalışmaz
+   - color-scheme: light ile browser UI da aydınlık kalır
+========================================================= */
+
+/* 1) Dark variant'ını BOŞA düşür (Tailwind v4) */
+@custom-variant dark (&:where(.never-dark, .never-dark *));
+
+/* 2) Temel renk değişkenleri */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
 }
 
+/* 3) Tailwind theme değişkenleri */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* 4) Global */
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* 5) Eğer bir yer "dark" class basıyorsa bile ez */
+html.dark,
+body.dark,
+.dark {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  color-scheme: light !important;
 }

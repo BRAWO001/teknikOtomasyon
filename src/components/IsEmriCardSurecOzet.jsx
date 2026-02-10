@@ -1,4 +1,9 @@
+
+
+
+
 // src/components/IsEmriCardSurecOzet.jsx
+
 function pick(obj, ...keys) {
   for (const k of keys) {
     const v = obj?.[k];
@@ -7,19 +12,75 @@ function pick(obj, ...keys) {
   return null;
 }
 
+function getTone(value) {
+  const s = String(value ?? "").trim().toLowerCase();
+
+  if (!s || s === "-") return "neutral";
+
+  // ✅ iyi / olumlu
+  if (
+    s.includes("onay") ||
+    s.includes("tamam") ||
+    s.includes("bitti") ||
+    s.includes("uygun") ||
+    s.includes("olumlu") ||
+    s.includes("ok")
+  )
+    return "ok";
+
+  // ⚠️ bekleme / inceleme
+  if (
+    s.includes("bek") ||
+    s.includes("incele") ||
+    s.includes("kontrol") ||
+    s.includes("revize") ||
+    s.includes("hazırlan") ||
+    s.includes("plan")
+  )
+    return "warn";
+
+  // ❌ olumsuz
+  if (
+    s.includes("red") ||
+    s.includes("iptal") ||
+    s.includes("uygunsuz") ||
+    s.includes("olumsuz") ||
+    s.includes("hata")
+  )
+    return "bad";
+
+  return "neutral";
+}
+
+function badgeClassByTone(tone) {
+  if (tone === "ok") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (tone === "warn") return "border-amber-200 bg-amber-50 text-amber-800";
+  if (tone === "bad") return "border-red-200 bg-red-50 text-red-800";
+  return "border-zinc-200 bg-white text-black";
+}
+
 function Row({ title, value, note }) {
   const v = value ?? "-";
+  const tone = getTone(v);
+
   return (
-    <div className="flex items-start justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-[11px] ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+    <div className="flex items-start justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-[11px] ring-1 ring-zinc-200">
       <div className="min-w-0">
-        <div className="font-semibold text-zinc-700 dark:text-zinc-200">{title}</div>
+        <div className="font-semibold text-black">{title}</div>
+
         {note ? (
-          <div className="mt-0.5 line-clamp-2 text-[10px] text-zinc-500 dark:text-zinc-400">
+          <div className="mt-0.5 line-clamp-2 text-[10px] text-zinc-600">
             {note}
           </div>
         ) : null}
       </div>
-      <span className="shrink-0 rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-50 dark:text-black">
+
+      <span
+        className={[
+          "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+          badgeClassByTone(tone),
+        ].join(" ")}
+      >
         {v}
       </span>
     </div>
@@ -27,7 +88,11 @@ function Row({ title, value, note }) {
 }
 
 export default function IsEmriCardSurecOzet({ data }) {
-  const projeDurum = pick(data, "projeYoneticiSurecDurumu", "ProjeYoneticiSurecDurumu");
+  const projeDurum = pick(
+    data,
+    "projeYoneticiSurecDurumu",
+    "ProjeYoneticiSurecDurumu"
+  );
   const projeNot = pick(data, "projeYoneticiSurecNotu", "ProjeYoneticiSurecNotu");
 
   const opTeknikDurum = pick(
@@ -52,14 +117,19 @@ export default function IsEmriCardSurecOzet({ data }) {
     "OperasyonGenelMudurSurecNotu"
   );
 
-  const hasAny = !!(projeDurum || projeNot || opTeknikDurum || opTeknikNot || opGenelDurum || opGenelNot);
+  const hasAny = !!(
+    projeDurum ||
+    projeNot ||
+    opTeknikDurum ||
+    opTeknikNot ||
+    opGenelDurum ||
+    opGenelNot
+  );
 
   return (
-    <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-0.5 text-[11px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200">
-      
-
+    <div className="mt-2 rounded-xl border border-zinc-200 bg-white p-2 text-[11px] text-black shadow-sm">
       {!hasAny ? (
-        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+        <div className="px-2 py-1 text-[11px] text-black">
           Henüz süreç bilgisi girilmedi.
         </div>
       ) : (

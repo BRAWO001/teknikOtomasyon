@@ -1,3 +1,8 @@
+
+
+
+
+
 // pages/projeGorevlileri/index.jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
@@ -6,8 +11,6 @@ import { getCookie as getClientCookie } from "@/utils/cookieService";
 import ProjeGorevlileriSonYorumOzetCard from "@/components/projeGorevlileri/ProjeGorevlileriSonYorumOzetCard";
 import ProjeDosyaModals from "@/components/ProjeDosyaModals";
 
-// ✅ apiService kullanıyorsan bunu tercih et (token vb. otomatik gidiyorsa çok iyi)
-// Eğer sende farklı path ise düzelt
 import { getDataAsync } from "@/utils/apiService";
 
 export default function ProjeGorevlileriPage() {
@@ -48,7 +51,7 @@ export default function ProjeGorevlileriPage() {
     }
   }, [router]);
 
-  // ✅ personelKodu bul (sende isim farklıysa burayı değiştir)
+  // ✅ personelKodu bul
   const personelKodu = useMemo(() => {
     return (
       personel?.personelKodu ||
@@ -70,10 +73,7 @@ export default function ProjeGorevlileriPage() {
   // ✅ SiteId yoksa: personelKodu ile site(ler)i çek
   useEffect(() => {
     const directSiteId = personel?.siteId || personel?.SiteId || null;
-
-    // SiteId zaten varsa API'ye gerek yok
     if (directSiteId) return;
-
     if (!personelKodu) return;
 
     const loadSites = async () => {
@@ -81,7 +81,6 @@ export default function ProjeGorevlileriPage() {
         setSiteLoading(true);
         setSiteError("");
 
-        // endpoint: /api/projeYonetimKurulu/site/personel/{personelKodu}
         const data = await getDataAsync(
           `projeYonetimKurulu/site/personel/${encodeURIComponent(personelKodu)}`
         );
@@ -89,12 +88,10 @@ export default function ProjeGorevlileriPage() {
         const arr = Array.isArray(data) ? data : [];
         setSiteList(arr);
 
-        // tek site varsa otomatik seç
         if (arr.length === 1) {
           setSelectedSiteId(arr[0]?.SiteId ?? arr[0]?.siteId ?? null);
         }
 
-        // birden fazla site varsa ilkini seç (istersen null bırakıp seçtiririz)
         if (arr.length > 1 && !selectedSiteId) {
           const firstId = arr[0]?.SiteId ?? arr[0]?.siteId ?? null;
           if (firstId) setSelectedSiteId(firstId);
@@ -132,12 +129,23 @@ export default function ProjeGorevlileriPage() {
   const handleYeniIsEmri = () =>
     router.push("/projeGorevlileri/projeSorumlusuISemriOlustur");
 
-  const handleYeniKararTalebi = () => router.push("/projeGorevlileri/ProjeSorumlusuYeniKarar");
+  const handleYeniKararTalebi = () =>
+    router.push("/projeGorevlileri/ProjeSorumlusuYeniKarar");
 
   const handleProjemIsEmirleri = () =>
     router.push("/projeGorevlileri/projeGorevlileriIsEmirleri");
 
   const handleTaleplerim = () => router.push("/projeGorevlileri/taleplerim");
+
+  // ✅ yeni sayfalar
+  const handleProjemKararlar = () =>
+    router.push("/projeGorevlileri/projeGorevlileriKararlar");
+
+  const handleYeniIleti = () =>
+    router.push("/projeGorevlileri/projeGorevlileriYeniIleti");
+
+  const handleProjemIletiler = () =>
+    router.push("/projeGorevlileri/projeGorevlileriIletiler");
 
   const handlePilotFeatureClick = (featureName) => {
     setPilotInfo(
@@ -145,7 +153,7 @@ export default function ProjeGorevlileriPage() {
     );
   };
 
-  // ✅ Modal açmadan önce site seçili mi kontrol (opsiyonel)
+  // ✅ Modal açmadan önce site seçili mi kontrol
   const openDosyaModal = () => {
     if (!selectedSiteId) {
       setPilotInfo("Önce bir site seçmelisiniz (SiteId bulunamadı).");
@@ -188,6 +196,28 @@ export default function ProjeGorevlileriPage() {
                     </p>
                   </>
                 )}
+
+                {/* küçük durum satırı */}
+                <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                  {siteLoading ? (
+                    <span>Site bilgisi yükleniyor…</span>
+                  ) : siteError ? (
+                    <span className="text-rose-600 dark:text-rose-300">
+                      {siteError}
+                    </span>
+                  ) : selectedSiteId ? (
+                    <span>
+                      Aktif SiteId:{" "}
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-100">
+                        {selectedSiteId}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-amber-700 dark:text-amber-200">
+                      SiteId bulunamadı.
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -237,7 +267,7 @@ export default function ProjeGorevlileriPage() {
           </div>
 
           {/* Pilot modüller */}
-          <section className="mt-4 space-y-3">
+          <section className="mt-4 space-y-3 w-full">
             <div>
               <p className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
                 Aşağıdaki modüller profesyonel site yönetimi için
@@ -259,7 +289,7 @@ export default function ProjeGorevlileriPage() {
                   </p>
                 </div>
 
-                <div className="mt-3 flex justify-evenly gap-2">
+                <div className="mt-3 flex justify-evenly gap-2 flex-wrap">
                   <button
                     onClick={handleYeniIsEmri}
                     className="flex items-center gap-1 rounded-md bg-amber-200 px-3 py-1.5 text-xs font-semibold text-black hover:bg-amber-300"
@@ -293,7 +323,7 @@ export default function ProjeGorevlileriPage() {
                     type="button"
                     onClick={openDosyaModal}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
                   >
                     📎 Dosya Ekle / Gör
                   </button>
@@ -306,37 +336,79 @@ export default function ProjeGorevlileriPage() {
                 )}
               </div>
 
-              {/* Yönetim Kurulu Karar Talebi Oluştur */}
+              {/* ✅ Yönetim Kurulu Karar Talebi Oluştur + Projemin Kararları */}
               <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-gradient-to-br from-zinc-50 to-zinc-100 p-3 text-xs shadow-sm dark:border-zinc-800 dark:from-zinc-950/60 dark:to-zinc-900/40">
-                {/* Header */}
-                <div className="flex items-start gap-2">
-                  <div>
-                    <h3 className="text-[13px] text-center font-semibold text-zinc-900 dark:text-zinc-50">
-                      🏛️ Yönetim Kurulu Karar Talebi
-                    </h3>
-                    <p className="mt-0.5 text-[11px] leading-snug text-zinc-600 dark:text-zinc-300">
-                      Yönetim kuruluna iletilecek karar talebini açıklama ve
-                      ekleriyle kayıt altına alın.
-                    </p>
-                  </div>
+                <div>
+                  <h3 className="text-[13px] text-center font-semibold text-zinc-900 dark:text-zinc-50">
+                    🏛️ Yönetim Kurulu Karar Talebi
+                  </h3>
+                  <p className="mt-0.5 text-[11px] leading-snug text-zinc-600 dark:text-zinc-300 text-center">
+                    Yönetim kuruluna iletilecek karar talebini açıklama ve
+                    ekleriyle kayıt altına alın.
+                  </p>
                 </div>
 
-                {/* Action */}
-                <div className="mt-3 flex items-center justify-center">
+                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleYeniKararTalebi}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
                   >
                     ➕ Yeni Talepte Bulun
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProjemKararlar}
+                    disabled={!selectedSiteId}
+                    className="flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    📚 Projemin Kararları
+                  </button>
                 </div>
 
-                {/* Warning */}
                 {!selectedSiteId && (
                   <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-200">
-                    ⚠️ Site seçilmeden karar talebi oluşturulamaz.
+                    ⚠️ Site seçilmeden karar işlemi yapılamaz.
+                  </div>
+                )}
+              </div>
+
+              {/* ✅ İletiler (Yeni kart) */}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50 text-center">
+                    📣 İletiler
+                  </h3>
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300 text-center">
+                    Projeye ait bilgilendirme iletileri, duyurular ve yönetim notları.
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleYeniIleti}
+                    disabled={!selectedSiteId}
+                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                  >
+                    ➕ Yeni İleti Oluştur
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProjemIletiler}
+                    disabled={!selectedSiteId}
+                    className="flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    📄 İletileri Görüntüle
+                  </button>
+                </div>
+
+                {!selectedSiteId && (
+                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                    Site seçilmeden ileti işlemi yapılamaz.
                   </div>
                 )}
               </div>
@@ -381,7 +453,7 @@ export default function ProjeGorevlileriPage() {
         </main>
       </div>
 
-      {/* ✅ MODAL (siteId artık selectedSiteId) */}
+      {/* ✅ MODAL */}
       <ProjeDosyaModals
         isOpen={isDosyaModalOpen}
         onClose={() => setIsDosyaModalOpen(false)}

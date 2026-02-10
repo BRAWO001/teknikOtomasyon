@@ -2,40 +2,32 @@
 
 
 
-
 // pages/YonetimKuruluYoneticiRaporu/index.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 
-/* ===== helpers ===== */
-function safeText(v) {
-  if (v === null || v === undefined) return "-";
-  const s = String(v).trim();
-  return s.length ? s : "-";
-}
+import YoneticiRaporuKararlarTable from "@/components/YoneticiRaporu/YoneticiRaporuKararlarTable";
+import YoneticiRaporuIletilerTable from "@/components/YoneticiRaporu/YoneticiRaporuIletilerTable";
 
-function formatDateTR(iso) {
-  if (!iso) return "-";
-  try {
-    const d = new Date(iso);
-    // backend UTC dönüyorsa TR için +3
-    d.setHours(d.getHours() + 3);
-    return d.toLocaleString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "-";
+/* ===== safe normalize ===== */
+function normalizePagedResponse(res) {
+  if (Array.isArray(res)) {
+    return { items: res, totalPages: 1, totalCount: res.length };
   }
+  const list = res?.items ?? res?.Items ?? [];
+  const items = Array.isArray(list) ? list : [];
+  const totalPages = Number(res?.totalPages ?? res?.TotalPages ?? 1) || 1;
+  const totalCount = Number(res?.totalCount ?? res?.TotalCount ?? items.length) || 0;
+  return { items, totalPages, totalCount };
 }
-/* =================== */
+/* ======================== */
 
 export default function YonetimKuruluYoneticiRaporuPage() {
   const router = useRouter();
+
+  // ✅ View: karar | ileti
+  const [view, setView] = useState("karar");
 
   // listeler
   const [sites, setSites] = useState([]);
@@ -46,27 +38,59 @@ export default function YonetimKuruluYoneticiRaporuPage() {
 
   // paging
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const pageSize = 20;
 
   // data
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState([]); // ✅ her zaman array
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // endpoint (backend: /api/projeYonetimKurulu/kararlar)
-  const kararlarEndpoint = useMemo(() => {
+  // ✅ “Kararlar/İletiler” click davranışını tek yerden yönetelim
+  const selectView = useCallback(
+    (nextView) => {
+      setView(nextView);
+      setPage(1);
+
+      // ✅ tıklanmış gibi: URL de aynı şekilde güncellensin
+      if (nextView === "karar") {
+        router.replace("/YonetimKuruluYoneticiRaporu", undefined, { shallow: true });
+      } else {
+        router.replace("/YonetimKuruluYoneticiRaporu?view=ileti", undefined, { shallow: true });
+      }
+    },
+    [router]
+  );
+
+  // ✅ GERİ GELİNCE: sanki “Kararlar” butonuna tıklanmış gibi olsun
+  const didAutoClickRef = useRef(false);
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (didAutoClickRef.current) return;
+    didAutoClickRef.current = true;
+
+    // her durumda kararlar “tıklansın”
+    selectView("karar");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady]);
+
+  // ✅ endpoint view’a göre değişir
+  const endpoint = useMemo(() => {
     const qs = new URLSearchParams();
     qs.set("page", String(page));
     qs.set("pageSize", String(pageSize));
     if (siteId) qs.set("siteId", String(siteId));
     if (search?.trim()) qs.set("search", search.trim());
-    return `projeYonetimKurulu/kararlar?${qs.toString()}`;
-  }, [page, pageSize, siteId, search]);
 
-  // ilk açılış: siteler
+    if (view === "ileti") {
+      return `projeYonetimKurulu/ileti/iletis?${qs.toString()}`;
+    }
+    return `projeYonetimKurulu/kararlar?${qs.toString()}`;
+  }, [view, page, pageSize, siteId, search]);
+
+  // siteler
   useEffect(() => {
     let cancelled = false;
 
@@ -88,20 +112,21 @@ export default function YonetimKuruluYoneticiRaporuPage() {
     };
   }, []);
 
-  // kararlar loader
-  const loadKararlar = async () => {
+  // liste loader
+  const loadList = useCallback(async () => {
     setLoading(true);
     setErr("");
+    setItems([]); // ✅ map güvenliği
+
     try {
-      const res = await getDataAsync(kararlarEndpoint);
+      const res = await getDataAsync(endpoint);
+      const norm = normalizePagedResponse(res);
 
-      const list = res?.items ?? res?.Items ?? [];
-      setItems(Array.isArray(list) ? list : []);
-
-      setTotalPages(Number(res?.totalPages ?? res?.TotalPages ?? 1) || 1);
-      setTotalCount(Number(res?.totalCount ?? res?.TotalCount ?? 0) || 0);
+      setItems(norm.items);
+      setTotalPages(norm.totalPages);
+      setTotalCount(norm.totalCount);
     } catch (e) {
-      console.error("KARARLAR GET ERROR:", e);
+      console.error("LIST GET ERROR:", e);
       setItems([]);
       setTotalPages(1);
       setTotalCount(0);
@@ -111,13 +136,12 @@ export default function YonetimKuruluYoneticiRaporuPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [endpoint]);
 
-  // filtre/paging değişince otomatik çek
   useEffect(() => {
-    loadKararlar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kararlarEndpoint]);
+    if (!router.isReady) return;
+    loadList();
+  }, [router.isReady, loadList]);
 
   const resetFilters = () => {
     setSiteId("");
@@ -125,27 +149,33 @@ export default function YonetimKuruluYoneticiRaporuPage() {
     setPage(1);
   };
 
-  const handleYeniKararTalebi = () =>
+  const handleYeni = () => {
+    if (view === "ileti") {
+      router.push("/YonetimKuruluYoneticiRaporu/YoneticiRaporuYeniIletiOlustur");
+      return;
+    }
     router.push("/YonetimKuruluYoneticiRaporu/YoneticiRaporuYeniKararOlustur");
+  };
+
   const handleAnaSayfayaDon = () => router.push("/");
 
   const rowOpen = (token) => {
     if (!token) return;
-    router.push(`/YonetimKurulu/karar/${token}`);
+
+    if (view === "karar") {
+      router.push(`/YonetimKurulu/karar/${token}`);
+      return;
+    }
+    router.push(`/YonetimKurulu/ileti/${token}`);
   };
 
-  // ✅ Düzenleme durumu pill
-  const DuzenlemePill = ({ ok }) => (
-    <span
-      className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${
-        ok
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/25 dark:text-emerald-200"
-          : "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-900/25 dark:text-red-200"
-      }`}
-    >
-      {ok ? "Açık" : "Kapalı"}
-    </span>
-  );
+  const title =
+    view === "ileti" ? "Yönetim Kurulu – İletiler Raporu" : "Yönetim Kurulu – Kararlar Raporu";
+  const listLabel = view === "ileti" ? "İletiler" : "Kararlar";
+  const searchPlaceholder =
+    view === "ileti"
+      ? "Başlık / Açıklama / Durum içinde ara..."
+      : "Konu / Açıklama / Nihai sonuç içinde ara...";
 
   return (
     <div className="p-3 space-y-3">
@@ -153,11 +183,38 @@ export default function YonetimKuruluYoneticiRaporuPage() {
       <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-              Yönetim Kurulu – Kararlar Raporu
-            </div>
+            <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{title}</div>
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Toplam: {totalCount} kayıt • Sayfa: {page}/{totalPages}
+            </div>
+
+            {/* ✅ Seçim: Kararlar / İletiler */}
+            <div className="mt-2 inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-950">
+              <button
+                type="button"
+                onClick={() => selectView("karar")}
+                className={[
+                  "px-3 py-1 text-[11px] font-semibold rounded-md",
+                  view === "karar"
+                    ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-600 dark:text-zinc-300",
+                ].join(" ")}
+              >
+                Kararlar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => selectView("ileti")}
+                className={[
+                  "px-3 py-1 text-[11px] font-semibold rounded-md",
+                  view === "ileti"
+                    ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-600 dark:text-zinc-300",
+                ].join(" ")}
+              >
+                İletiler
+              </button>
             </div>
           </div>
 
@@ -179,10 +236,10 @@ export default function YonetimKuruluYoneticiRaporuPage() {
 
             <button
               type="button"
-              onClick={handleYeniKararTalebi}
+              onClick={handleYeni}
               className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
-              ➕ Yeni Karar Talebinde Bulun
+              ➕ Yeni {view === "ileti" ? "İleti" : "Karar"} Oluştur
             </button>
 
             <button
@@ -195,7 +252,7 @@ export default function YonetimKuruluYoneticiRaporuPage() {
 
             <button
               type="button"
-              onClick={loadKararlar}
+              onClick={loadList}
               className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200 dark:hover:bg-emerald-900/45"
             >
               Yenile
@@ -211,7 +268,6 @@ export default function YonetimKuruluYoneticiRaporuPage() {
 
         {/* Filtre satırı */}
         <div className="grid grid-cols-1 gap-2 md:grid-cols-6">
-          {/* Site */}
           <div className="flex flex-col gap-1 md:col-span-2">
             <label className="text-[11px] text-zinc-500">Site</label>
             <select
@@ -235,7 +291,6 @@ export default function YonetimKuruluYoneticiRaporuPage() {
             </select>
           </div>
 
-          {/* Search */}
           <div className="flex flex-col gap-1 md:col-span-4">
             <label className="text-[11px] text-zinc-500">Arama</label>
             <input
@@ -244,7 +299,7 @@ export default function YonetimKuruluYoneticiRaporuPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Konu / Açıklama / Nihai sonuç içinde ara..."
+              placeholder={searchPlaceholder}
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
@@ -255,13 +310,9 @@ export default function YonetimKuruluYoneticiRaporuPage() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
-            Kararlar
+            {listLabel}
           </div>
-          {loading && (
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Yükleniyor…
-            </span>
-          )}
+          {loading && <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Yükleniyor…</span>}
         </div>
 
         <div className="flex items-center gap-2">
@@ -285,119 +336,12 @@ export default function YonetimKuruluYoneticiRaporuPage() {
         </div>
       </div>
 
-      {/* ===== Table ===== */}
-      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <table className="min-w-[1200px] w-full border-collapse text-[11px]">
-          <thead className="sticky top-0 z-10 bg-zinc-100 dark:bg-zinc-800">
-            <tr>
-              {[
-                "Karar No",
-                "Tarih",
-                "Site",
-                "Karar Konusu",
-                "Nihai Sonuç",
-                "Düzenleme",
-                "Öneren Kişi",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="px-2 py-[4px] text-left font-semibold border-b border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {items.map((r, i) => {
-              const id = r?.id ?? r?.Id;
-              const token = r?.publicToken ?? r?.PublicToken; // backend PublicToken
-              const siteName = r?.site?.ad ?? r?.Site?.Ad;
-              const siteIdRow = r?.siteId ?? r?.SiteId;
-
-              // ✅ Site bazlı karar no (camelCase + PascalCase destekli)
-              const siteBazliNo = r?.siteBazliNo ?? r?.SiteBazliNo;
-              const kararNoText =
-                typeof siteBazliNo === "number" && siteBazliNo > 0
-                  ? `# ${siteBazliNo}` // örn: 6-18
-                  : `${safeText(id)}`; // fallback: global id
-
-              const duzenleme =
-                typeof (r?.duzenlemeDurumu ?? r?.DuzenlemeDurumu) === "boolean"
-                  ? (r?.duzenlemeDurumu ?? r?.DuzenlemeDurumu)
-                  : null;
-
-              return (
-                <tr
-                  key={id ?? i}
-                  onClick={() => rowOpen(token)}
-                  className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
-                  title={token ? "Detaya git" : "Token yok"}
-                >
-                  {/* ✅ No: SiteId-SiteBazliNo */}
-                  <td className="px-2 py-[4px] text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
-                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                      {kararNoText}
-                    </span>
-                  </td>
-
-                  <td className="px-2 py-[4px] whitespace-nowrap">
-                    {formatDateTR(r?.tarih ?? r?.Tarih)}
-                  </td>
-
-                  <td className="px-2 py-[4px] whitespace-nowrap">
-                    {siteName ?? `Site #${safeText(siteIdRow)}`}
-                  </td>
-
-                  <td className="px-2 py-[4px]">
-                    <div className="max-w-[520px] truncate font-semibold text-zinc-800 dark:text-zinc-100">
-                      {safeText(r?.kararKonusu ?? r?.KararKonusu)}
-                    </div>
-                    <div className="max-w-[520px] truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                      {safeText(r?.kararAciklamasi ?? r?.KararAciklamasi)}
-                    </div>
-                  </td>
-
-                  <td className="px-2 py-[4px] whitespace-nowrap">
-                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                      {safeText(r?.nihaiSonuc ?? r?.NihaiSonuc)}
-                    </span>
-                  </td>
-
-                  {/* ✅ Düzenleme Durumu */}
-                  <td className="px-2 py-[4px] whitespace-nowrap">
-                    {duzenleme === null ? (
-                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                        -
-                      </span>
-                    ) : (
-                      <DuzenlemePill ok={duzenleme} />
-                    )}
-                  </td>
-
-                  <td className="px-2 py-[4px] whitespace-nowrap">
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/25 dark:text-emerald-200">
-                      {safeText(r?.onerenKisiSayisi ?? r?.OnerenKisiSayisi)}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-
-            {!loading && !items?.length && (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="py-8 text-center text-zinc-500 dark:text-zinc-400"
-                >
-                  Kayıt bulunamadı
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* ✅ TABLO */}
+      {view === "ileti" ? (
+        <YoneticiRaporuIletilerTable items={items} loading={loading} onRowOpen={rowOpen} />
+      ) : (
+        <YoneticiRaporuKararlarTable items={items} loading={loading} onRowOpen={rowOpen} />
+      )}
     </div>
   );
 }

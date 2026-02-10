@@ -1,14 +1,15 @@
-
-
-
-
-
 // src/pages/YonetimKurulu/karar/[token].jsx
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+
+// ✅ A4 görünümü bununla olacak (senin verdiğin component)
+import KararPrintA4 from "@/components/ProjeYonetimKurulu/KararPrintA4";
 
 const OPTIONS = [
   { value: "Onaylıyorum", label: "Onaylıyorum" },
@@ -51,6 +52,13 @@ export default function KararTokenDetayPage() {
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminMsg, setAdminMsg] = useState(null);
 
+  // ✅ PDF state
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [pdfErr, setPdfErr] = useState("");
+
+  // ✅ A4 render alanı ref (gizli)
+  const pdfRef = useRef(null);
+
   const isRol11 = useMemo(() => Number(personel?.rol) === 11, [personel]);
   const isRol90 = useMemo(() => Number(personel?.rol) === 90, [personel]);
 
@@ -61,10 +69,7 @@ export default function KararTokenDetayPage() {
     return list.find((x) => Number(x.personelId) === pid) || null;
   }, [data?.onerenKisiler, personel?.id]);
 
-  const duzenlemeAcikMi = useMemo(
-    () => !!data?.duzenlemeDurumu,
-    [data?.duzenlemeDurumu]
-  );
+  const duzenlemeAcikMi = useMemo(() => !!data?.duzenlemeDurumu, [data?.duzenlemeDurumu]);
 
   const canEdit = useMemo(() => {
     return isRol11 && !!myOnerenKaydi && duzenlemeAcikMi;
@@ -99,7 +104,6 @@ export default function KararTokenDetayPage() {
 
         setData(dto || null);
 
-        // Nihai sonuc defaultları
         const nih = dto?.nihaiSonuc ?? "";
         const nihStr = nih ? String(nih) : "";
 
@@ -146,6 +150,90 @@ export default function KararTokenDetayPage() {
       });
     } catch {
       return iso;
+    }
+  };
+
+  // ✅✅✅ PDF DOWNLOAD (A4 component render -> html2canvas -> jsPDF)
+  const handlePdfDownload = async () => {
+    if (!data) return;
+
+    setPdfErr("");
+    setPdfDownloading(true);
+
+    try {
+      // gizli A4 alanı
+      const el = pdfRef.current;
+      if (!el) throw new Error("pdfRef yok");
+
+      // ✅ oklch patlamasın diye: PDF anında renkleri düzleştir (siyah/beyaz)
+      const styleEl = document.createElement("style");
+      styleEl.setAttribute("data-pdf-style", "1");
+      styleEl.innerHTML = `
+        /* sadece PDF alanına uygula */
+        #pdf-a4-root, #pdf-a4-root * {
+          color: #000 !important;
+          background: #fff !important;
+          border-color: #ddd !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+          filter: none !important;
+        }
+      `;
+      document.head.appendChild(styleEl);
+
+      // ✅ logo/görsel istemiyorsun: pdf alanındaki img/svg vs kapat
+      const hidden = [];
+      el.querySelectorAll("img,svg,video,canvas,iframe").forEach((node) => {
+        hidden.push({ node, prev: node.style.display });
+        node.style.display = "none";
+      });
+
+      // render settle
+      await new Promise((r) => setTimeout(r, 80));
+
+      const canvas = await html2canvas(el, {
+        scale: 1.35,
+        backgroundColor: "#ffffff",
+        useCORS: false,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 1200,
+      });
+
+      // geri aç
+      hidden.forEach(({ node, prev }) => (node.style.display = prev));
+      styleEl.remove();
+
+      const imgData = canvas.toDataURL("image/png",0.72);
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = 210;
+      const pageHeight = 297;
+
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `Karar-${data?.siteBazliNo ?? data?.SiteBazliNo ?? data?.id ?? "belge"}.pdf`;
+      pdf.save(fileName);
+    } catch (e) {
+      console.error("PDF ERROR:", e);
+      setPdfErr("PDF oluşturulamadı.");
+    } finally {
+      setPdfDownloading(false);
     }
   };
 
@@ -198,7 +286,6 @@ export default function KararTokenDetayPage() {
     }
   };
 
-  // Rol90: NihaiSonuc güncelle
   const handleUpdateNihai = async () => {
     if (!data?.id) return;
 
@@ -214,10 +301,7 @@ export default function KararTokenDetayPage() {
       setAdminSaving(true);
       setAdminMsg(null);
 
-      const res = await postDataAsync(
-        `projeYonetimKurulu/karar/${data.id}/nihai-sonuc`,
-        payload
-      );
+      const res = await postDataAsync(`projeYonetimKurulu/karar/${data.id}/nihai-sonuc`, payload);
 
       const newVal = res?.nihaiSonuc ?? payload.nihaiSonuc;
       setData((prev) => (prev ? { ...prev, nihaiSonuc: newVal } : prev));
@@ -231,15 +315,12 @@ export default function KararTokenDetayPage() {
     } catch (e) {
       console.error("NIHAI SONUC UPDATE ERROR:", e);
       const status = e?.response?.status;
-      setAdminMsg(
-        status ? `Nihai sonuç güncellenemedi (HTTP ${status}).` : "Nihai sonuç güncellenemedi."
-      );
+      setAdminMsg(status ? `Nihai sonuç güncellenemedi (HTTP ${status}).` : "Nihai sonuç güncellenemedi.");
     } finally {
       setAdminSaving(false);
     }
   };
 
-  // Rol90: Düzenleme Aç/Kapat
   const handleToggleDuzenleme = async () => {
     if (!data?.id) return;
 
@@ -252,24 +333,17 @@ export default function KararTokenDetayPage() {
       setAdminSaving(true);
       setAdminMsg(null);
 
-      const payload = {
-        kararId: Number(data.id),
-        duzenlemeDurumu: !duzenlemeAcikMi,
-      };
-
+      const payload = { kararId: Number(data.id), duzenlemeDurumu: !duzenlemeAcikMi };
       const res = await postDataAsync("projeYonetimKurulu/karar/duzenleme-durumu", payload);
 
-      const newVal =
-        typeof res?.duzenlemeDurumu === "boolean" ? res.duzenlemeDurumu : payload.duzenlemeDurumu;
+      const newVal = typeof res?.duzenlemeDurumu === "boolean" ? res.duzenlemeDurumu : payload.duzenlemeDurumu;
 
       setData((prev) => (prev ? { ...prev, duzenlemeDurumu: newVal } : prev));
       setAdminMsg(newVal ? "Düzenleme açıldı." : "Düzenleme kapatıldı.");
     } catch (e) {
       console.error("DUZENLEME DURUMU UPDATE ERROR:", e);
       const status = e?.response?.status;
-      setAdminMsg(
-        status ? `Düzenleme güncellenemedi (HTTP ${status}).` : "Düzenleme güncellenemedi."
-      );
+      setAdminMsg(status ? `Düzenleme güncellenemedi (HTTP ${status}).` : "Düzenleme güncellenemedi.");
     } finally {
       setAdminSaving(false);
     }
@@ -296,14 +370,8 @@ export default function KararTokenDetayPage() {
     <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {title}
-          </div>
-          {subtitle ? (
-            <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              {subtitle}
-            </div>
-          ) : null}
+          <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</div>
+          {subtitle ? <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">{subtitle}</div> : null}
         </div>
         {right ? <div className="shrink-0">{right}</div> : null}
       </div>
@@ -313,12 +381,11 @@ export default function KararTokenDetayPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      {/* =========================================================
-          ✅ KURUMSAL STICKY HEADER (logo her zaman açık)
-         ========================================================= */}
+      {/* ✅ KURUMSAL STICKY HEADER */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
+            {/* İstersen logoyu kaldır (pdf’de zaten kapatıyoruz) */}
             <div className="rounded-xl bg-white p-2 shadow-sm ring-1 ring-zinc-200 dark:bg-white dark:ring-zinc-200">
               <Image
                 src="/eos_management_logo.png"
@@ -331,46 +398,49 @@ export default function KararTokenDetayPage() {
             </div>
 
             <div className="leading-tight">
-              <div className="text-sm font-bold tracking-wide">
-                EOS MANAGEMENT
-              </div>
-              <div className="text-xs text-zinc-600 dark:text-zinc-400">
-                Yönetim Kurulu • Karar Detayı
-              </div>
+              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">Yönetim Kurulu • Karar Detayı</div>
             </div>
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
             <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-              Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve
-              arşivlenir.
+              Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve arşivlenir.
             </span>
+
+            {/* ✅✅✅ BURASI: YAZDIR YOK — PDF İNDİR VAR */}
+            <button
+              type="button"
+              onClick={handlePdfDownload}
+              disabled={pdfDownloading || loading || !data}
+              className="h-9 rounded-md bg-zinc-900 px-3 text-[12px] font-semibold text-white shadow-sm hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {pdfDownloading ? "PDF Hazırlanıyor..." : "⬇️ PDF İndir"}
+            </button>
           </div>
         </div>
       </div>
 
       {/* içerik */}
       <div className="mx-auto max-w-6xl px-3 py-5 sm:px-5 sm:py-6">
+        {pdfErr ? (
+          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700 shadow-sm">
+            {pdfErr}
+          </div>
+        ) : null}
+
         {/* üst mini bar */}
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <StatusPill
-              tone={duzenlemeAcikMi ? "ok" : "bad"}
-              label={duzenlemeAcikMi ? "Düzenleme Açık" : "Düzenleme Kapalı"}
-            />
-            <StatusPill
-              tone={data?.nihaiSonuc ? "neutral" : "warn"}
-              label={`Nihai: ${data?.nihaiSonuc ?? "-"}`}
-            />
+            <StatusPill tone={duzenlemeAcikMi ? "ok" : "bad"} label={duzenlemeAcikMi ? "Düzenleme Açık" : "Düzenleme Kapalı"} />
+            <StatusPill tone={data?.nihaiSonuc ? "neutral" : "warn"} label={`Nihai: ${data?.nihaiSonuc ?? "-"}`} />
           </div>
 
           <div className="text-right text-[11px] text-zinc-500 dark:text-zinc-400">
             {personel ? (
-              <>
-                <div className="font-semibold text-zinc-700 dark:text-zinc-200">
-                  {safeText(personel.ad)} {safeText(personel.soyad)}
-                </div>
-              </>
+              <div className="font-semibold text-zinc-700 dark:text-zinc-200">
+                {safeText(personel.ad)} {safeText(personel.soyad)}
+              </div>
             ) : null}
           </div>
         </div>
@@ -392,61 +462,57 @@ export default function KararTokenDetayPage() {
             {/* SOL */}
             <div className="lg:col-span-8 space-y-3">
               <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                {/* Üst bilgi */}
                 <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-[12px] text-zinc-500 dark:text-zinc-400">
                     {data.site?.ad ? `${data.site.ad} • ` : ""}
                     {formatTR(data.tarih)}
                   </div>
 
-                  {/* ✅ Karar No: artık SiteId-SiteBazliNo (fallback id) */}
                   <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     Karar No:
                     <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
-                      #
                       {(() => {
-                        const siteIdRow = data?.siteId ?? data?.SiteId;
-                        const siteBazliNo =
-                          data?.siteBazliNo ?? data?.SiteBazliNo;
-
-                        if (
-                          typeof siteBazliNo === "number" &&
-                          siteBazliNo > 0 &&
-                          siteIdRow
-                        ) {
-                          return ` ${siteBazliNo}`;
-                        }
-                        return safeText(data?.id ?? data?.Id);
+                        const siteBazliNo = data?.siteBazliNo ?? data?.SiteBazliNo;
+                        if (typeof siteBazliNo === "number" && siteBazliNo > 0) return `#${siteBazliNo}`;
+                        return `#${safeText(data?.id ?? data?.Id)}`;
                       })()}
                     </span>
                   </div>
                 </div>
 
-                {/* Karar konusu */}
                 <div className="break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
                   {safeText(data.kararKonusu)}
                 </div>
 
-                {/* Açıklama */}
                 <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[13px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
-                  <div className="whitespace-pre-wrap break-words">
-                    {safeText(data.kararAciklamasi)}
-                  </div>
+                  <div className="whitespace-pre-wrap break-words">{safeText(data.kararAciklamasi)}</div>
+                </div>
+
+                {/* Mobilde PDF indir */}
+                <div className="mt-4 md:hidden">
+                  <button
+                    type="button"
+                    onClick={handlePdfDownload}
+                    disabled={pdfDownloading || loading || !data}
+                    className="h-10 w-full rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white shadow-sm hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    {pdfDownloading ? "PDF Hazırlanıyor..." : "⬇️ PDF İndir"}
+                  </button>
                 </div>
               </div>
 
-              {/* Yetki uyarıları */}
+              {/* (senin diğer bloklar aynı kalsın) */}
+              {/* Rol11 / Rol90 blokların aşağıda aynen duruyor... */}
+
               {personel && !isRol11 && !isRol90 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
-                  Bu ekranda oy/düşünce girişi sadece <b>rol 11</b>, yönetici
-                  işlemleri sadece <b>rol 90</b>.
+                  Bu ekranda oy/düşünce girişi sadece <b>rol 11</b>, yönetici işlemleri sadece <b>rol 90</b>.
                 </div>
               )}
 
               {isRol11 && !myOnerenKaydi && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
-                  Bu karar için “söz sahibi üye” listesinde değilsin. Oy/düşünce
-                  giremezsin.
+                  Bu karar için “söz sahibi üye” listesinde değilsin. Oy/düşünce giremezsin.
                 </div>
               )}
 
@@ -456,19 +522,13 @@ export default function KararTokenDetayPage() {
                 </div>
               )}
 
-              {/* Rol11 form */}
               {canEdit && (
                 <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                  {/* Başlık */}
                   <div className="mb-3">
-                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      Karar Düşüncen
-                    </div>
+                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Karar Düşüncen</div>
                   </div>
 
-                  {/* Form alanı */}
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {/* Seçim */}
                     <div>
                       <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                         Seçim
@@ -476,11 +536,13 @@ export default function KararTokenDetayPage() {
                       <select
                         value={secim}
                         onChange={(e) => setSecim(e.target.value)}
-                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px]
-                          outline-none transition
-                          focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200
-                          dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
-                          dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                        className={[
+                          "h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px]",
+                          "outline-none transition",
+                          "focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200",
+                          "dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100",
+                          "dark:focus:border-zinc-600 dark:focus:ring-zinc-800",
+                        ].join(" ")}
                       >
                         <option value="">Seçiniz...</option>
                         {OPTIONS.map((o) => (
@@ -491,15 +553,10 @@ export default function KararTokenDetayPage() {
                       </select>
                     </div>
 
-                    {/* Açıklama */}
                     <div>
-                      <label
-                        htmlFor="aciklama"
-                        className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300"
-                      >
+                      <label htmlFor="aciklama" className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                         Açıklama (opsiyonel)
                       </label>
-
                       <input
                         id="aciklama"
                         type="text"
@@ -507,92 +564,76 @@ export default function KararTokenDetayPage() {
                         onChange={(e) => setAciklama(e.target.value)}
                         placeholder="Kısa not..."
                         autoComplete="off"
-                        className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-[12px] text-zinc-900
-                          outline-none transition
-                          focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200
-                          dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100
-                          dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
+                        className={[
+                          "h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-[12px] text-zinc-900",
+                          "outline-none transition",
+                          "focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200",
+                          "dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100",
+                          "dark:focus:border-zinc-500 dark:focus:ring-zinc-800",
+                        ].join(" ")}
                       />
                     </div>
                   </div>
 
-                  {/* Aksiyonlar */}
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <button
                       onClick={handleKaydet}
                       disabled={saving}
-                      className="h-10 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white
-                        shadow-sm transition hover:bg-zinc-800 active:scale-[0.99]
-                        disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      className="h-10 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                     >
                       {saving ? "Kaydediliyor..." : "Kaydet"}
                     </button>
 
-                    {saveMsg && (
-                      <div
-                        className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-700
-                        dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
-                      >
+                    {saveMsg ? (
+                      <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
                         {saveMsg}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               )}
 
-              {/* Söz sahibi üyeler */}
-              {Array.isArray(data.onerenKisiler) &&
-                data.onerenKisiler.length > 0 && (
-                  <SoftCard
-                    title="Söz Sahibi Üyeler"
-                    subtitle="Üyelerin seçimi ve açıklamaları bu kararın kayıt sürecinin parçasıdır."
-                  >
-                    <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-                      {data.onerenKisiler.map((o) => {
-                        const isMe =
-                          Number(o.personelId) === Number(personel?.id);
-                        const dusunce = o.kararDusuncesi ?? "-";
-
-                        return (
-                          <div key={o.id} className="px-4 py-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <div className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
-                                    {o.personel?.ad ?? "-"}{" "}
-                                    {o.personel?.soyad ?? ""}
-                                  </div>
-                                  {isMe ? (
-                                    <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                                      SEN
-                                    </span>
-                                  ) : null}
+              {Array.isArray(data.onerenKisiler) && data.onerenKisiler.length > 0 ? (
+                <SoftCard title="Söz Sahibi Üyeler" subtitle="Üyelerin seçimi ve açıklamaları bu kararın kayıt sürecinin parçasıdır.">
+                  <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+                    {data.onerenKisiler.map((o) => {
+                      const isMe = Number(o.personelId) === Number(personel?.id);
+                      const dusunce = o.kararDusuncesi ?? "-";
+                      return (
+                        <div key={o.id} className="px-4 py-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <div className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
+                                  {o.personel?.ad ?? "-"} {o.personel?.soyad ?? ""}
                                 </div>
-
-                                {o.kararDusunceAciklamasi ? (
-                                  <div className="mt-1 text-[11px] text-zinc-700 dark:text-zinc-200">
-                                    {o.kararDusunceAciklamasi}
-                                  </div>
-                                ) : (
-                                  <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                                    Açıklama yok
-                                  </div>
-                                )}
+                                {isMe ? (
+                                  <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                                    SEN
+                                  </span>
+                                ) : null}
                               </div>
 
-                              <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                                {dusunce}
-                              </span>
+                              {o.kararDusunceAciklamasi ? (
+                                <div className="mt-1 text-[11px] text-zinc-700 dark:text-zinc-200">{o.kararDusunceAciklamasi}</div>
+                              ) : (
+                                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Açıklama yok</div>
+                              )}
                             </div>
+
+                            <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                              {dusunce}
+                            </span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </SoftCard>
-                )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </SoftCard>
+              ) : null}
             </div>
 
-            {/* SAĞ: Yönetici paneli (sadece Rol 90) */}
+            {/* SAĞ */}
             <div className="lg:col-span-4 space-y-3">
               {isRol90 ? (
                 <SoftCard
@@ -602,25 +643,18 @@ export default function KararTokenDetayPage() {
                       type="button"
                       disabled={adminSaving}
                       onClick={handleToggleDuzenleme}
-                      className={`h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
-                        duzenlemeAcikMi
-                          ? "bg-red-600 hover:bg-red-700"
-                          : "bg-emerald-600 hover:bg-emerald-700"
-                      }`}
+                      className={[
+                        "h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60",
+                        duzenlemeAcikMi ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700",
+                      ].join(" ")}
                     >
-                      {adminSaving
-                        ? "İşleniyor..."
-                        : duzenlemeAcikMi
-                          ? "Düzenlemeyi Kapat"
-                          : "Düzenlemeyi Aç"}
+                      {adminSaving ? "İşleniyor..." : duzenlemeAcikMi ? "Düzenlemeyi Kapat" : "Düzenlemeyi Aç"}
                     </button>
                   }
                 >
                   <div className="space-y-3">
                     <div>
-                      <label className="mb-1 block text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">
-                        Nihai Sonuç
-                      </label>
+                      <label className="mb-1 block text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">Nihai Sonuç</label>
                       <select
                         value={nihaiSelect}
                         onChange={(e) => {
@@ -628,7 +662,11 @@ export default function KararTokenDetayPage() {
                           setNihaiSelect(v);
                           if (v) setNihai("");
                         }}
-                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                        className={[
+                          "h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-[12px] shadow-sm outline-none transition",
+                          "focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200",
+                          "dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-zinc-600 dark:focus:ring-zinc-800",
+                        ].join(" ")}
                       >
                         <option value="">Seçiniz...</option>
                         {NIHAI_OPTIONS.map((o) => (
@@ -657,32 +695,16 @@ export default function KararTokenDetayPage() {
                 </SoftCard>
               ) : (
                 <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-[12px] text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                  <div className="font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
-                    Yönetim Kurulu Karar Bilgilendirmesi
-                  </div>
-
+                  <div className="mb-1 font-semibold text-zinc-800 dark:text-zinc-200">Yönetim Kurulu Karar Bilgilendirmesi</div>
                   <p className="text-[12px] leading-relaxed">
-                    Bu ekranda görüntülenen kararlar,{" "}
-                    <b>Kat Mülkiyeti Kanunu</b> ve ilgili mevzuat hükümleri
-                    çerçevesinde site/apartman yönetim kurulu tarafından
-                    oluşturulan resmi kararlardır. Karar metinleri ve üyelerin
-                    beyanları, kurumsal kayıt niteliğinde olup yönetim arşivinde
-                    saklanır ve yetkilendirilmiş kişiler tarafından
-                    görüntülenebilir.
+                    Bu ekranda görüntülenen kararlar, <b>Kat Mülkiyeti Kanunu</b> ve ilgili mevzuat hükümleri çerçevesinde
+                    site/apartman yönetim kurulu tarafından oluşturulan resmi kararlardır.
                   </p>
-
                   <p className="mt-2 text-[12px] leading-relaxed">
-                    Nihai sonuç ve düzenleme yetkileri yalnızca yönetim planında
-                    tanımlı
-                    <b>yetkili yönetici</b> tarafından kullanılabilir. Üyelerin
-                    görüş ve oyları, karar sürecinin şeffaflığı ve KMK’ya
-                    uygunluğu açısından sistem üzerinde kayıt altına
-                    alınmaktadır.
+                    Nihai sonuç ve düzenleme yetkileri yalnızca yönetim planında tanımlı <b>yetkili yönetici</b> tarafından kullanılabilir.
+                    Üyelerin görüş ve oyları sistem üzerinde kayıt altına alınır.
                   </p>
-
-                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
-                    EOS Management
-                  </p>
+                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">EOS Management</p>
                 </div>
               )}
             </div>
@@ -691,6 +713,22 @@ export default function KararTokenDetayPage() {
 
         <div className="mt-6 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
           SAYGILARIMIZLA, <span className="font-semibold">EOS MANAGEMENT</span>
+        </div>
+      </div>
+
+      {/* ✅✅✅ PDF İÇİN GİZLİ A4 RENDER ALANI (BU SAYEDE PDF A4 GÖRÜNÜMÜ AYNI ÇIKAR) */}
+      <div
+        style={{
+          position: "fixed",
+          left: "-99999px",
+          top: 0,
+          width: "210mm",
+          background: "#fff",
+          zIndex: -1,
+        }}
+      >
+        <div id="pdf-a4-root" ref={pdfRef}>
+          <KararPrintA4 data={data} />
         </div>
       </div>
     </div>
