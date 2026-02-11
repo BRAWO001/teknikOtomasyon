@@ -1,3 +1,8 @@
+
+
+
+
+
 // src/pages/YonetimKuruluYoneticiRaporu/YoneticiRaporuYeniKararOlustur.jsx
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -93,6 +98,9 @@ export default function YoneticiRaporuYeniKararOlusturPage() {
   const [kararNo, setKararNo] = useState(""); // placeholder var, zorunlu
   const [gundemMetni, setGundemMetni] = useState("");
 
+  // ✅ İki div arasına girecek metin
+  const [araAciklamaMetni, setAraAciklamaMetni] = useState("");
+
   /* ========================
      UI state
   ======================== */
@@ -169,6 +177,8 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       setKararDraft("");
       setKararMsg(null);
 
+      setAraAciklamaMetni("");
+
       setMsg(null);
       return;
     }
@@ -180,7 +190,9 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         setUyelerLoading(true);
         setUyelerError(null);
 
-        const list = await getDataAsync(`ProjeYonetimKurulu/site/${siteId}/uyeler`);
+        const list = await getDataAsync(
+          `ProjeYonetimKurulu/site/${siteId}/uyeler`
+        );
         if (cancelled) return;
 
         const normalized = Array.isArray(list) ? list : list ? [list] : [];
@@ -193,6 +205,8 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         setKararItems([]);
         setKararDraft("");
         setKararMsg(null);
+
+        setAraAciklamaMetni("");
       } catch (e) {
         console.error("UYELER GET ERROR:", e);
         if (cancelled) return;
@@ -231,7 +245,8 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         setProjeSorumlusuId("");
       } else {
         const current = Number(projeSorumlusuId);
-        if (!current || !next.includes(current)) setProjeSorumlusuId(String(next[0]));
+        if (!current || !next.includes(current))
+          setProjeSorumlusuId(String(next[0]));
       }
       return next;
     });
@@ -317,6 +332,8 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
     const kararNoFinal = (kararNo || "").trim();
     const gundemFinal = normalizeLine(gundemMetni);
 
+    const araAciklamaFinal = normalizeLine(araAciklamaMetni);
+
     const kararListHtml =
       kararItems.length > 0
         ? `<ol style="margin:8px 0 0 18px; padding:0;">
@@ -326,13 +343,32 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
           </ol>`
         : `<div style="margin-top:6px; color:#666;">-</div>`;
 
+    const araAciklamaHtml = araAciklamaFinal
+      ? `<div>${escHtml(araAciklamaFinal)}</div>`
+      : "";
+
+    // ✅ Header: Karar Belgesi Başlığı inputundan gelsin (mantıklı + güvenli)
+    const defaultHeaderText = `${siteAdi.toUpperCase()}
+SİTE YÖNETİCİLİĞİ
+YÖNETİM KURULU TOPLANTI TUTANAĞI`;
+
+    const headerTextRaw = String(kararKonusu ?? "").trim() || defaultHeaderText;
+
+    const headerLines = headerTextRaw
+      .split(/\r?\n/)
+      .map((x) => String(x ?? "").trim())
+      .filter((x) => x.length);
+
+    const headerHtml =
+      headerLines.length > 0
+        ? headerLines.map((l) => escHtml(l)).join("<br/>")
+        : escHtml(siteAdi.toUpperCase());
+
     return `
 <div style="font-family:Arial, sans-serif; line-height:1.6">
 
   <div style="text-align:center; font-weight:bold;">
-    ${escHtml(siteAdi.toUpperCase())}<br/>
-    SİTE YÖNETİCİLİĞİ<br/>
-    YÖNETİM KURULU TOPLANTI TUTANAĞI
+    ${headerHtml}
   </div>
 
   <br/>
@@ -347,11 +383,13 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
   <br/>
 
   <div>
-    Yönetim planının 30.3 maddesi ve KMK'nın 73. maddesi hükmünce Kat Mülkiyeti Kanunu 27 ve
+    KMK'nın 73. maddesi hükmünce Kat Mülkiyeti Kanunu 27 ve
     devamı hükümlerince toplu yapı kat malikleri kurulu yerine görev yapmak üzere atanmış yukarıda
     isimleri yazılı kişilerce toplanılmıştır.
   </div>
 
+  <br/>
+  ${araAciklamaHtml}
   <br/>
 
   <div>
@@ -386,9 +424,8 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
 
     if (!katilanlarText.trim()) return "Toplantıya katılanlar otomatik üretilemedi.";
 
-    if (!kararKonusu.trim()) return "Karar belgesi başlığı zorunlu.";
+    if (!String(kararKonusu ?? "").trim()) return "Karar belgesi başlığı zorunlu.";
 
-    // ✅ en az 1 madde
     if (!kararItems.length) return "En az 1 karar maddesi eklemelisiniz.";
 
     return null;
@@ -409,7 +446,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
 
       const payload = {
         siteId: Number(siteId),
-        kararKonusu: kararKonusu.trim(),
+        kararKonusu: String(kararKonusu ?? "").trim(),
         kararAciklamasi: finalAciklama, // ✅ HTML
         onerenPersonelIdler: selectedPersonelIds,
       };
@@ -441,6 +478,8 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
     projeSorumlusuId,
     selectedUyeOptions,
     kararItems,
+    araAciklamaMetni,
+    kararKonusu,
   ]);
 
   return (
@@ -545,9 +584,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 disabled={sitesLoading}
                 className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
               >
-                <option value="">
-                  {sitesLoading ? "Yükleniyor..." : "Seçiniz..."}
-                </option>
+                <option value="">{sitesLoading ? "Yükleniyor..." : "Seçiniz..."}</option>
                 {sites.map((s) => (
                   <option key={s.siteId} value={s.siteId}>
                     {s.site?.ad ?? `Site #${safeText(s.siteId)}`}
@@ -627,6 +664,8 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                   placeholder="2026/..."
                 />
               </div>
+
+              
 
               {/* ✅ Katılanlar otomatik */}
               <div className="sm:col-span-2">
@@ -732,6 +771,21 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 maxLength={400}
               />
             </div>
+
+
+            {/* ✅ Ara Açıklama */}
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                  Ara Açıklama
+                </label>
+                <textarea
+                  className="min-h-[90px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  value={araAciklamaMetni}
+                  onChange={(e) => setAraAciklamaMetni(e.target.value)}
+                  placeholder="KMK paragrafı ile kararların başladığı kısım arasına girecek metin..."
+                  maxLength={600}
+                />
+              </div>
 
             {/* ✅ Karar Metni -> MADDE MADDE EKLEME */}
             <div>
