@@ -229,9 +229,9 @@ export default function ProjeGorevlileriPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleLogout}
-                className="rounded-md bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
+                className="rounded-md cursor-pointer bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
               >
-                Çıkış Yap
+                Çıkış
               </button>
             </div>
           </div>
@@ -253,14 +253,14 @@ export default function ProjeGorevlileriPage() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleYeniTalep}
-              className="rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+              className="rounded-md cursor-pointer bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
             >
               Yeni Talep Oluştur
             </button>
 
             <button
               onClick={handleTaleplerim}
-              className="rounded-md bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700"
+              className="rounded-md cursor-pointer bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700"
             >
               Taleplerim
             </button>
@@ -292,14 +292,14 @@ export default function ProjeGorevlileriPage() {
                 <div className="mt-3 flex justify-evenly gap-2 flex-wrap">
                   <button
                     onClick={handleYeniIsEmri}
-                    className="flex items-center gap-1 rounded-md bg-amber-200 px-3 py-1.5 text-xs font-semibold text-black hover:bg-amber-300"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     ➕ İş Emri Oluştur
                   </button>
 
                   <button
                     onClick={handleProjemIsEmirleri}
-                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📋 Projemin İş Emirleri
                   </button>
@@ -323,7 +323,7 @@ export default function ProjeGorevlileriPage() {
                     type="button"
                     onClick={openDosyaModal}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📎 Dosya Ekle / Gör
                   </button>
@@ -353,7 +353,7 @@ export default function ProjeGorevlileriPage() {
                     type="button"
                     onClick={handleYeniKararTalebi}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     ➕ Yeni Talepte Bulun
                   </button>
@@ -362,7 +362,7 @@ export default function ProjeGorevlileriPage() {
                     type="button"
                     onClick={handleProjemKararlar}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📚 Projemin Kararları
                   </button>
@@ -391,7 +391,7 @@ export default function ProjeGorevlileriPage() {
                     type="button"
                     onClick={handleYeniIleti}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     ➕ Yeni İleti Oluştur
                   </button>
@@ -400,7 +400,7 @@ export default function ProjeGorevlileriPage() {
                     type="button"
                     onClick={handleProjemIletiler}
                     disabled={!selectedSiteId}
-                    className="flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📄 İletileri Görüntüle
                   </button>

@@ -6,7 +6,7 @@ export default function SatinalmaMalzemeTeklifList({
   if (malzemeler.length === 0) {
     return (
       <div style={{ fontSize: 14 }}>
-        Bu satın almada malzeme bulunmuyor.
+        Malzeme bulunmuyor.
       </div>
     );
   }

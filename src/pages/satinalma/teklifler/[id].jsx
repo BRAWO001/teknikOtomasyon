@@ -17,16 +17,20 @@ import SatinalmaTedarikciOzet from "@/components/SatinalmaTedarikciOzet";
 import SatinalmaMalzemeTeklifList from "@/components/SatinalmaMalzemeTeklifList";
 import SatinalmaYorumlarCard from "@/components/satinalma/SatinalmaYorumlarCard";
 
-
 // ✅ yeni componentler
 import SatinalmaFaturaPdfDurumCard from "@/components/satinalma/SatinalmaFaturaPdfDurumCard";
 import SatinalmaDurumCard from "@/components/satinalma/SatinalmaDurumCard";
 import SatinalmaSurecDurumCard from "@/components/satinalma/SatinalmaSurecDurumCard";
 
+// ✅ DOSYA MODAL
+import TalepFotoModals from "@/components/satinalma/TalepFotoModals";
+
 // const BASE_URL = "http://localhost:3000";
 const BASE_URL = "http://teknik-otomasyon.vercel.app";
 
-// ✅ güvenli url mi? (share link için)
+/* =========================
+   helpers
+========================= */
 function isValidHttpUrl(url) {
   if (!url) return false;
   try {
@@ -36,6 +40,35 @@ function isValidHttpUrl(url) {
     return false;
   }
 }
+
+function pickAny(obj, ...keys) {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+  }
+  return null;
+}
+
+function fileExt(name) {
+  const s = String(name || "");
+  const idx = s.lastIndexOf(".");
+  return idx >= 0 ? s.slice(idx + 1).toLowerCase() : "";
+}
+
+function isImageUrl(url, dosyaAdi) {
+  const u = String(url || "");
+  const n = String(dosyaAdi || "");
+  const ext = fileExt(n) || fileExt(u.split("?")[0]);
+  return ["jpg", "jpeg", "png", "webp", "gif", "heic"].includes(ext);
+}
+
+function isPdf(url, dosyaAdi) {
+  const u = String(url || "");
+  const n = String(dosyaAdi || "");
+  const ext = fileExt(n) || fileExt(u.split("?")[0]);
+  return ext === "pdf";
+}
+/* ========================= */
 
 export default function SatinAlmaTekliflerPage() {
   const router = useRouter();
@@ -59,6 +92,9 @@ export default function SatinAlmaTekliflerPage() {
   // ✅ UI için local Not_1 & Not_5
   const [localNot1, setLocalNot1] = useState("");
   const [localNot5, setLocalNot5] = useState("");
+
+  // ✅ DOSYA MODAL STATE
+  const [dosyaModalOpen, setDosyaModalOpen] = useState(false);
 
   // Personel cookie'sini oku
   useEffect(() => {
@@ -105,6 +141,33 @@ export default function SatinAlmaTekliflerPage() {
     setLocalNot5((data.not_5 ?? data.Not_5 ?? "") || "");
   }, [data]);
 
+  // ✅ DTO’ya eklediğimiz DOSYALAR
+  const dosyalar = useMemo(() => {
+    const list = data?.dosyalar ?? data?.Dosyalar ?? [];
+    return Array.isArray(list) ? list : [];
+  }, [data]);
+
+  // ✅ Görsel/Belge ayrımı + sayılar
+  const dosyaOzet = useMemo(() => {
+    const foto = [];
+    const belge = [];
+
+    dosyalar.forEach((d) => {
+      const turKod = Number(pickAny(d, "TurKod", "turKod")) || 0;
+      const url = pickAny(d, "Url", "url");
+      const dosyaAdi = pickAny(d, "DosyaAdi", "dosyaAdi");
+
+      if (turKod === 10) foto.push(d);
+      else if (turKod === 20) belge.push(d);
+      else {
+        if (isImageUrl(url, dosyaAdi)) foto.push(d);
+        else belge.push(d);
+      }
+    });
+
+    return { foto, belge, total: dosyalar.length };
+  }, [dosyalar]);
+
   // Malzeme map (Id -> malzeme)
   const malzemeMap = useMemo(() => {
     if (!data) return {};
@@ -118,34 +181,19 @@ export default function SatinAlmaTekliflerPage() {
   }, [data]);
 
   if (loading) {
-    return (
-      <div style={{ padding: "1.5rem", fontSize: 14, color: "#000" }}>
-        Yükleniyor...
-      </div>
-    );
+    return <div className="p-6 text-sm text-zinc-900 dark:text-zinc-100">Yükleniyor...</div>;
   }
 
   if (error) {
     return (
-      <div
-        style={{
-          padding: "1.5rem",
-          fontSize: 14,
-          color: "#b91c1c",
-          backgroundColor: "#fef2f2",
-        }}
-      >
+      <div className="m-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         {error}
       </div>
     );
   }
 
   if (!data) {
-    return (
-      <div style={{ padding: "1.5rem", fontSize: 14, color: "#000" }}>
-        Kayıt bulunamadı.
-      </div>
-    );
+    return <div className="p-6 text-sm text-zinc-900 dark:text-zinc-100">Kayıt bulunamadı.</div>;
   }
 
   const seriNo = data.seriNo ?? data.SeriNo;
@@ -305,7 +353,6 @@ export default function SatinAlmaTekliflerPage() {
   });
 
   // ✅ Onay / Red / Yorum (tek endpoint)
-  // onaylandiMi: true=Onay, false=Red, null=Yorum (durum değişmez)
   const handleOnayIslem = async (onaylandiMi) => {
     if (!id || !currentPersonelId) return;
 
@@ -317,7 +364,7 @@ export default function SatinAlmaTekliflerPage() {
       const res = await postDataAsync(`satinalma/onay`, {
         satinAlmaId: Number(id),
         personelId: Number(currentPersonelId),
-        onaylandiMi: onaylandiMi === undefined ? null : onaylandiMi, // true/false/null
+        onaylandiMi: onaylandiMi === undefined ? null : onaylandiMi,
         not: (onayNot || "").trim() || null,
       });
 
@@ -326,8 +373,8 @@ export default function SatinAlmaTekliflerPage() {
         (onaylandiMi === true
           ? "Onayınız kaydedildi / güncellendi."
           : onaylandiMi === false
-          ? "Red işleminiz kaydedildi / güncellendi."
-          : "Yorum güncellendi (durum değişmedi).");
+            ? "Red işleminiz kaydedildi / güncellendi."
+            : "Yorum güncellendi (durum değişmedi).");
 
       setOnaySuccess(apiMessage);
       setOnayNot("");
@@ -339,57 +386,113 @@ export default function SatinAlmaTekliflerPage() {
       setOnayError(
         err?.response?.data?.message ||
           err?.response?.data?.Message ||
-          "Onay/Yorum işlemi sırasında bir hata oluştu."
+          "Onay/Yorum işlemi sırasında bir hata oluştu.",
       );
     } finally {
       setOnayLoading(false);
     }
   };
 
+const DosyaTile = ({ d, mode }) => {
+  const url = pickAny(d, "Url", "url");
+  const dosyaAdi = pickAny(d, "DosyaAdi", "dosyaAdi") ?? "-";
+  const turAd = pickAny(d, "TurAd", "turAd") ?? "-";
+  const sira = pickAny(d, "Sira", "sira") ?? "-";
+  const did = pickAny(d, "Id", "id") ?? `${Math.random()}`;
+  const isImg = mode === "foto" ? true : isImageUrl(url, dosyaAdi);
+  const pdf = isPdf(url, dosyaAdi);
+
+  const canOpen = url && isValidHttpUrl(url);
+
+  // ✅ tüm kart tıklanınca aç
+  const handleOpen = () => {
+    if (!canOpen) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div
-      style={{
-        maxWidth: 1200,
-        margin: "0 auto",
-        padding: "1rem 1.25rem",
-        fontSize: 14,
-        color: "#000",
-        backgroundColor: "#fff",
+      role={canOpen ? "button" : undefined}
+      tabIndex={canOpen ? 0 : -1}
+      onClick={handleOpen}
+      onKeyDown={(e) => {
+        if (!canOpen) return;
+        if (e.key === "Enter" || e.key === " ") handleOpen();
       }}
+      className={[
+        "overflow-hidden rounded-xl border bg-white p-2 shadow-sm dark:bg-zinc-900",
+        "border-zinc-200 dark:border-zinc-800",
+        canOpen ? "cursor-pointer transition hover:shadow-md hover:border-sky-300 dark:hover:border-sky-700" : "opacity-70",
+      ].join(" ")}
+      title={canOpen ? "Aç / İndir" : "Link yok"}
     >
-      {/* ÜST BAR */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-          marginBottom: 10,
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "6px 10px",
-            borderRadius: 999,
-            border: "1px solid #d1d5db",
-            backgroundColor: "#f8fafc",
-            fontSize: 12,
-            fontWeight: 800,
-            color: "#0f172a",
-          }}
-        >
-          Sıra No: <span style={{ fontWeight: 900 }}>{id}</span>
+      {/* preview */}
+      {isImg && canOpen ? (
+        <div className="h-[88px] w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={dosyaAdi} className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className="flex h-[88px] w-full items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-center text-[11px] font-extrabold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+          {pdf ? "PDF" : isImg ? "GÖRSEL" : "BELGE"}
+        </div>
+      )}
+
+      <div className="mt-1 space-y-1">
+        <div className="line-clamp-1 text-[10px] font-normal text-zinc-900 dark:text-zinc-100">
+          {dosyaAdi}
         </div>
 
-        <h1
-          style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#0b1220" }}
-        >
-          Satın Alma Teklifleri
+        
+
+      </div>
+    </div>
+  );
+};
+
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-4 text-sm text-zinc-900 dark:text-zinc-100">
+      {/* ✅ DOSYA MODAL */}
+      <TalepFotoModals
+        isOpen={dosyaModalOpen}
+        onClose={() => setDosyaModalOpen(false)}
+        satinAlmaId={id}
+        satinAlmaSeriNo={seriNo}
+      />
+
+      {/* ÜST BAR */}
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-[12px] font-extrabold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+          Sıra No: <span className="font-black">{id}</span>
+        </div>
+
+        <h1 className="m-0 text-[18px] font-extrabold text-zinc-900 dark:text-zinc-100">
+          Talep Detayı
         </h1>
+
+        {/* SAĞ AKSİYONLAR */}
+        <div className="flex items-center gap-2">
+          {/* Geri */}
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-[12px] font-extrabold text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            title="Geri"
+          >
+            ← Geri
+          </button>
+
+          {/* Ana Sayfa */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-[12px] font-extrabold text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            title="Ana sayfaya git"
+          >
+            ⌂ Ana Sayfa
+          </button>
+        </div>
       </div>
 
       {/* PAYLAŞIM LINK */}
@@ -400,25 +503,16 @@ export default function SatinAlmaTekliflerPage() {
       />
 
       {/* ✅ FATURA + PDF DURUM KARTI */}
-      <SatinalmaFaturaPdfDurumCard
-        faturaShareUrl={faturaShareUrl}
-        not2Raw={not2Raw}
-      />
+      <div className="mt-3">
+        <SatinalmaFaturaPdfDurumCard
+          faturaShareUrl={faturaShareUrl}
+          not2Raw={not2Raw}
+        />
+      </div>
 
       {/* ÜST GRID */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1.3fr)",
-          gap: "0.75rem",
-          alignItems: "flex-start",
-          marginTop: "0.75rem",
-          marginBottom: "0.75rem",
-        }}
-      >
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-        >
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="flex flex-col gap-3">
           <SatinalmaHeaderCard
             seriNo={seriNo}
             tarih={tarih}
@@ -440,9 +534,8 @@ export default function SatinAlmaTekliflerPage() {
             handleOnayIslem={handleOnayIslem}
           />
         </div>
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-        >
+
+        <div className="flex flex-col gap-3">
           <SatinalmaOnaylayanPersoneller
             onaylayanPersoneller={onaylayanPersoneller}
           />
@@ -457,38 +550,127 @@ export default function SatinAlmaTekliflerPage() {
         </div>
       </div>
 
+      {/* ✅ DOSYA ÖZET (Tailwind, 4x..) */}
+      <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-[12px] font-extrabold text-zinc-900 dark:text-zinc-100">
+            Talep İçin Yüklenen Belgeler
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setDosyaModalOpen(true)}
+            className="rounded-xl border cursor-pointer border-zinc-300 bg-blue-100 px-1.5 py-1 text-[11px] font-semibold text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            title="Dosyaları görüntüle / yükle"
+          >
+            Belge Ekleme Yapabilirsiniz ({dosyaOzet.total})
+          </button>
+
+          <div className="flex flex-wrap gap-2 text-[12px]">
+            <span className="rounded-full border border-zinc-200 bg-white px-2 py-[2px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+              Foto: <b>{dosyaOzet.foto.length}</b>
+            </span>
+            <span className="rounded-full border border-zinc-200 bg-white px-2 py-[2px] font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+              Belge: <b>{dosyaOzet.belge.length}</b>
+            </span>
+          </div>
+        </div>
+
+        {dosyalar.length === 0 ? (
+          <div className="mt-2 text-[12px] text-zinc-600 dark:text-zinc-300">
+            Henüz dosya yok yükleyebilirsiniz.
+          </div>
+        ) : (
+          <div className="mt-3 space-y-4">
+            {/* FOTO */}
+            <div>
+              <div className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-100">
+                Fotoğraflar
+              </div>
+
+              {dosyaOzet.foto.length === 0 ? (
+                <div className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
+                  Fotoğraf yok.
+                </div>
+              ) : (
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  {dosyaOzet.foto.map((d) => (
+                    <DosyaTile
+                      key={`${pickAny(d, "Id", "id")}-${pickAny(d, "Url", "url")}-${pickAny(d, "Sira", "sira")}`}
+                      d={d}
+                      mode="foto"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* BELGE */}
+            <div>
+              <div className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-100">
+                Belgeler
+              </div>
+
+              {dosyaOzet.belge.length === 0 ? (
+                <div className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
+                  Belge yok.
+                </div>
+              ) : (
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  {dosyaOzet.belge.map((d) => (
+                    <DosyaTile
+                      key={`${pickAny(d, "Id", "id")}-${pickAny(d, "Url", "url")}-${pickAny(d, "Sira", "sira")}`}
+                      d={d}
+                      mode="belge"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ✅ Satın Alım Durumu (Not_1) */}
-      <SatinalmaDurumCard
-        localNot1={localNot1}
-        setLocalNot1={setLocalNot1}
-        satinAlindiYetkiliMi={satinAlindiYetkiliMi}
-        id={id}
-        postDataAsync={postDataAsync}
-        fetchData={fetchData}
-        router={router}
-      />
+      <div className="mt-3">
+        <SatinalmaDurumCard
+          localNot1={localNot1}
+          setLocalNot1={setLocalNot1}
+          satinAlindiYetkiliMi={satinAlindiYetkiliMi}
+          id={id}
+          postDataAsync={postDataAsync}
+          fetchData={fetchData}
+          router={router}
+        />
+      </div>
 
       {/* ✅ Süreç Durumu (Not_5) — Talep Açan */}
-      <SatinalmaSurecDurumCard
-        id={id}
-        localNot5={localNot5}
-        setLocalNot5={setLocalNot5}
-        surecIsaretYetkiliMi={surecIsaretYetkiliMi}
-        postDataAsync={postDataAsync}
-        fetchData={fetchData}
-        router={router}
-      />
+      <div className="mt-3">
+        <SatinalmaSurecDurumCard
+          id={id}
+          localNot5={localNot5}
+          setLocalNot5={setLocalNot5}
+          surecIsaretYetkiliMi={surecIsaretYetkiliMi}
+          postDataAsync={postDataAsync}
+          fetchData={fetchData}
+          router={router}
+        />
+      </div>
 
-      <SatinalmaTedarikciOzet
-        tedarikciOzetList={tedarikciOzetList}
-        satinAlmaId={id}
-        onAfterFastApprove={() => window.location.reload()}
-      />
+      <div className="mt-3">
+        <SatinalmaTedarikciOzet
+          tedarikciOzetList={tedarikciOzetList}
+          satinAlmaId={id}
+          onAfterFastApprove={() => window.location.reload()}
+        />
+      </div>
 
-      <SatinalmaMalzemeTeklifList
-        malzemeler={malzemeler}
-        tekliflerByMalzeme={tekliflerByMalzeme}
-      />
+      <div className="mt-3">
+        <SatinalmaMalzemeTeklifList
+          malzemeler={malzemeler}
+          tekliflerByMalzeme={tekliflerByMalzeme}
+        />
+      </div>
     </div>
   );
 }

@@ -141,7 +141,7 @@ export default function ProjeGorevlileriSonYorumOzetCard({
           <div className="flex items-start justify-between gap-2 px-3 py-2">
             <div className="min-w-0">
               <div className="text-[11px] font-extrabold text-zinc-900 dark:text-zinc-50">
-                Yorum Detayı
+                Yorum Detayı  
               </div>
 
               {(() => {
@@ -175,8 +175,10 @@ export default function ProjeGorevlileriSonYorumOzetCard({
                     >
                       <div className="text-[11px] leading-snug text-zinc-700 dark:text-zinc-200">
                         <div>
+                          <span className="font-bold" >Sayfaya Git</span>
+                          <br/>
                           <span className="font-bold">Yorum:</span>{" "}
-                          {yorumSayisi} adet
+                          {yorumSayisi} adet 
                         </div>
 
                         <div>

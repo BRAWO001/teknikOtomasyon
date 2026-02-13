@@ -1,8 +1,3 @@
-
-
-
-
-
 // src/components/BelgeFotoModals.jsx
 
 import { useEffect, useState } from "react";
@@ -16,6 +11,12 @@ import UploadedFilesSection from "./UploadedFilesSection";
 // ✅ apiService base'i kullanacağı için relative endpoint
 const UPLOAD_URL = "HttpUpload/upload-ftp";
 const SAVE_URL_BASE = "IsEmriDosyaEkle";
+
+// ✅ Tur kodları (mevcut mantıkla aynı)
+const TUR = {
+  FOTO: 10,
+  BELGE: 20,
+};
 
 export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }) {
   if (!isOpen) return null;
@@ -89,6 +90,32 @@ export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }
     return url;
   };
 
+  // ✅ Tek seferde çoklu yükleme (Foto için max 5)
+  const uploadMany = async (fileList, tur, max = 5) => {
+    const arr = Array.from(fileList || []).filter(Boolean);
+    if (arr.length === 0) return;
+
+    const sliced = arr.slice(0, max);
+
+    // ✅ Sırayla yükle (SFTP tarafında en stabil)
+    for (const f of sliced) {
+      await uploadAndAttach(f, tur);
+    }
+  };
+
+  // ✅ Foto input onChange handler (multiple)
+  const handlePickAndUploadManyPhotos = async (e) => {
+    const list = e?.target?.files;
+    e.target.value = ""; // aynı dosyaları tekrar seçebilmek için reset
+    if (!list || list.length === 0) return;
+
+    try {
+      await uploadMany(list, TUR.FOTO, 5);
+    } catch (err) {
+      console.error("MULTI PHOTO UPLOAD ERROR:", err);
+    }
+  };
+
   const handleCloseAndReload = () => {
     onClose?.();
     window.location.reload();
@@ -111,15 +138,17 @@ export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 text-xs">
           <div className="grid gap-3 md:grid-cols-2">
-            <FotoUploadBlock uploadAndAttach={uploadAndAttach} />
+            {/* ✅ Foto: tek seferde max 5 seçilebilir (multiple) */}
+            <FotoUploadBlock
+              uploadAndAttach={uploadAndAttach}
+              onPickMany={handlePickAndUploadManyPhotos}
+            />
+
+            {/* ✅ Belge: mevcut mantık aynı (tek tek ya da senin block ne yapıyorsa) */}
             <BelgeUploadBlock uploadAndAttach={uploadAndAttach} />
           </div>
 
-          <UploadedFilesSection
-            files={files}
-            loadingFiles={loadingFiles}
-            filesError={filesError}
-          />
+          <UploadedFilesSection files={files} loadingFiles={loadingFiles} filesError={filesError} />
         </div>
       </div>
     </div>
