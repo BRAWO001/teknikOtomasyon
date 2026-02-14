@@ -24,10 +24,8 @@ export default function LoginPage() {
 
   // ✅ Dönen yazılar
   const texts = [
-    "Teknik Personel",
-    "Operasyon Yöneticisi",
-    "Proje Yöneticisi",
-    "Yönetim Kurulu Üyesi",
+    "Doğru planlama", "Şeffaf iletişim ", "Disiplinli takip",
+    "Kaliteli proje yönetimi",
   ];
 
   const [activeText, setActiveText] = useState(0);
@@ -124,19 +122,19 @@ export default function LoginPage() {
               </div>
 
               <div className="text-black/70 text-sm">
-                EOS Management — Kurumsal Operasyon Platformu
+                
               </div>
             </div>
           </div>
 
           {/* SAĞ TARAF – LOGIN */}
           <div className="rounded-3xl border border-slate-200 bg-white p-9 shadow-2xl">
-            <div className="mb-6">
+            <div className="mb-6 flex justify-evenly flex-row items-center gap-2">
               <div className="text-[12px] font-semibold tracking-widest text-slate-500">
                 GİRİŞ
               </div>
-              <div className="mt-1 text-xl font-semibold text-slate-900">
-                Hesabınıza giriş yapın
+              <div className="text-[12px] font-semibold tracking-widest text-black">
+                Kat Maliki Girişi
               </div>
               
             </div>

@@ -1,14 +1,12 @@
-
-
-
-
-
 // src/pages/YonetimKurulu/ileti/[token].jsx
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+
+import IletiDosyaModals from "@/components/yonetimKurulu/IletiDosyaModals";
+import IletiDosyaOzetCard from "@/components/yonetimKurulu/IletiDosyaOzetCard";
 
 const DURUM_OPTIONS = [
   { value: "Beklemede", label: "Beklemede" },
@@ -17,19 +15,20 @@ const DURUM_OPTIONS = [
   { value: "İptal", label: "İptal" },
 ];
 
+// ✅ Dosya controller base
+const DOSYA_URL_BASE = "ProjeYKIletiDosyaYukle";
+
 function safeText(v) {
   if (v === null || v === undefined) return "-";
   const s = String(v).trim();
   return s.length ? s : "-";
 }
-
 function pick(obj, ...keys) {
   for (const k of keys) {
     if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
   }
   return undefined;
 }
-
 function normalizePersonel(p) {
   if (!p) return null;
   return {
@@ -39,7 +38,6 @@ function normalizePersonel(p) {
     rol: pick(p, "rol", "Rol") ?? null,
   };
 }
-
 function normalizeSite(s) {
   if (!s) return null;
   return {
@@ -47,7 +45,6 @@ function normalizeSite(s) {
     ad: pick(s, "ad", "Ad") ?? null,
   };
 }
-
 function normalizeYorum(y) {
   if (!y) return null;
   return {
@@ -61,7 +58,6 @@ function normalizeYorum(y) {
 }
 
 function normalizeIletiDto(dto) {
-  // ✅ Bazı backend versiyonlarında { Ileti, Katilimcilar } döner
   const rawIleti = pick(dto, "ileti", "Ileti") || dto;
 
   const siteObj = pick(rawIleti, "site", "Site");
@@ -69,6 +65,10 @@ function normalizeIletiDto(dto) {
 
   const yorumlarRaw = pick(rawIleti, "yorumlar", "Yorumlar");
   const yorumlar = Array.isArray(yorumlarRaw) ? yorumlarRaw.map(normalizeYorum).filter(Boolean) : [];
+
+  // Dosyalar token endpoint’inden gelmezse boş kalır; biz ayrıca dolduracağız.
+  const dosyalarRaw = pick(rawIleti, "dosyalar", "Dosyalar", "iletiDosyalar", "IletiDosyalar");
+  const dosyalar = Array.isArray(dosyalarRaw) ? dosyalarRaw : [];
 
   const normalized = {
     id: pick(rawIleti, "id", "Id") ?? null,
@@ -83,9 +83,9 @@ function normalizeIletiDto(dto) {
     sistemUretilmisLink: pick(rawIleti, "sistemUretilmisLink", "SistemUretilmisLink") ?? null,
     duzenlemeDurumu: pick(rawIleti, "duzenlemeDurumu", "DuzenlemeDurumu") ?? false,
     yorumlar,
+    dosyalar,
   };
 
-  // ✅ Katılımcılar gerekiyorsa (wrap’li response)
   const katilimcilarRaw = pick(dto, "katilimcilar", "Katilimcilar");
   const katilimcilar = Array.isArray(katilimcilarRaw)
     ? katilimcilarRaw.map((k) => ({
@@ -118,13 +118,12 @@ export default function IletiTokenDetayPage() {
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminMsg, setAdminMsg] = useState(null);
 
-  const isRol90 = useMemo(() => Number(personel?.rol) === 90, [personel]);
+  const [dosyaModalOpen, setDosyaModalOpen] = useState(false);
 
+  const isRol90 = useMemo(() => Number(personel?.rol) === 90, [personel]);
   const duzenlemeAcikMi = useMemo(() => !!data?.duzenlemeDurumu, [data?.duzenlemeDurumu]);
 
-  const canComment = useMemo(() => {
-    return !!personel?.id && duzenlemeAcikMi;
-  }, [personel?.id, duzenlemeAcikMi]);
+  const canComment = useMemo(() => !!personel?.id && duzenlemeAcikMi, [personel?.id, duzenlemeAcikMi]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -140,6 +139,32 @@ export default function IletiTokenDetayPage() {
     }
   }, []);
 
+  // ✅ İletiId ile dosyaları çek
+  const fetchDosyalarByIletiId = useCallback(async (iletiId) => {
+    const id = Number(iletiId || 0);
+    if (!id) return [];
+    const list = await getDataAsync(`${DOSYA_URL_BASE}/${id}`);
+    return Array.isArray(list) ? list : [];
+  }, []);
+
+  const reloadData = useCallback(async () => {
+    if (!token) return;
+
+    const dto = await getDataAsync(`projeYonetimKurulu/ileti/public/${token}`);
+    const normalized = normalizeIletiDto(dto || {});
+
+    // ✅ Dosyaları ayrıca çekip data içine koy
+    const dosyalar = await fetchDosyalarByIletiId(normalized?.id);
+    const merged = { ...normalized, dosyalar };
+
+    setData(merged);
+
+    const dStr = merged?.durum ? String(merged.durum) : "";
+    const known = DURUM_OPTIONS.some((x) => x.value === dStr) ? dStr : "";
+    setDurumSelect(known);
+    setDurumCustom(known ? "" : dStr);
+  }, [token, fetchDosyalarByIletiId]);
+
   useEffect(() => {
     if (!token) return;
 
@@ -149,15 +174,18 @@ export default function IletiTokenDetayPage() {
         setLoading(true);
         setErr(null);
 
-        // ✅ Endpoint doğru ama response casing değişken olabilir => normalize ediyoruz
         const dto = await getDataAsync(`projeYonetimKurulu/ileti/public/${token}`);
         if (cancelled) return;
 
         const normalized = normalizeIletiDto(dto || {});
-        setData(normalized);
 
-        // durum default
-        const dStr = normalized?.durum ? String(normalized.durum) : "";
+        // ✅ Dosyaları ayrıca çekip data içine koy
+        const dosyalar = await fetchDosyalarByIletiId(normalized?.id);
+        const merged = { ...normalized, dosyalar };
+
+        setData(merged);
+
+        const dStr = merged?.durum ? String(merged.durum) : "";
         const known = DURUM_OPTIONS.some((x) => x.value === dStr) ? dStr : "";
         setDurumSelect(known);
         setDurumCustom(known ? "" : dStr);
@@ -175,7 +203,7 @@ export default function IletiTokenDetayPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, fetchDosyalarByIletiId]);
 
   const formatTR = (iso) => {
     if (!iso) return "-";
@@ -247,7 +275,6 @@ export default function IletiTokenDetayPage() {
 
   const handleUpdateDurum = async () => {
     if (!data?.id) return;
-
     if (!isRol90) {
       setAdminMsg("Bu işlem sadece rol 90 için.");
       return;
@@ -319,8 +346,6 @@ export default function IletiTokenDetayPage() {
     const cls =
       tone === "ok"
         ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/15 dark:text-emerald-200"
-        : tone === "warn"
-        ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
         : tone === "bad"
         ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/15 dark:text-red-200"
         : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200";
@@ -345,8 +370,25 @@ export default function IletiTokenDetayPage() {
     </div>
   );
 
+  const dosyalar = useMemo(() => {
+    const list = data?.dosyalar ?? [];
+    return Array.isArray(list) ? list : [];
+  }, [data]);
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      <IletiDosyaModals
+        isOpen={dosyaModalOpen}
+        onClose={() => setDosyaModalOpen(false)}
+        iletiId={data?.id}
+        iletiBaslik={data?.iletiBaslik}
+        onAfterSaved={async () => {
+          try {
+            await reloadData(); // ✅ dosyalar dahil yeniden çekilir
+          } catch {}
+        }}
+      />
+
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
@@ -361,20 +403,45 @@ export default function IletiTokenDetayPage() {
               />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
-              <div className="text-xs text-zinc-600 dark:text-zinc-400">Yönetim Kurulu • İleti Detayı</div>
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                Yönetim Kurulu • İleti Detayı
+              </div>
             </div>
           </div>
 
-          
+          {/* ✅ Sağ butonlar */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex h-9 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              title="Geri"
+            >
+              ← Geri
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="inline-flex h-9 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              title="Anasayfa"
+            >
+              ⌂ Anasayfa
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-6xl px-3 py-5 sm:px-5 sm:py-6">
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <StatusPill tone={duzenlemeAcikMi ? "ok" : "bad"} label={duzenlemeAcikMi ? "Yorumlar Açık" : "Yorumlar Kapalı"} />
-            
+            <StatusPill
+              tone={duzenlemeAcikMi ? "ok" : "bad"}
+              label={duzenlemeAcikMi ? "Yorumlar Açık" : "Yorumlar Kapalı"}
+            />
           </div>
 
           <div className="text-right text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -411,7 +478,11 @@ export default function IletiTokenDetayPage() {
                   <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     İleti No:
                     <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
-                      #{typeof data?.siteBazliNo === "number" && data.siteBazliNo > 0 ? ` ${data.siteBazliNo}` : ` ${safeText(data?.id)}`}
+                      #
+                      {typeof data?.siteBazliNo === "number" &&
+                      data.siteBazliNo > 0
+                        ? ` ${data.siteBazliNo}`
+                        : ` ${safeText(data?.id)}`}
                     </span>
                   </div>
                 </div>
@@ -421,112 +492,122 @@ export default function IletiTokenDetayPage() {
                 </div>
 
                 <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[13px] leading-relaxed text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
-                  <div className="whitespace-pre-wrap break-words">{safeText(data.iletiAciklama)}</div>
+                  <div className="whitespace-pre-wrap break-words">
+                    {safeText(data.iletiAciklama)}
+                  </div>
                 </div>
               </div>
 
-              {/* Yorum yazma (SoftCard YOK) */}
-<div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-  <div className="mb-3">
-    <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-      Yorum / Görüş Bildir
-    </div>
-    
-  </div>
+              {/* ✅ Token sayfasında görünür: dosyalar artık data.dosyalar içine dolduruluyor */}
+              <IletiDosyaOzetCard
+                dosyalar={dosyalar}
+                onOpen={() => setDosyaModalOpen(true)}
+              />
 
-  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
-    <textarea
-      value={yorum}
-      onChange={(e) => setYorum(e.target.value)}
-      placeholder={duzenlemeAcikMi ? "Görüşünüzü yazın..." : "Yorumlar kapalı"}
-      disabled={!canComment || saving}
-      rows={4}
-      className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[13px] leading-relaxed outline-none transition
-        focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200
-        disabled:opacity-60
-        dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100
-        dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-    />
+              {/* Yorum yazma */}
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="mb-3">
+                  <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    Yorum / Görüş Bildir
+                  </div>
+                </div>
 
-    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <button
-        onClick={handleYorumEkle}
-        disabled={!canComment || saving}
-        className="h-10 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white
-          shadow-sm transition hover:bg-zinc-800 active:scale-[0.99]
-          disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-      >
-        {saving ? "Gönderiliyor..." : "Yorum Gönder"}
-      </button>
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+                  <textarea
+                    value={yorum}
+                    onChange={(e) => setYorum(e.target.value)}
+                    placeholder={
+                      duzenlemeAcikMi
+                        ? "Görüşünüzü yazın..."
+                        : "Yorumlar kapalı"
+                    }
+                    disabled={!canComment || saving}
+                    rows={4}
+                    className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[13px] leading-relaxed outline-none transition
+                      focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200
+                      disabled:opacity-60
+                      dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100
+                      dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                  />
 
-      {saveMsg ? (
-        <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-          {saveMsg}
-        </div>
-      ) : (
-        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-          
-        </div>
-      )}
-    </div>
-  </div>
-</div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <button
+                      onClick={handleYorumEkle}
+                      disabled={!canComment || saving}
+                      className="h-10 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white
+                        shadow-sm transition hover:bg-zinc-800 active:scale-[0.99]
+                        disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                    >
+                      {saving ? "Gönderiliyor..." : "Yorum Gönder"}
+                    </button>
 
-{/* Yorum listesi (istersen SoftCard kalsın; istersen bunu da kart yapısına çeviririz) */}
-<div className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-  <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
-    <div className="min-w-0">
-      <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-        Yorumlar
-      </div>
-      <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-        Toplam: {Array.isArray(data.yorumlar) ? data.yorumlar.length : 0}
-      </div>
-    </div>
-  </div>
+                    {saveMsg ? (
+                      <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                        {saveMsg}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400"></div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-  <div className="px-5 py-4">
-    {Array.isArray(data.yorumlar) && data.yorumlar.length > 0 ? (
-      <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
-        {data.yorumlar.map((y) => {
-          const isMe = Number(y.personelId) === Number(personel?.id);
-
-          return (
-            <div key={y.id} className="px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
-                      {safeText(y.personel?.ad)} {safeText(y.personel?.soyad)}
+              {/* Yorum listesi */}
+              <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                      Yorumlar
                     </div>
-                    {isMe ? (
-                      <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                        SEN
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-1 whitespace-pre-wrap break-words text-[12px] text-zinc-700 dark:text-zinc-200">
-                    {safeText(y.yorum)}
+                    <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Toplam:{" "}
+                      {Array.isArray(data.yorumlar) ? data.yorumlar.length : 0}
+                    </div>
                   </div>
                 </div>
 
-                <div className="shrink-0 text-right text-[10px] text-zinc-500 dark:text-zinc-400">
-                  {formatTR(y.olusturmaTarihiUtc)}
+                <div className="px-5 py-4">
+                  {Array.isArray(data.yorumlar) && data.yorumlar.length > 0 ? (
+                    <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+                      {data.yorumlar.map((y) => {
+                        const isMe =
+                          Number(y.personelId) === Number(personel?.id);
+                        return (
+                          <div key={y.id} className="px-4 py-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <div className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
+                                    {safeText(y.personel?.ad)}{" "}
+                                    {safeText(y.personel?.soyad)}
+                                  </div>
+                                  {isMe ? (
+                                    <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                                      SEN
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                <div className="mt-1 whitespace-pre-wrap break-words text-[12px] text-zinc-700 dark:text-zinc-200">
+                                  {safeText(y.yorum)}
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 text-right text-[10px] text-zinc-500 dark:text-zinc-400">
+                                {formatTR(y.olusturmaTarihiUtc)}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                      Henüz yorum yok.
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    ) : (
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-        Henüz yorum yok.
-      </div>
-    )}
-  </div>
-</div>
-
             </div>
 
             <div className="lg:col-span-4 space-y-3">
@@ -539,30 +620,77 @@ export default function IletiTokenDetayPage() {
                       disabled={adminSaving}
                       onClick={handleToggleDuzenleme}
                       className={`h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
-                        duzenlemeAcikMi ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"
+                        duzenlemeAcikMi
+                          ? "bg-red-600 hover:bg-red-700"
+                          : "bg-emerald-600 hover:bg-emerald-700"
                       }`}
                     >
-                      {adminSaving ? "İşleniyor..." : duzenlemeAcikMi ? "Yorumları Kapat" : "Yorumları Aç"}
+                      {adminSaving
+                        ? "İşleniyor..."
+                        : duzenlemeAcikMi
+                          ? "Yorumları Kapat"
+                          : "Yorumları Aç"}
                     </button>
                   }
                 >
-                 
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">
+                        Durum
+                      </div>
+                      <div className="mt-2 flex gap-2">
+                        <select
+                          value={durumSelect}
+                          onChange={(e) => setDurumSelect(e.target.value)}
+                          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                        >
+                          <option value="">Özel</option>
+                          {DURUM_OPTIONS.map((x) => (
+                            <option key={x.value} value={x.value}>
+                              {x.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          onClick={handleUpdateDurum}
+                          disabled={adminSaving}
+                          className="h-10 rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+                        >
+                          Kaydet
+                        </button>
+                      </div>
+
+                      {!durumSelect ? (
+                        <input
+                          value={durumCustom}
+                          onChange={(e) => setDurumCustom(e.target.value)}
+                          placeholder="Özel durum..."
+                          className="mt-2 h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                        />
+                      ) : null}
+                    </div>
+
+                    {adminMsg ? (
+                      <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                        {adminMsg}
+                      </div>
+                    ) : null}
+                  </div>
                 </SoftCard>
               ) : (
                 <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-[12px] text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                  <div className="mb-1 font-semibold text-zinc-800 dark:text-zinc-200">Yönetim Kurulu İleti Bilgilendirmesi</div>
-
-                  <p className="text-[12px] leading-relaxed">
-                    Bu ekranda yer alan iletiler, yönetim kurulu tarafından <b>kurumsal kayıt ve bilgilendirme</b> amacıyla paylaşılır.
-                    İletiler ve yorumlar arşivlenir; yetkili kişiler tarafından görüntülenebilir.
-                  </p>
-
-                  <p className="mt-2 text-[12px] leading-relaxed">
-                    Durum ve yorum yetkileri yalnızca yönetim planında tanımlı <b>yetkili yönetici</b> tarafından yönetilir. Yorumlar
-                    şeffaflık ve izlenebilirlik esaslarıyla kayıt altına alınır.
-                  </p>
-
-                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">EOS Management</p>
+                  <div className="mb-1 font-semibold text-zinc-800 dark:text-zinc-200">
+                    Yönetim Kurulu Bilgilendirmesi
+                  </div>
+                  <div className="text-[12px] leading-relaxed">
+                    Bu ekranda yer alan kayıtlar kurumsal bilgilendirme
+                    amaçlıdır. İçerikler ve ekler arşivlenir, yetkili kişiler
+                    tarafından görüntülenebilir.
+                  </div>
+                  <div className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
+                    EOS Management
+                  </div>
                 </div>
               )}
             </div>

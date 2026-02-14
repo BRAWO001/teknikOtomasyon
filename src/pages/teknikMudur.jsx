@@ -226,104 +226,129 @@ export default function TeknikMudurPage() {
         {/* ÜSTTE TEKNİK MÜDÜR PANELİ */}
 
         <section className="rounded-xl border border-zinc-200 bg-white px-3 py-3 shadow-sm">
-  <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            {/* SOL: Kimlik + Bilgi */}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  TEKNİK MÜDÜR PANELİ
+                </span>
 
-    {/* SOL: Kimlik + Bilgi */}
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-1.5">
+                {personel ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-zinc-700">
+                    <span className="font-semibold text-zinc-900">
+                      {personel.ad} {personel.soyad}
+                    </span>
+                    <span className="text-zinc-400">•</span>
+                    <span className="text-zinc-600">Rol: {personel.rol}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-medium text-amber-800">
+                    PersonelUserInfo bulunamadı
+                  </span>
+                )}
+              </div>
+            </div>
 
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-700">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          TEKNİK MÜDÜR PANELİ
-        </span>
-
-        {personel ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-zinc-700">
-            <span className="font-semibold text-zinc-900">
-              {personel.ad} {personel.soyad}
-            </span>
-            <span className="text-zinc-400">•</span>
-            <span className="text-zinc-600">Rol: {personel.rol}</span>
-          </span>
-        ) : (
-          <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-medium text-amber-800">
-            PersonelUserInfo bulunamadı
-          </span>
-        )}
-      </div>
-    </div>
-
-    {/* SAĞ: Aksiyonlar */}
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-
-      {/* ===== YÖNETİM GRUBU ===== */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5 shadow-sm backdrop-blur">
-
-        <button
-          onClick={handleYonetimKurulu}
-          className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
+            {/* SAĞ: Aksiyonlar */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
+              {/* ===== YÖNETİM GRUBU ===== */}
+              <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5 shadow-sm backdrop-blur">
+                <button
+                  onClick={handleYonetimKurulu}
+                  className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
                      hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-900 active:scale-[0.98]"
-        >
-          <svg className="h-3.5 w-3.5 text-zinc-500 group-hover:text-indigo-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-          </svg>
-          Yönetim Kurulu Karar / İleti
-        </button>
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-zinc-500 group-hover:text-indigo-600"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                  </svg>
+                  Yönetim Kurulu Karar / İleti
+                </button>
 
-        <button
-          onClick={handleYoneticiRaporu}
-          className="group inline-flex h-9 cursor-pointer  items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
+                <button
+                  onClick={handleYoneticiRaporu}
+                  className="group inline-flex h-9 cursor-pointer  items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
                      hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98]"
-        >
-          <svg className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
-          </svg>
-          Yönetici Raporu
-        </button>
-      </div>
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                  </svg>
+                  Yönetici Raporu
+                </button>
+              </div>
 
-      {/* ===== OPERASYON GRUBU ===== */}
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5 shadow-sm backdrop-blur">
-
-        <button
-          onClick={handleNewIsEmri}
-          className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-semibold text-white shadow-sm transition
+              {/* ===== OPERASYON GRUBU ===== */}
+              <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5 shadow-sm backdrop-blur">
+                <button
+                  onClick={handleNewIsEmri}
+                  className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-semibold text-white shadow-sm transition
                      hover:bg-emerald-700 active:scale-[0.98]"
-        >
-          <svg className="h-3.5 w-3.5 text-white/90" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Yeni İş
-        </button>
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-white/90"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Yeni İş
+                </button>
 
-        <button
-          onClick={handleSatinalma}
-          className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-[11px] font-semibold text-white shadow-sm transition
+                <button
+                  onClick={handleSatinalma}
+                  className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-[11px] font-semibold text-white shadow-sm transition
                      hover:bg-amber-600 active:scale-[0.98]"
-        >
-          <svg className="h-3.5 w-3.5 text-white/90" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M3 3h2l3.6 7.59M7 13h10l4-8H5.4" />
-          </svg>
-          Satın Alma
-        </button>
-      </div>
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-white/90"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 3h2l3.6 7.59M7 13h10l4-8H5.4" />
+                  </svg>
+                  Satın Alma
+                </button>
+              </div>
 
-      {/* ===== ÇIKIŞ ===== */}
-      <button
-        onClick={handleLogout}
-        className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 text-[11px] font-semibold text-red-700 shadow-sm transition
+              {/* ===== ÇIKIŞ ===== */}
+              <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5 shadow-sm backdrop-blur">
+                <button
+                  onClick={handleLogout}
+                  className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 text-[11px] font-semibold text-red-700 shadow-sm transition
                    hover:bg-red-50 hover:border-red-300 active:scale-[0.98]"
-      >
-        <svg className="h-3.5 w-3.5 text-red-500 group-hover:text-red-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path d="M15 3h4v18h-4M10 17l5-5-5-5M15 12H3" />
-        </svg>
-        Çıkış
-      </button>
-
-    </div>
-  </div>
-</section>
-
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-red-500 group-hover:text-red-600"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M15 3h4v18h-4M10 17l5-5-5-5M15 12H3" />
+                  </svg>
+                  Çıkış
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* ALTA GENİŞ TEKNİK İŞ EMİRLERİ */}
         <main className="flex-1 rounded-lg border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -357,7 +382,6 @@ export default function TeknikMudurPage() {
                     {f.label}
                   </button>
                 );
-
               })}
 
               <button

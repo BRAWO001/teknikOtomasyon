@@ -1,9 +1,15 @@
+
+
+
+
+
 // pages/projeGorevlileri/projeGorevlileriYeniIleti.jsx
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+import ProjeYKIletiDosyaPanel from "@/components/ProjeYKIletiDosyaPanel";
 
 export default function ProjeGorevlileriYeniIletiPage() {
   const router = useRouter();
@@ -31,6 +37,16 @@ export default function ProjeGorevlileriYeniIletiPage() {
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+
+  // ✅ dosya panel entegrasyonu
+  const [createdIletiId, setCreatedIletiId] = useState(null);
+  const [createdToken, setCreatedToken] = useState(null);
+  const [panelStatus, setPanelStatus] = useState({
+    uploading: false,
+    attaching: false,
+    pendingCount: 0,
+    hasIletiId: false,
+  });
 
   const personelKodu = useMemo(() => {
     return (
@@ -182,6 +198,25 @@ export default function ProjeGorevlileriYeniIletiPage() {
     }
   };
 
+  // ✅ panel status callback
+  const handlePanelStatus = (st) => setPanelStatus(st);
+
+  // ✅ İleti + dosya akışı:
+  // - ileti oluşturulur => createdIletiId + createdToken set edilir
+  // - pending/attach bitince token sayfasına yönlenir
+  useEffect(() => {
+    if (!createdToken) return;
+
+    const canGo =
+      !panelStatus.uploading &&
+      !panelStatus.attaching &&
+      (panelStatus.pendingCount || 0) === 0;
+
+    if (canGo) {
+      router.push(`/YonetimKurulu/ileti/${createdToken}`);
+    }
+  }, [createdToken, panelStatus.uploading, panelStatus.attaching, panelStatus.pendingCount, router]);
+
   const handleSubmit = async () => {
     const v = validate();
     if (v) {
@@ -203,13 +238,17 @@ export default function ProjeGorevlileriYeniIletiPage() {
 
       const res = await postDataAsync("projeYonetimKurulu/ileti", payload);
 
-      const token = res?.publicToken ?? res?.PublicToken;
-      if (token) {
-        router.push(`/YonetimKurulu/ileti/${token}`);
-        return;
-      }
+      // ✅ created id + token (push yok, dosyalar bağlansın)
+      const createdId = res?.id ?? res?.Id ?? null;
+      const token = res?.publicToken ?? res?.PublicToken ?? null;
 
-      router.push("/projeGorevlileri/projeGorevlileriIletiler");
+      if (createdId) setCreatedIletiId(Number(createdId));
+      if (token) setCreatedToken(token);
+
+      // token yoksa eski davranış
+      if (!token) {
+        router.push("/projeGorevlileri/projeGorevlileriIletiler");
+      }
     } catch (e) {
       console.error("CREATE ILETI ERROR:", e);
 
@@ -232,10 +271,29 @@ export default function ProjeGorevlileriYeniIletiPage() {
     }
   };
 
-  const selectedSiteName = selectedSite?.site?.ad ?? selectedSite?.Site?.Ad ?? (siteId ? `Site #${siteId}` : "Proje");
+  const selectedSiteName =
+    selectedSite?.site?.ad ??
+    selectedSite?.Site?.Ad ??
+    (siteId ? `Site #${siteId}` : "Proje");
+
+  const showRedirectInfo = !!createdToken;
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      {/* ✅ Kaydedildi / Dosyalar bağlanıyor bandı */}
+      {showRedirectInfo && (
+        <div className="fixed left-0 right-0 top-3 z-50 mx-auto w-[min(780px,calc(100%-24px))]">
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-900 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-100">
+            <div className="font-semibold">İleti oluşturuldu.</div>
+            <div className="mt-1 text-[12px]">
+              {panelStatus.uploading || panelStatus.attaching || panelStatus.pendingCount > 0
+                ? "Dosyalar iletiye bağlanıyor... (bitince yönlendirileceksiniz)"
+                : "Yönlendiriliyorsunuz..."}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-5 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -273,6 +331,7 @@ export default function ProjeGorevlileriYeniIletiPage() {
           <button
             className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             onClick={() => router.push("/projeGorevlileri")}
+            disabled={showRedirectInfo}
           >
             ← Geri
           </button>
@@ -324,6 +383,7 @@ export default function ProjeGorevlileriYeniIletiPage() {
               <select
                 value={siteId}
                 onChange={(e) => setSiteId(e.target.value)}
+                disabled={showRedirectInfo}
                 className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
               >
                 {sites.map((s) => {
@@ -377,7 +437,7 @@ export default function ProjeGorevlileriYeniIletiPage() {
                         checked
                           ? "border-zinc-400 bg-white dark:border-zinc-600 dark:bg-zinc-950"
                           : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
-                      }`}
+                      } ${showRedirectInfo ? "opacity-60 pointer-events-none" : ""}`}
                     >
                       <input
                         type="checkbox"
@@ -412,6 +472,7 @@ export default function ProjeGorevlileriYeniIletiPage() {
                 onChange={(e) => setIletiKonusu(e.target.value)}
                 placeholder="Örn: Temizlik hizmeti planı hakkında bilgilendirme"
                 maxLength={250}
+                disabled={showRedirectInfo}
               />
             </div>
 
@@ -425,8 +486,18 @@ export default function ProjeGorevlileriYeniIletiPage() {
                 onChange={(e) => setIletiAciklamasi(e.target.value)}
                 placeholder="Detayları yaz..."
                 maxLength={4000}
+                disabled={showRedirectInfo}
               />
             </div>
+          </div>
+
+          {/* ✅ DOSYA PANELİ (tam buraya eklendi) */}
+          <div className="mt-6">
+            <ProjeYKIletiDosyaPanel
+              iletiId={createdIletiId}
+              onStatusChange={handlePanelStatus}
+              disabled={saving}
+            />
           </div>
 
           <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -437,17 +508,18 @@ export default function ProjeGorevlileriYeniIletiPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => router.push("/projeGorevlileri")}
-                className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                disabled={showRedirectInfo}
+                className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
               >
                 Vazgeç
               </button>
 
               <button
                 onClick={handleSubmit}
-                disabled={saving}
+                disabled={saving || showRedirectInfo}
                 className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                {saving ? "Kaydediliyor..." : "İletiyi Oluştur"}
+                {saving ? "Kaydediliyor..." : showRedirectInfo ? "Yönlendiriliyor..." : "İletiyi Oluştur"}
               </button>
             </div>
           </div>

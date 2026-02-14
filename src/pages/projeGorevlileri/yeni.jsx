@@ -537,44 +537,72 @@ export default function YeniSatinAlmaPage() {
   useEffect(() => {
     let cancelled = false;
 
+    
+
     const fetchLookups = async () => {
-      if (!personelId) return;
+  if (!personelId) return;
 
-      setLoadingLookups(true);
-      setError(null);
+  setLoadingLookups(true);
+  setError(null);
 
-      try {
-        const res = await getDataAsync(
-          `Personeller/satinalma-yeni/lookups?personelId=${personelId}`
-        );
+  try {
+    // 1️⃣ Site + default bilgisi
+    const lookupsRes = await getDataAsync(
+      `Personeller/satinalma-yeni/lookups?personelId=${personelId}`
+    );
 
-        if (cancelled) return;
+    if (cancelled) return;
 
-        const resSites = res?.sites || [];
-        const resOnaycilar = res?.onaycilar || [];
-        const defaultSiteId = res?.defaultSiteId ?? null;
+    const resSites = lookupsRes?.sites || [];
+    const defaultSiteId = lookupsRes?.defaultSiteId ?? null;
 
-        setSites(resSites);
-        setOnayciCandidates(resOnaycilar);
+    setSites(resSites);
 
-        if (Array.isArray(resSites) && resSites.length === 1) {
-          const onlyId = getId(resSites[0]);
-          setSiteId(onlyId ? String(onlyId) : "");
-        } else if (defaultSiteId) {
-          setSiteId(String(defaultSiteId));
-        } else {
-          setSiteId("");
-        }
-      } catch (err) {
-        if (cancelled) return;
-        console.error("LOOKUP FETCH ERROR:", err);
-        setError(
-          "Proje/Site veya onaycı listesi alınırken bir hata oluştu. (404 ise backend endpoint yok demektir.)"
-        );
-      } finally {
-        if (!cancelled) setLoadingLookups(false);
+    // 2️⃣ Onaycıları yeni endpointten al
+    let onaycilar = [];
+
+    try {
+      const onayRes = await getDataAsync(
+        `Personeller/satinalma/onaycilar`
+      );
+
+      // Eğer direkt array dönüyorsa
+      if (Array.isArray(onayRes)) {
+        onaycilar = onayRes;
+      } 
+      // Eğer { onaycilar: [] } şeklinde dönüyorsa
+      else if (Array.isArray(onayRes?.onaycilar)) {
+        onaycilar = onayRes.onaycilar;
       }
-    };
+    } catch (innerErr) {
+      console.warn("Yeni onaycı endpointi hata verdi, lookups içindekiler kullanılacak.");
+      onaycilar = lookupsRes?.onaycilar || [];
+    }
+
+    setOnayciCandidates(onaycilar);
+
+    // 3️⃣ Site seçimi
+    if (Array.isArray(resSites) && resSites.length === 1) {
+      const onlyId = getId(resSites[0]);
+      setSiteId(onlyId ? String(onlyId) : "");
+    } else if (defaultSiteId) {
+      setSiteId(String(defaultSiteId));
+    } else {
+      setSiteId("");
+    }
+
+  } catch (err) {
+    if (cancelled) return;
+
+    console.error("LOOKUP FETCH ERROR:", err);
+    setError(
+      "Proje/Site veya onaycı listesi alınırken bir hata oluştu."
+    );
+  } finally {
+    if (!cancelled) setLoadingLookups(false);
+  }
+};
+
 
     fetchLookups();
     return () => {
@@ -586,12 +614,19 @@ export default function YeniSatinAlmaPage() {
   // Onaycıları default seçili getir
   // ------------------------------------------------------
   useEffect(() => {
-    const allIds = (onayciCandidates || [])
-      .map((p) => p?.id ?? p?.Id)
-      .filter((x) => x != null);
+    const defaultId = 20; // 👈 seçili gelmesini istediğin PersonelId
 
-    setSelectedOnayciIds(allIds);
+    const exists = (onayciCandidates || []).some(
+      (p) => (p?.id ?? p?.Id) === defaultId,
+    );
+
+    if (exists) {
+      setSelectedOnayciIds([defaultId]);
+    } else {
+      setSelectedOnayciIds([]);
+    }
   }, [onayciCandidates]);
+
 
   const toggleOnayci = (id) => {
     setSelectedOnayciIds((prev) => {
@@ -1098,6 +1133,7 @@ export default function YeniSatinAlmaPage() {
 
             {/* Onaycılar */}
             <div className="space-y-2">
+              <div className="block text-xs font-medium text-zinc-700" >Talebin iletileceği kişi</div>
               {onayciCandidates.length === 0 ? (
                 <p className="text-[11px] text-zinc-500">Uygun onaycı personel bulunamadı.</p>
               ) : (
@@ -1126,8 +1162,7 @@ export default function YeniSatinAlmaPage() {
                         <span className="font-medium">
                           {ad} {soyad}
                         </span>
-                        <span className="text-[10px] text-zinc-500">({rolAd})</span>
-                        <span className="text-[10px] text-zinc-400">#{id}</span>
+                        
                       </label>
                     );
                   })}
