@@ -134,7 +134,7 @@ export default function LoginPage() {
                 GİRİŞ
               </div>
               <div className="text-[12px] font-semibold tracking-widest text-black">
-                Kat Maliki Girişi
+                Kat Maliki İçin
               </div>
               
             </div>

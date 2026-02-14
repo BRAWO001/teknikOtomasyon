@@ -408,6 +408,7 @@ const TALEP_CINSI_OPTIONS = [
   { value: "İletişim", label: "İletişim" },
   { value: "İnsan Kaynakları", label: "İnsan Kaynakları" },
   { value: "Muhasebe", label: "Muhasebe" },
+  { value: "Peyzaj", label: "Peyzaj" },
   { value: "Diğer", label: "Diğer" },
 ];
 
@@ -507,7 +508,7 @@ export default function YeniSatinAlmaPage() {
   }, [siteId, sites]);
 
   const isProcurementLike = useMemo(() => {
-    return talepCinsi === "Satın Alma" || talepCinsi === "Teknik Talep";
+    return talepCinsi === "Satın Alma" || talepCinsi === "Teknik Talep" || talepCinsi === "Peyzaj";
   }, [talepCinsi]);
 
   // ------------------------------------------------------

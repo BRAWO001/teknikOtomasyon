@@ -3,12 +3,40 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
+import ProjeYKIletiDosyaPanel from "@/components/ProjeYKIletiDosyaPanel";
 
 /* ===== helpers ===== */
 function safeText(v) {
   if (v === null || v === undefined) return "-";
   const s = String(v).trim();
   return s.length ? s : "-";
+}
+function pick(obj, ...keys) {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return undefined;
+}
+function extractBackendMsg(err) {
+  const data = err?.response?.data;
+  if (!data) return null;
+
+  if (data?.errors && typeof data.errors === "object") {
+    const flat = Object.entries(data.errors)
+      .flatMap(([k, arr]) => (Array.isArray(arr) ? arr.map((x) => `${k}: ${x}`) : []))
+      .slice(0, 8);
+    if (flat.length) return flat.join(" | ");
+  }
+
+  if (typeof data === "string") return data;
+  if (data?.message) return data.message;
+  if (data?.title) return data.title;
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return null;
+  }
 }
 /* =================== */
 
@@ -21,7 +49,6 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
   const [sites, setSites] = useState([]);
   const [sitesLoading, setSitesLoading] = useState(true);
   const [sitesError, setSitesError] = useState("");
-
   const [siteId, setSiteId] = useState("");
 
   const selectedSite = useMemo(() => {
@@ -37,7 +64,7 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
   }, [selectedSite]);
 
   // =========================
-  // Üyeler (Katılımcılar)
+  // Üyeler
   // =========================
   const [uyeler, setUyeler] = useState([]);
   const [uyelerLoading, setUyelerLoading] = useState(false);
@@ -55,6 +82,18 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
   // submit
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+
+  // ✅ Dosya panel akışı
+  const [createdIletiId, setCreatedIletiId] = useState(null);
+  const [createdToken, setCreatedToken] = useState(null);
+  const [panelStatus, setPanelStatus] = useState({
+    uploading: false,
+    attaching: false,
+    pendingCount: 0,
+    hasIletiId: false,
+  });
+
+  const showRedirectInfo = !!createdToken;
 
   // =========================
   // 1) Site listesini çek
@@ -74,7 +113,6 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
         const list = Array.isArray(data) ? data : [];
         setSites(list);
 
-        // otomatik ilk site seç
         const firstId = list?.[0]?.id ?? list?.[0]?.Id ?? null;
         setSiteId(firstId ? String(firstId) : "");
       } catch (e) {
@@ -108,15 +146,11 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
         setUyelerLoading(true);
         setUyelerError("");
 
-        const list = await getDataAsync(
-          `ProjeYonetimKurulu/site/${siteId}/uyeler`
-        );
+        const list = await getDataAsync(`ProjeYonetimKurulu/site/${siteId}/uyeler`);
         if (cancelled) return;
 
         const normalized = Array.isArray(list) ? list : list ? [list] : [];
         setUyeler(normalized);
-
-        // site değişince reset
         setSelectedPersonelIds([]);
       } catch (e) {
         console.error("UYELER GET ERROR:", e);
@@ -138,9 +172,9 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
   // Helpers
   // =========================
   const formatUye = (u) => {
-    const p = u?.personel;
-    if (!p) return `Personel #${u?.personelId ?? "?"}`;
-    return `${p.ad ?? ""} ${p.soyad ?? ""}`.trim();
+    const p = u?.personel ?? u?.Personel;
+    if (!p) return `Personel #${u?.personelId ?? u?.PersonelId ?? "?"}`;
+    return `${p.ad ?? p.Ad ?? ""} ${p.soyad ?? p.Soyad ?? ""}`.trim();
   };
 
   const toggleSelect = (pid) => {
@@ -152,6 +186,23 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
       return has ? prev.filter((x) => x !== id) : [...prev, id];
     });
   };
+
+  // ✅ panel status callback
+  const handlePanelStatus = (st) => setPanelStatus(st);
+
+  // ✅ token varsa, panel bitince token sayfasına git
+  useEffect(() => {
+    if (!createdToken) return;
+
+    const canGo =
+      !panelStatus.uploading &&
+      !panelStatus.attaching &&
+      (panelStatus.pendingCount || 0) === 0;
+
+    if (canGo) {
+      router.push(`/YonetimKurulu/ileti/${createdToken}`);
+    }
+  }, [createdToken, panelStatus.uploading, panelStatus.attaching, panelStatus.pendingCount, router]);
 
   // =========================
   // Validation
@@ -166,7 +217,7 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
 
   // =========================
   // Submit
-  // POST ProjeYonetimKurulu/ileti   (api/projeYonetimKurulu/ileti)
+  // POST ProjeYonetimKurulu/ileti
   // =========================
   const handleSubmit = async () => {
     const v = validate();
@@ -185,26 +236,51 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
         iletiAciklama: iletiAciklama.trim(),
         durum: durum?.trim() || "Beklemede",
         katilanPersonelIdler: selectedPersonelIds,
-        // tarihUtc: null (backend otomatik UtcNow basıyor)
       };
 
       const res = await postDataAsync("ProjeYonetimKurulu/ileti", payload);
 
-      const token = res?.publicToken ?? res?.PublicToken;
-      // oluşturduktan sonra listeye dön + iletiler sekmesini aç
-      router.push("/YonetimKuruluYoneticiRaporu?view=ileti");
-      return;
+      const createdId = res?.id ?? res?.Id ?? null;
+      const token = res?.publicToken ?? res?.PublicToken ?? null;
+
+      if (createdId) setCreatedIletiId(Number(createdId));
+      if (token) setCreatedToken(token);
+
+      if (!token) {
+        router.push("/YonetimKuruluYoneticiRaporu?view=ileti");
+      }
     } catch (e) {
       console.error("CREATE ILETI ERROR:", e);
-      setMsg("İleti oluşturulamadı. (Yetki/endpoint/validasyon kontrol et)");
+      const status = e?.response?.status;
+      const backendMsg = extractBackendMsg(e);
+
+      if (status === 401) setMsg("Yetkisiz (401). Oturum/token kontrol edin.");
+      else if (status === 403) setMsg("Erişim reddedildi (403). Yetki kontrol edin.");
+      else setMsg(backendMsg ? `İleti oluşturulamadı: ${backendMsg}` : "İleti oluşturulamadı.");
     } finally {
       setSaving(false);
     }
   };
 
+  const siteSelectMode = sites.length > 1;
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      {/* ===== Kurumsal Header ===== */}
+      {/* ✅ Kaydedildi / Dosyalar bağlanıyor bandı */}
+      {showRedirectInfo && (
+        <div className="fixed left-0 right-0 top-3 z-50 mx-auto w-[min(780px,calc(100%-24px))]">
+          <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-[13px] text-emerald-900 shadow-sm dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-100">
+            <div className="font-semibold">İleti oluşturuldu.</div>
+            <div className="mt-1 text-[12px]">
+              {panelStatus.uploading || panelStatus.attaching || panelStatus.pendingCount > 0
+                ? "Dosyalar bağlanıyor..."
+                : "Yönlendiriliyorsunuz..."}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Header ===== */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -221,44 +297,52 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
 
             <div className="leading-tight">
               <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
-              <div className="text-xs text-zinc-600 dark:text-zinc-400">
-                Yönetici Raporu • Yeni İleti Oluştur
-              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">Yönetici Raporu • Yeni İleti</div>
             </div>
           </div>
 
-          <button
-            onClick={() => router.push("/YonetimKuruluYoneticiRaporu?view=ileti")}
-            className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-          >
-            ← Rapor’a Dön
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              disabled={showRedirectInfo}
+              className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+            >
+              ← Geri
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/YonetimKuruluYoneticiRaporu?view=ileti")}
+              disabled={showRedirectInfo}
+              className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+            >
+              Rapor’a Dön
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* ===== Body ===== */}
       <div className="mx-auto max-w-5xl px-4 py-6">
         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          {/* Başlık */}
+          {/* Üst Bilgi */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-base font-semibold tracking-tight">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-                  ✉️
-                </span>
-                Yeni İleti Oluştur
-              </div>
+            <div className="min-w-0">
+              <div className="text-base font-semibold tracking-tight">Yeni İleti Oluştur</div>
               <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Site seçin, katılımcıları belirleyin ve iletiyi oluşturun.
+                İleti kaydı oluşturun, ardından dosyaları ekleyin.
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 justify-end">
               <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
                 Seçili Katılımcı:{" "}
                 <span className="font-semibold text-zinc-800 dark:text-zinc-100">
                   {selectedPersonelIds.length}
                 </span>
               </span>
+
               <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
                 Site:{" "}
                 <span className="font-semibold text-zinc-800 dark:text-zinc-100">
@@ -268,7 +352,6 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
             </div>
           </div>
 
-          {/* Hata mesajları */}
           {sitesError && (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
               {sitesError}
@@ -284,60 +367,50 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
           {/* Site + Durum */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                Site
-              </label>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">Site</label>
 
-              <select
-                value={siteId}
-                onChange={(e) => setSiteId(e.target.value)}
-                disabled={sitesLoading}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-              >
-                <option value="">
-                  {sitesLoading ? "Yükleniyor..." : "Seçiniz..."}
-                </option>
-                {sites.map((s) => {
-                  const id = s?.id ?? s?.Id;
-                  const ad = s?.ad ?? s?.Ad;
-                  return (
-                    <option key={id} value={id}>
-                      {ad ?? `Site #${safeText(id)}`}
-                    </option>
-                  );
-                })}
-              </select>
-
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Rapor ekranındaki filtreyle aynı site kaynağından gelir.
-              </div>
+              {siteSelectMode ? (
+                <select
+                  value={siteId}
+                  onChange={(e) => setSiteId(e.target.value)}
+                  disabled={sitesLoading || showRedirectInfo}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                >
+                  <option value="">{sitesLoading ? "Yükleniyor..." : "Seçiniz..."}</option>
+                  {sites.map((s) => {
+                    const id = s?.id ?? s?.Id;
+                    const ad = s?.ad ?? s?.Ad;
+                    return (
+                      <option key={id} value={id}>
+                        {ad ?? `Site #${safeText(id)}`}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <div className="flex h-10 w-full items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+                  {selectedSiteName ?? "-"}
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                Durum (Opsiyonel)
-              </label>
+            {/* <div>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">Durum</label>
 
               <input
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={durum}
                 onChange={(e) => setDurum(e.target.value)}
                 placeholder="Beklemede"
                 maxLength={60}
+                disabled={showRedirectInfo}
               />
-
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Boş bırakırsanız backend “Beklemede” atar.
-              </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Katılımcılar */}
           <div className="mt-7">
             <div className="text-sm font-semibold">Katılımcılar</div>
-            <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Seçilen kişiler bu iletiye yorum ekleyebilir.
-            </div>
 
             {uyelerLoading && (
               <div className="mt-3 rounded-lg border border-zinc-200 bg-white px-3 py-3 text-[12px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
@@ -352,15 +425,14 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
             )}
 
             {!uyelerLoading && !uyelerError && uyeler.length > 0 && (
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className={`mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 ${showRedirectInfo ? "opacity-60 pointer-events-none" : ""}`}>
                 {uyeler.map((u) => {
-                  const pid = Number(u.personelId);
+                  const pid = Number(u?.personelId ?? u?.PersonelId);
                   const checked = selectedPersonelIds.includes(pid);
-                  const p = u?.personel;
 
                   return (
                     <label
-                      key={u.id}
+                      key={u?.id ?? `${pid}`}
                       className={[
                         "flex items-center gap-3 rounded-xl border px-3 py-2 text-sm shadow-sm transition hover:bg-zinc-50 dark:hover:bg-zinc-900",
                         checked
@@ -375,13 +447,8 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
                         className="h-4 w-4"
                       />
                       <div className="min-w-0">
-                        <div className="font-medium text-zinc-900 dark:text-zinc-100">
-                          {formatUye(u)}
-                        </div>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                          {p?.rol ? `Rol: ${p.rol}` : "Yetkili üye"}
-                          {p?.telefon ? ` • Tel: ${p.telefon}` : ""}
-                        </div>
+                        <div className="font-medium text-zinc-900 dark:text-zinc-100">{formatUye(u)}</div>
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Katılımcı</div>
                       </div>
                     </label>
                   );
@@ -394,69 +461,65 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
                 Bu site için üye bulunamadı.
               </div>
             )}
-
-            {!siteId && (
-              <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-[12px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-                Katılımcıları görmek için önce site seçiniz.
-              </div>
-            )}
           </div>
 
           {/* Form */}
           <div className="mt-7 grid grid-cols-1 gap-4">
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                İleti Başlık
-              </label>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">İleti Başlığı</label>
               <input
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={iletiBaslik}
                 onChange={(e) => setIletiBaslik(e.target.value)}
                 placeholder="Örn: Aidat bilgilendirmesi"
                 maxLength={200}
+                disabled={showRedirectInfo}
               />
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Kısa ve resmi bir başlık kullanın.
-              </div>
             </div>
 
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                İleti Açıklaması
-              </label>
+              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">İleti Açıklaması</label>
               <textarea
-                className="min-h-[160px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                className="min-h-[160px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
                 value={iletiAciklama}
                 onChange={(e) => setIletiAciklama(e.target.value)}
-                placeholder="Detayları yaz..."
+                placeholder="Detayları yazınız..."
                 maxLength={2000}
+                disabled={showRedirectInfo}
               />
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Detayları maddeleyerek yazmanız önerilir.
-              </div>
             </div>
+          </div>
+
+          {/* ✅ Dosya Paneli */}
+          <div className="mt-6">
+            <ProjeYKIletiDosyaPanel
+              iletiId={createdIletiId}
+              onStatusChange={handlePanelStatus}
+              disabled={saving}
+            />
           </div>
 
           {/* Actions */}
           <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Kaydetmeden önce seçimleri kontrol ediniz.
+              İleti oluşturulduktan sonra dosyalar bağlanır ve ileti sayfasına yönlendirilir.
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => router.push("/YonetimKuruluYoneticiRaporu?view=ileti")}
-                className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                disabled={showRedirectInfo}
+                className="h-10 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
               >
                 Vazgeç
               </button>
 
               <button
                 onClick={handleSubmit}
-                disabled={saving || sitesLoading || uyelerLoading}
+                disabled={saving || sitesLoading || uyelerLoading || showRedirectInfo}
                 className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                {saving ? "Kaydediliyor..." : "İletiyi Oluştur"}
+                {saving ? "Kaydediliyor..." : showRedirectInfo ? "Yönlendiriliyor..." : "İletiyi Oluştur"}
               </button>
             </div>
           </div>
@@ -469,5 +532,3 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
     </div>
   );
 }
-
-
