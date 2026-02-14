@@ -91,6 +91,9 @@ export default function SatinAlmaTekliflerPage() {
 
   // ✅ UI için local Not_1 & Not_5
   const [localNot1, setLocalNot1] = useState("");
+  // ✅ UI için local Not_4 (Teknik Açıklama)
+  const [localNot4, setLocalNot4] = useState("");
+
   const [localNot5, setLocalNot5] = useState("");
 
   // ✅ DOSYA MODAL STATE
@@ -138,6 +141,7 @@ export default function SatinAlmaTekliflerPage() {
   useEffect(() => {
     if (!data) return;
     setLocalNot1((data.not_1 ?? data.Not_1 ?? "") || "");
+    setLocalNot4((data.not_4 ?? data.Not_4 ?? "") || "");
     setLocalNot5((data.not_5 ?? data.Not_5 ?? "") || "");
   }, [data]);
 
@@ -519,6 +523,7 @@ const DosyaTile = ({ d, mode }) => {
             talepCinsi={talepCinsi}
             talepEden={talepEden}
             aciklama={aciklama}
+            teknikAciklama={data?.not_4 ?? data?.Not_4 ?? ""}
           />
 
           <SatinalmaOnayPanel

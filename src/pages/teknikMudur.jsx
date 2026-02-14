@@ -315,15 +315,15 @@ export default function TeknikMudurPage() {
                      hover:bg-amber-600 active:scale-[0.98]"
                 >
                   <svg
-                    className="h-3.5 w-3.5 text-white/90"
+                    className="h-3.5 w-3.5 text-white group-hover:text-indigo-600"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M3 3h2l3.6 7.59M7 13h10l4-8H5.4" />
+                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
                   </svg>
-                  Satın Alma
+                  Taleplerim
                 </button>
               </div>
 
