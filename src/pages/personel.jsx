@@ -644,10 +644,7 @@ export default function PersonelPage() {
                 <div className="text-[12px] font-extrabold text-zinc-800 dark:text-zinc-100">
                   Liste ({items.length})
                 </div>
-                <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Tab filtresi backend’den gelir •{" "}
-                  {tab === "ALL" ? "Tümü" : tab}
-                </div>
+                
               </div>
 
               <div className="pr-1 md:max-h-[70vh] md:overflow-y-auto">
