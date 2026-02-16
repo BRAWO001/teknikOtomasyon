@@ -205,6 +205,7 @@ export default function SatinAlmaTekliflerPage() {
   const talepCinsi = data.talepCinsi ?? data.TalepCinsi;
   const aciklama = data.aciklama ?? data.Aciklama;
   const talepEden = data.talepEden ?? data.TalepEden;
+  const site = data.site ?? data.Site ?? null;
   const yorumlar = data.yorumlar ?? data.Yorumlar ?? [];
 
   const malzemeler = data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
@@ -522,6 +523,7 @@ const DosyaTile = ({ d, mode }) => {
             tarih={tarih}
             talepCinsi={talepCinsi}
             talepEden={talepEden}
+            site={site}
             aciklama={aciklama}
             teknikAciklama={data?.not_4 ?? data?.Not_4 ?? ""}
           />

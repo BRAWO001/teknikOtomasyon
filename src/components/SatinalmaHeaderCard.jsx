@@ -31,6 +31,7 @@ export default function SatinalmaHeaderCard({
   seriNo,
   tarih,
   talepCinsi,
+  site,
   talepEden,
   aciklama,
 
@@ -43,6 +44,9 @@ export default function SatinalmaHeaderCard({
     ? `${talepEden.ad ?? talepEden.Ad ?? ""} ${talepEden.soyad ?? talepEden.Soyad ?? ""}`.trim()
     : "";
 
+  const siteAd = site ? (site.ad ?? site.Ad ?? "") : "";
+
+
   // ✅ Hızlı iş emri oluştur
   const handleNewIsEmri = () => {
     window.open("/teknikIsEmriEkle", "_blank", "noopener,noreferrer");
@@ -52,14 +56,14 @@ export default function SatinalmaHeaderCard({
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-[12px] leading-relaxed shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       {/* ÜST BAŞLIK */}
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-3 flex items-center justify-evenly gap-2">
         <div className="text-[12px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Satın Alma Bilgileri
+          Talep Bilgileri
         </div>
 
-        {seriNo ? (
+        {siteAd ? (
           <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-extrabold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-            Seri No: {safeText(seriNo)}
+            Proje : {safeText(siteAd)}
           </span>
         ) : null}
       </div>
@@ -67,23 +71,40 @@ export default function SatinalmaHeaderCard({
       {/* SATIRLAR */}
       <div className="space-y-1.5">
         <div>
-          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">Tarih:</span>{" "}
-          <span className="text-zinc-900 dark:text-zinc-100">{formatTR(tarih)}</span>
+          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">
+            Tarih:
+          </span>{" "}
+          <span className="text-zinc-900 dark:text-zinc-100">
+            {formatTR(tarih)}
+          </span>
         </div>
 
         <div>
-          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">Talep Cinsi:</span>{" "}
-          <span className="text-zinc-900 dark:text-zinc-100">{safeText(talepCinsi)}</span>
+          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">
+            Talep Cinsi:
+          </span>{" "}
+          <span className="text-zinc-900 dark:text-zinc-100">
+            {safeText(talepCinsi)}
+          </span>
         </div>
 
         <div>
-          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">Talep Eden:</span>{" "}
-          <span className="text-zinc-900 dark:text-zinc-100">{safeText(talepEdenAd)}</span>
+          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">
+            Talep Eden:
+          </span>{" "}
+          <span className="text-zinc-900 dark:text-zinc-100">
+            {safeText(talepEdenAd)}
+          </span>
         </div>
+        
 
         <div>
-          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">Talep Açıklama:</span>{" "}
-          <span className="text-zinc-900 dark:text-zinc-100">{safeText(aciklama)}</span>
+          <span className="font-extrabold text-zinc-800 dark:text-zinc-200">
+            Talep Açıklama:
+          </span>{" "}
+          <span className="text-zinc-900 dark:text-zinc-100">
+            {safeText(aciklama)}
+          </span>
         </div>
       </div>
 
@@ -94,7 +115,6 @@ export default function SatinalmaHeaderCard({
             <div className="text-[11px] font-extrabold text-zinc-900 dark:text-zinc-100">
               Teknik Açıklama
             </div>
-            
           </div>
 
           <button
