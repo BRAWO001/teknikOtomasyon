@@ -186,8 +186,6 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
           <div className="mb-1 flex items-center justify-evenly text-[11px]">
             <Link
               href={`/teknik/isEmriDetay/${id}`}
-              target="_blank"
-              rel="noopener noreferrer"
               className={`rounded-md px-2 py-1 text-[14px] font-semibold transition ${ustButonClass}`}
             >
               {ustButonText}

@@ -437,7 +437,7 @@ export default function PersonelPage() {
           <StatCard
             title="Devam Eden"
             value={loadingKpi ? "…" : kpi.devamEden}
-            sub="Durum < 100"
+            
             icon="⏳"
             active={tab === "DEVAM"}
             onClick={() => handleSelectTab("DEVAM")}

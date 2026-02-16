@@ -211,16 +211,69 @@ export default function IsEmriDetayPage() {
             <div className="flex w-full items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => router.push("/")}
-                className="rounded-lg bg-zinc-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push("/");
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
+               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
               >
+                {/* Sol Ok İkon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                Geri
+              </button>
+
+              {/* Ana Sayfa Butonu */}
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
+               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+              >
+                {/* Home İkon */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 10l9-7 9 7"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 21V12h6v9"
+                  />
+                </svg>
                 Ana Sayfa
               </button>
 
               <button
                 type="button"
                 onClick={handlePrint}
-                className="rounded-lg bg-zinc-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
+               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
               >
                 Yazdır
               </button>
