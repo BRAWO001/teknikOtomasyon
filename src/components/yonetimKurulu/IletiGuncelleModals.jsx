@@ -236,9 +236,7 @@ export default function IletiGuncelleModals({
                   focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200
                   dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
               />
-              <div className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
-                Boş bırakırsan tarih değiştirilmez (backend tarafında ignore edebilirsin).
-              </div>
+              
             </div>
 
             <div className="md:col-span-2">
