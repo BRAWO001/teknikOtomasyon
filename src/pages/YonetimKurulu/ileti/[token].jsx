@@ -7,6 +7,7 @@ import { getCookie as getClientCookie } from "@/utils/cookieService";
 
 import IletiDosyaModals from "@/components/yonetimKurulu/IletiDosyaModals";
 import IletiDosyaOzetCard from "@/components/yonetimKurulu/IletiDosyaOzetCard";
+import IletiGuncelleModals from "@/components/yonetimKurulu/IletiGuncelleModals";
 
 const DURUM_OPTIONS = [
   { value: "Beklemede", label: "Beklemede" },
@@ -120,9 +121,11 @@ export default function IletiTokenDetayPage() {
 
   const [dosyaModalOpen, setDosyaModalOpen] = useState(false);
 
+  // ✅ Güncelleme modalı
+  const [guncelleModalOpen, setGuncelleModalOpen] = useState(false);
+
   const isRol90 = useMemo(() => Number(personel?.rol) === 90, [personel]);
   const duzenlemeAcikMi = useMemo(() => !!data?.duzenlemeDurumu, [data?.duzenlemeDurumu]);
-
   const canComment = useMemo(() => !!personel?.id && duzenlemeAcikMi, [personel?.id, duzenlemeAcikMi]);
 
   useEffect(() => {
@@ -147,6 +150,13 @@ export default function IletiTokenDetayPage() {
     return Array.isArray(list) ? list : [];
   }, []);
 
+  const syncDurumInputs = useCallback((merged) => {
+    const dStr = merged?.durum ? String(merged.durum) : "";
+    const known = DURUM_OPTIONS.some((x) => x.value === dStr) ? dStr : "";
+    setDurumSelect(known);
+    setDurumCustom(known ? "" : dStr);
+  }, []);
+
   const reloadData = useCallback(async () => {
     if (!token) return;
 
@@ -158,12 +168,8 @@ export default function IletiTokenDetayPage() {
     const merged = { ...normalized, dosyalar };
 
     setData(merged);
-
-    const dStr = merged?.durum ? String(merged.durum) : "";
-    const known = DURUM_OPTIONS.some((x) => x.value === dStr) ? dStr : "";
-    setDurumSelect(known);
-    setDurumCustom(known ? "" : dStr);
-  }, [token, fetchDosyalarByIletiId]);
+    syncDurumInputs(merged);
+  }, [token, fetchDosyalarByIletiId, syncDurumInputs]);
 
   useEffect(() => {
     if (!token) return;
@@ -178,17 +184,11 @@ export default function IletiTokenDetayPage() {
         if (cancelled) return;
 
         const normalized = normalizeIletiDto(dto || {});
-
-        // ✅ Dosyaları ayrıca çekip data içine koy
         const dosyalar = await fetchDosyalarByIletiId(normalized?.id);
         const merged = { ...normalized, dosyalar };
 
         setData(merged);
-
-        const dStr = merged?.durum ? String(merged.durum) : "";
-        const known = DURUM_OPTIONS.some((x) => x.value === dStr) ? dStr : "";
-        setDurumSelect(known);
-        setDurumCustom(known ? "" : dStr);
+        syncDurumInputs(merged);
       } catch (e) {
         console.error("PUBLIC TOKEN GET ERROR:", e);
         if (cancelled) return;
@@ -203,7 +203,7 @@ export default function IletiTokenDetayPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, fetchDosyalarByIletiId]);
+  }, [token, fetchDosyalarByIletiId, syncDurumInputs]);
 
   const formatTR = (iso) => {
     if (!iso) return "-";
@@ -342,6 +342,15 @@ export default function IletiTokenDetayPage() {
     }
   };
 
+  // ✅ Modal açma: data yoksa açma + mesaj
+  const openGuncelleModal = useCallback(() => {
+    if (!data?.id) {
+      setAdminMsg("İleti verisi henüz yüklenmedi. Lütfen tekrar deneyin.");
+      return;
+    }
+    setGuncelleModalOpen(true);
+  }, [data?.id]);
+
   const StatusPill = ({ tone = "neutral", label }) => {
     const cls =
       tone === "ok"
@@ -384,7 +393,19 @@ export default function IletiTokenDetayPage() {
         iletiBaslik={data?.iletiBaslik}
         onAfterSaved={async () => {
           try {
-            await reloadData(); // ✅ dosyalar dahil yeniden çekilir
+            await reloadData();
+          } catch {}
+        }}
+      />
+
+      {/* ✅ Metin + dosya silme güncelleme modalı */}
+      <IletiGuncelleModals
+        isOpen={guncelleModalOpen}
+        onClose={() => setGuncelleModalOpen(false)}
+        ileti={data}
+        onAfterSaved={async () => {
+          try {
+            await reloadData();
           } catch {}
         }}
       />
@@ -498,7 +519,7 @@ export default function IletiTokenDetayPage() {
                 </div>
               </div>
 
-              {/* ✅ Token sayfasında görünür: dosyalar artık data.dosyalar içine dolduruluyor */}
+              {/* ✅ Token sayfasında görünür */}
               <IletiDosyaOzetCard
                 dosyalar={dosyalar}
                 onOpen={() => setDosyaModalOpen(true)}
@@ -615,22 +636,34 @@ export default function IletiTokenDetayPage() {
                 <SoftCard
                   title="Yönetici Paneli"
                   right={
-                    <button
-                      type="button"
-                      disabled={adminSaving}
-                      onClick={handleToggleDuzenleme}
-                      className={`h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
-                        duzenlemeAcikMi
-                          ? "bg-red-600 hover:bg-red-700"
-                          : "bg-emerald-600 hover:bg-emerald-700"
-                      }`}
-                    >
-                      {adminSaving
-                        ? "İşleniyor..."
-                        : duzenlemeAcikMi
-                          ? "Yorumları Kapat"
-                          : "Yorumları Aç"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {/* ✅ Modal açma butonu */}
+                      <button
+                        type="button"
+                        onClick={openGuncelleModal}
+                        className="h-10 rounded-md border border-zinc-200 bg-blue-200 px-3 text-[12px] font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50
+              dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                      >
+                        Düzenle
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={adminSaving}
+                        onClick={handleToggleDuzenleme}
+                        className={`h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60 ${
+                          duzenlemeAcikMi
+                            ? "bg-red-600 hover:bg-red-700"
+                            : "bg-emerald-600 hover:bg-emerald-700"
+                        }`}
+                      >
+                        {adminSaving
+                          ? "İşleniyor..."
+                          : duzenlemeAcikMi
+                            ? "Yorumları Kapat"
+                            : "Yorumları Aç"}
+                      </button>
+                    </div>
                   }
                 >
                   <div className="space-y-3">
@@ -683,11 +716,23 @@ export default function IletiTokenDetayPage() {
                   <div className="mb-1 font-semibold text-zinc-800 dark:text-zinc-200">
                     Yönetim Kurulu Bilgilendirmesi
                   </div>
+
                   <div className="text-[12px] leading-relaxed">
                     Bu ekranda yer alan kayıtlar kurumsal bilgilendirme
                     amaçlıdır. İçerikler ve ekler arşivlenir, yetkili kişiler
                     tarafından görüntülenebilir.
                   </div>
+
+                  {/* ✅ Her ekranda görünen "Düzenle" */}
+                  <button
+                    type="button"
+                    onClick={openGuncelleModal}
+                    className="mt-3 h-10 w-full rounded-md border border-zinc-200 bg-blue-100 px-3 text-[12px] font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50
+          dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                  >
+                    Düzenle / Belge Sil
+                  </button>
+
                   <div className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
                     EOS Management
                   </div>

@@ -56,6 +56,7 @@ export default function SatinalmaHeaderCard({
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-[12px] leading-relaxed shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       {/* ÜST BAŞLIK */}
+      
       <div className="mb-3 flex items-center justify-evenly gap-2">
         <div className="text-[12px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
           Talep Bilgileri
