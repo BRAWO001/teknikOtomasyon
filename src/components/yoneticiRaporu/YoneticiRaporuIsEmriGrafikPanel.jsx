@@ -270,9 +270,7 @@ export default function YoneticiRaporuIsEmriGrafikPanel({
                 </div>
               </div>
 
-              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                (İstersen burada min/max tarihleri formatlayıp da yazarız.)
-              </div>
+              
             </div>
           </div>
         )}
