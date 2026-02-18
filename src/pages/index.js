@@ -133,9 +133,6 @@ export default function LoginPage() {
               <div className="text-[12px] font-semibold tracking-widest text-slate-500">
                 GİRİŞ
               </div>
-              <div className="text-[12px] font-semibold tracking-widest text-black">
-                Kat Maliki İçin
-              </div>
               
             </div>
 
