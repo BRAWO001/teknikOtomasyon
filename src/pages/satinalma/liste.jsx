@@ -215,17 +215,7 @@ export default function SatinAlmaListePage() {
       <div className="mx-auto max-w-6xl px-4 py-6">
         <SatinalmaTopBar totalCount={tamOnaylananlar.length} />
 
-        <SatinalmaIdSearch
-          idSearch={idSearch}
-          setIdSearch={setIdSearch}
-          idLoading={idLoading}
-          idError={idError}
-          idResult={idResult}
-          onSearch={handleIdSearch}
-          onReset={handleIdReset}
-          formatDate={formatDate}
-          pick={pick}
-        />
+        
 
         <SatinalmaGenelArama
           genelStartDate={genelStartDate}
@@ -244,28 +234,13 @@ export default function SatinAlmaListePage() {
           formatDate={formatDate}
         />
 
-        <SatinalmaOnayliFiltre
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-          siteId={siteId}
-          setSiteId={setSiteId}
-          sites={sites}
-          loading={loading}
-          onApply={handleFilterApply}
-          onReset={handleFilterReset}
-        />
+       
 
         {error && <SatinalmaListStateBox type="error">{error}</SatinalmaListStateBox>}
 
         {loading && <SatinalmaListStateBox type="info">Yükleniyor...</SatinalmaListStateBox>}
 
-        {!loading && tamOnaylananlar.length === 0 && !error && (
-          <SatinalmaListStateBox type="info">
-            Filtrelere uygun, tüm onaylayıcıları tarafından onaylanmış talep bulunmuyor.
-          </SatinalmaListStateBox>
-        )}
+        
 
         {!loading && !error && tamOnaylananlar.length > 0 && (
           <section className="mt-4">
