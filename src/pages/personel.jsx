@@ -401,7 +401,7 @@ export default function PersonelPage() {
               <div className="mt-1 flex flex-wrap items-end gap-x-2 gap-y-1">
                 <div className="text-[14px] font-extrabold text-zinc-900 dark:text-zinc-100">
                   {personel
-                    ? `${personel.ad} ${personel.soyad}`
+                    ? `${personel.ad} ${personel.soyad}`  
                     : "Personel yükleniyor..."}
                 </div>
                 {personel?.personelKodu ? (
@@ -672,6 +672,7 @@ export default function PersonelPage() {
                           item.kod_2 ?? item.Kod_2 ?? item.kod2 ?? item.Kod2,
                         kod_3:
                           item.kod_3 ?? item.Kod_3 ?? item.kod3 ?? item.Kod3,
+                        currentRol: personel.rol,
                       }}
                       currentPersonelId={currentPersonelId}
                     />

@@ -85,6 +85,10 @@ export default function TeknikMudurPage() {
   const handleYoneticiRaporu = () => {
     router.push("/yoneticiRaporu");
   };
+  // Talep raporu
+  const handleTalepRaporu = () => {
+    router.push("/detayliTaleplerRaporu");
+  };
   // Yönetim Kurulu Yönetici Raporu
   const handleYonetimKurulu= () => {
     router.push("/YonetimKuruluYoneticiRaporu");
@@ -255,22 +259,24 @@ export default function TeknikMudurPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
               {/* ===== YÖNETİM GRUBU ===== */}
               <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5 shadow-sm backdrop-blur">
-                <button
-                  onClick={handleYonetimKurulu}
-                  className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
-                     hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-900 active:scale-[0.98]"
-                >
-                  <svg
-                    className="h-3.5 w-3.5 text-zinc-500 group-hover:text-indigo-600"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
+                {personel?.ad === "Özer" && (
+                  <button
+                    onClick={handleYonetimKurulu}
+                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
+               hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-900 active:scale-[0.98]"
                   >
-                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-                  </svg>
-                  Yönetim Kurulu Karar / İleti
-                </button>
+                    <svg
+                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-indigo-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                    </svg>
+                    Yönetim Kurulu Karar / İleti
+                  </button>
+                )}
 
                 <button
                   onClick={handleYoneticiRaporu}
@@ -286,7 +292,23 @@ export default function TeknikMudurPage() {
                   >
                     <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                   </svg>
-                  Yönetici Raporu
+                  İş Emirleri Raporu
+                </button>
+                <button
+                  onClick={handleTalepRaporu}
+                  className="group inline-flex h-9 cursor-pointer  items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
+                     hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98]"
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                  </svg>
+                  Talep Raporu
                 </button>
               </div>
 

@@ -296,7 +296,7 @@ export default function YoneticiRaporuPage() {
         <div className="flex items-center justify-between gap-2">
           <div>
             <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-              Yönetici Raporu – İş Emirleri + Satın Alma
+              Yönetici Raporu – İş Emirleri 
             </div>
 
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -495,38 +495,8 @@ export default function YoneticiRaporuPage() {
 
       <YoneticiRaporuIsEmriCard data={isEmriItems} page={isEmriPage} pageSize={isEmriPageSize} />
 
-      {/* ✅ Satın Alma Grafik Özet (yukarıda olsun daha iyi) */}
-      <YoneticiRaporuSatinAlmaGrafikPanel className="mt-2" />
 
-      {/* ===== Satın Alma Pagination ===== */}
-      <div className="flex items-center justify-between gap-2 pt-1">
-        <div className="flex items-center gap-2">
-          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">Satın Alma</div>
-          {saLoading && <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Yükleniyor…</span>}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={saPage <= 1}
-            onClick={() => setSaPage((p) => Math.max(1, p - 1))}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-          >
-            ◀ Önceki
-          </button>
-
-          <button
-            type="button"
-            disabled={saPage >= saTotalPages}
-            onClick={() => setSaPage((p) => Math.min(saTotalPages, p + 1))}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-          >
-            Sonraki ▶
-          </button>
-        </div>
-      </div>
-
-      <YoneticiRaporuSatinAlmaCard data={saItems} page={saPage} pageSize={saPageSize} />
+     
     </div>
   );
 }

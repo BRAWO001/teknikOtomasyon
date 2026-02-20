@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+// src/components/projeGorevlileri/ProjeGorevlileriSonYorumOzetCard.jsx
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getDataAsync } from "@/utils/apiService";
 import Link from "next/link";
 
@@ -6,6 +7,7 @@ function formatTR(iso) {
   if (!iso) return "-";
   try {
     const d = new Date(iso);
+
     // ✅ Backend UTC ise TR +3 (backend zaten TR dönüyorsa kaldır)
     d.setHours(d.getHours() + 3);
 
@@ -55,8 +57,9 @@ export default function ProjeGorevlileriSonYorumOzetCard({
   personelId,
   take = 10,
 }) {
+  const rootRef = useRef(null);
+
   const [items, setItems] = useState([]);
-  const [siteId, setSiteId] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
@@ -74,16 +77,14 @@ export default function ProjeGorevlileriSonYorumOzetCard({
     setErr(null);
 
     try {
+      // ✅ ENDPOINT AYNEN (çalışan halin)
       const res = await getDataAsync(
         `ProjeYoneticileri/satinalma/son-yorum-ozet?personelId=${Number(
           personelId
         )}&take=${Number(take) || 10}`
       );
 
-      const sid = res?.siteId ?? res?.SiteId ?? null;
       const arr = res?.items ?? res?.Items ?? [];
-
-      setSiteId(sid);
       setItems(Array.isArray(arr) ? arr : []);
       setSelected(null);
     } catch (e) {
@@ -94,7 +95,6 @@ export default function ProjeGorevlileriSonYorumOzetCard({
           "Yorum özetleri alınamadı."
       );
       setItems([]);
-      setSiteId(null);
       setSelected(null);
       setOpenList(false);
     } finally {
@@ -106,6 +106,18 @@ export default function ProjeGorevlileriSonYorumOzetCard({
     fetchIt();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personelId, take]);
+
+  // ✅ dışarı tıklayınca açılan listeyi kapat
+  useEffect(() => {
+    const onDown = (ev) => {
+      if (!openList) return;
+      const el = rootRef.current;
+      if (!el) return;
+      if (!el.contains(ev.target)) setOpenList(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [openList]);
 
   const sorted = useMemo(() => {
     const arr = Array.isArray(items) ? items : [];
@@ -130,7 +142,10 @@ export default function ProjeGorevlileriSonYorumOzetCard({
   }, [sorted]);
 
   return (
-    <section className="relative rounded-md border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <section
+      ref={rootRef}
+      className="relative rounded-md border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+    >
       {/* ✅ DETAY ÜST SEKME */}
       <div
         className={`absolute left-0 right-0 top-0 z-30 overflow-hidden rounded-t-md border-b border-zinc-200 bg-white/95 backdrop-blur transition-all duration-200 dark:border-zinc-800 dark:bg-zinc-950/90 ${
@@ -141,44 +156,33 @@ export default function ProjeGorevlileriSonYorumOzetCard({
           <div className="flex items-start justify-between gap-2 px-3 py-2">
             <div className="min-w-0">
               <div className="text-[11px] font-extrabold text-zinc-900 dark:text-zinc-50">
-                Yorum Detayı  
+                Yorum Detayı
               </div>
 
               {(() => {
                 const satinAlmaId =
                   selected?.satinAlmaId ?? selected?.SatinAlmaId ?? null;
-                const talepCinsi =
-                  selected?.talepCinsi ?? selected?.TalepCinsi ?? "-";
+
                 const yorumSayisi =
                   selected?.yorumSayisi ?? selected?.YorumSayisi ?? 0;
+
                 const dt =
                   selected?.sonYorumTarihiUtc ??
                   selected?.SonYorumTarihiUtc ??
                   null;
 
                 return (
-                  <div className="mt-1  ">
+                  <div className="mt-1">
                     <Link
                       href={`/satinalma/teklifler/${satinAlmaId}`}
-                      className="
-                        block rounded-md
-                        border border-zinc-200
-                        bg-zinc-50
-                        px-3 py-2 text-[12px]
-                        transition
-                        hover:bg-zinc-100
-                        hover:border-zinc-300
-                        dark:border-zinc-800
-                        dark:bg-zinc-950/40
-                        dark:hover:bg-zinc-950/60
-                      "
+                      className="block rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] transition hover:bg-zinc-100 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-950/60"
                     >
                       <div className="text-[11px] leading-snug text-zinc-700 dark:text-zinc-200">
                         <div>
-                          <span className="font-bold" >Sayfaya Git</span>
-                          <br/>
-                          <span className="font-bold">Yorum:</span>{" "}
-                          {yorumSayisi} adet 
+                          <span className="font-bold">Sayfaya Git</span>
+                          <br />
+                          <span className="font-bold">Yorum:</span> {yorumSayisi}{" "}
+                          adet
                         </div>
 
                         <div>
@@ -208,10 +212,8 @@ export default function ProjeGorevlileriSonYorumOzetCard({
 
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <div>
-          <div className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
-            Son Notlar
-          </div>
+        <div className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
+          Son Notlar
         </div>
 
         <button
@@ -266,17 +268,13 @@ export default function ProjeGorevlileriSonYorumOzetCard({
             </div>
           </button>
 
-          {/* ✅ Açılan Liste */}
+          {/* ✅ Açılan Liste (kart içi dropdown) */}
           <div
-            className={`absolute left-0 right-0 top-full z-20 overflow-hidden
-    rounded-md
-    border border-zinc-300 bg-white shadow-xl
-    dark:border-zinc-700 dark:bg-zinc-950
-    transition-all duration-200
-    ${openList ? "max-h-72" : "max-h-0"}
-  `}
+            className={`absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-md border border-zinc-300 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950 transition-all duration-200 ${
+              openList ? "max-h-72 opacity-100" : "max-h-0 opacity-0"
+            }`}
           >
-            <div className="mt-2 max-h-72 overflow-auto pr-1">
+            <div className="max-h-72 overflow-auto p-2">
               {sorted.length === 0 ? (
                 <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 p-2 text-[11px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-300">
                   Son {Number(take) || 10} talep içinde yorum özeti bulunamadı.
@@ -284,8 +282,7 @@ export default function ProjeGorevlileriSonYorumOzetCard({
               ) : (
                 <div className="space-y-2">
                   {sorted.map((x) => {
-                    const id =
-                      x?.satinAlmaId ?? x?.SatinAlmaId ?? Math.random();
+                    const id = x?.satinAlmaId ?? x?.SatinAlmaId ?? null;
                     const talepCinsi = x?.talepCinsi ?? x?.TalepCinsi ?? "-";
                     const yorumSayisi = x?.yorumSayisi ?? x?.YorumSayisi ?? 0;
                     const dt =
@@ -293,25 +290,14 @@ export default function ProjeGorevlileriSonYorumOzetCard({
 
                     return (
                       <button
-                        key={id}
+                        key={id ?? `${talepCinsi}-${dt ?? "0"}-${yorumSayisi}`}
                         type="button"
-                        onClick={() => setSelected(x)}
+                        onClick={() => {
+                          setSelected(x);
+                          setOpenList(false);
+                        }}
                         title="Detayı aç"
-                        className="
-                          w-full rounded-md
-                          border border-zinc-200
-                          bg-white
-                          px-2 py-1 text-left
-                          transition
-                          cursor-pointer
-                          hover:bg-zinc-50
-                          hover:border-zinc-300
-                          hover:shadow-[0_1px_0_0_rgba(0,0,0,0.04)]
-                          dark:border-zinc-800
-                          dark:bg-zinc-950/30
-                          dark:hover:bg-zinc-950/60
-                          dark:hover:border-zinc-700
-                        "
+                        className="w-full rounded-md border border-zinc-200 bg-white px-2 py-1 text-left transition hover:bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/30 dark:hover:bg-zinc-950/60 dark:hover:border-zinc-700"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">

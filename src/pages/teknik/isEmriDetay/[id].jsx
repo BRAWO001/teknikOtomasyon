@@ -43,7 +43,8 @@ export default function IsEmriDetayPage() {
 
   // ✅ PersonelId (durum güncelle butonu için)
   const [currentPersonelId, setCurrentPersonelId] = useState(null);
-
+  // ✅ Rol (Personel düzenle yetkisi için)
+  const [currentRol, setCurrentRol] = useState(null);
   // ✅ Durum/Progress
   const [localDurumKod, setLocalDurumKod] = useState(0);
 
@@ -61,13 +62,31 @@ export default function IsEmriDetayPage() {
     try {
       const raw = getCookie("PersonelUserInfo");
       if (!raw) return;
+
       const obj = JSON.parse(raw);
+
       const pid = obj?.id ?? obj?.Id ?? null;
-      if (pid) setCurrentPersonelId(Number(pid));
+      if (pid != null) setCurrentPersonelId(Number(pid));
+
+      // ✅ rol alanı farklı isimlerle gelebilir
+      const r =
+        obj?.rolKod ??
+        obj?.RolKod ??
+        obj?.rol ??
+        obj?.Rol ??
+        obj?.role ??
+        obj?.Role ??
+        null;
+
+      // rol yoksa null kalsın (buton görünsün kuralı için)
+      setCurrentRol(r != null && String(r).trim() !== "" ? Number(r) : null);
     } catch {
       // ignore
     }
   }, []);
+
+  // ✅ rol 30 ise kapat, rol yoksa açık
+  const canEditPersonel = currentRol !== 30;
 
   useEffect(() => {
     if (!id) return;
@@ -111,6 +130,11 @@ export default function IsEmriDetayPage() {
     if (progress < 75) return "bg-amber-500";
     return "bg-emerald-500";
   }, [progress]);
+
+
+
+
+  
 
   const handleDurumUpdated = (newKod) => {
     setLocalDurumKod(Number(newKod) || 0);
@@ -325,7 +349,11 @@ export default function IsEmriDetayPage() {
               />
               <IsEmriDetayPersoneller
                 personeller={personeller}
-                onEdit={() => setIsPersonelModalOpen(true)}
+                onEdit={
+                  canEditPersonel
+                    ? () => setIsPersonelModalOpen(true)
+                    : undefined
+                }
               />
               <IsEmriDetayMalzemeler
                 malzemeler={malzemeler}

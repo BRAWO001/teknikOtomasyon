@@ -152,10 +152,10 @@ export default function SatinAlmaOnayBekleyenPage() {
 
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
             <button
-              onClick={() => router.push("/satinalma/liste")}
+              onClick={() => router.back()}
               className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50"
             >
-              ← Tüm Satın Alma Talepleri
+              ← Geri
             </button>
           </div>
         </div>

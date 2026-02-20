@@ -68,6 +68,8 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
     malzemeler = [],
   } = data;
 
+  const currentRol = Number(data?.currentRol ?? null);
+
   // 🔹 Backend'ten gelen durum kodu -> yüzde gibi kullanacağız
   const rawDurumKod =
     data.durumKod ??
@@ -403,13 +405,15 @@ export default function TeknikIsEmriCard({ data, currentPersonelId }) {
               <div className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
                 Paylaşım / Personeller
               </div>
-              <button
-                type="button"
-                onClick={() => setIsPersonelModalOpen(true)}
-                className="rounded-full border border-zinc-300 bg-white px-2 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-              >
-                Personel düzenle
-              </button>
+              {currentRol !== 30 && (
+                <button
+                  type="button"
+                  onClick={() => setIsPersonelModalOpen(true)}
+                  className="rounded-full border border-zinc-300 bg-white px-2 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  Personel düzenle
+                </button>
+              )}
             </div>
 
             {people.length === 0 ? (
