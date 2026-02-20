@@ -146,7 +146,7 @@ export default function SatinAlmaOnaylananPage() {
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900">
-              Onayladığım / Reddettiğim Satın Alma Talepleri
+              Onayladığım Talepler
             </h1>
             <p className="text-[12px] text-zinc-500">
               Son 14 gün için otomatik filtre uygulanır, isterseniz tarih ve

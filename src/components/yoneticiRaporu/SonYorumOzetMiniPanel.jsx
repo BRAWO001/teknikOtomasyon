@@ -9,25 +9,37 @@ function safeText(v) {
   const s = String(v).trim();
   return s.length ? s : "-";
 }
-function formatTR(iso) {
-  if (!iso) return "-";
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "-";
-  }
+
+/**
+ * ✅ UTC + timezone yoksa (örn: "2026-02-20T08:10:00") TR'de +3 saat sapar.
+ * Bu yüzden: timezone bilgisi yoksa "Z" ekleyip UTC gibi parse ediyoruz.
+ * - "....Z" / "+00:00" / "-03:00" varsa dokunmayız.
+ */
+function parseDateSafe(iso) {
+  if (!iso) return null;
+  const s = String(iso).trim().replace(" ", "T");
+
+  const hasTZ = /([zZ]|[+\-]\d{2}:\d{2})$/.test(s);
+  const d = new Date(hasTZ ? s : `${s}Z`);
+  return isNaN(d.getTime()) ? null : d;
 }
+
+function formatTR(iso) {
+  const d = parseDateSafe(iso);
+  if (!d) return "-";
+  return d.toLocaleString("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function timeAgoTR(iso) {
-  if (!iso) return "";
-  const dt = new Date(iso);
-  if (isNaN(dt.getTime())) return "";
+  const dt = parseDateSafe(iso);
+  if (!dt) return "";
+
   const now = new Date();
   const diffMs = now.getTime() - dt.getTime();
   const absMs = Math.abs(diffMs);
@@ -49,6 +61,7 @@ function timeAgoTR(iso) {
 
   return future ? `${parts.join(" ")} sonra` : `${parts.join(" ")}`;
 }
+
 function chipClass(kind) {
   if (kind === "Satın Alma")
     return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/35 dark:text-indigo-200";
@@ -140,9 +153,11 @@ export default function SonYorumOzetMiniPanel({
   const sorted = useMemo(() => {
     const arr = Array.isArray(items) ? items : [];
     return [...arr].sort((a, b) => {
-      const da = new Date(a?.SonYorumTarihiUtc ?? a?.sonYorumTarihiUtc ?? 0).getTime();
-      const db = new Date(b?.SonYorumTarihiUtc ?? b?.sonYorumTarihiUtc ?? 0).getTime();
-      return (db || 0) - (da || 0);
+      const da =
+        parseDateSafe(a?.SonYorumTarihiUtc ?? a?.sonYorumTarihiUtc)?.getTime() ?? 0;
+      const db =
+        parseDateSafe(b?.SonYorumTarihiUtc ?? b?.sonYorumTarihiUtc)?.getTime() ?? 0;
+      return db - da;
     });
   }, [items]);
 
@@ -224,13 +239,20 @@ export default function SonYorumOzetMiniPanel({
             ) : (
               <div className="space-y-2">
                 {sorted.map((x) => {
-                  const id = x?.TalepId ?? x?.talepId ?? x?.SatinAlmaId ?? x?.satinAlmaId ?? `${Math.random()}`;
+                  const id =
+                    x?.TalepId ??
+                    x?.talepId ??
+                    x?.SatinAlmaId ??
+                    x?.satinAlmaId ??
+                    `${Math.random()}`;
+
                   const cins = x?.TalepCinsi ?? x?.talepCinsi ?? "-";
                   const yorumSay = x?.YorumSayisi ?? x?.yorumSayisi ?? 0;
                   const dt = x?.SonYorumTarihiUtc ?? x?.sonYorumTarihiUtc ?? null;
 
                   const href =
-                    id && (x?.SatinAlmaId || x?.satinAlmaId || x?.TalepId || x?.talepId)
+                    id &&
+                    (x?.SatinAlmaId || x?.satinAlmaId || x?.TalepId || x?.talepId)
                       ? `/satinalma/teklifler/${id}`
                       : "#";
 
@@ -243,13 +265,18 @@ export default function SonYorumOzetMiniPanel({
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex rounded-full px-2 py-[1px] text-[10px] font-semibold ${chipClass(cins)}`}>
+                            <span
+                              className={`inline-flex rounded-full px-2 py-[1px] text-[10px] font-semibold ${chipClass(
+                                cins
+                              )}`}
+                            >
                               {safeText(cins)}
                             </span>
                             <span className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-50">
                               TLP-{safeText(id)}
                             </span>
                           </div>
+
                           <div className="mt-1 flex items-center gap-2 text-[10.5px] text-zinc-500 dark:text-zinc-400">
                             <span className="shrink-0 whitespace-nowrap">{formatTR(dt)}</span>
                             <span className="shrink-0 whitespace-nowrap font-bold text-zinc-600 dark:text-zinc-300">
