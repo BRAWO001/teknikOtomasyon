@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
+import { roleGuard } from "@/utils/roleGuard";
+
+export const getServerSideProps = (ctx) =>
+  roleGuard(ctx, { allow: [40,90], redirectTo: "/" });
 
 /* ========================
    Upload endpoints

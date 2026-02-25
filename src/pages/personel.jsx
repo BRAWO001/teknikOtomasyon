@@ -20,6 +20,11 @@ import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 import TeknikIsEmriCard from "@/components/TeknikIsEmriCard";
+import { roleGuard } from "@/utils/roleGuard";
+
+export const getServerSideProps = (ctx) =>
+  roleGuard(ctx, { allow: [30], redirectTo: "/" });
+
 
 /* ========================
    Helpers

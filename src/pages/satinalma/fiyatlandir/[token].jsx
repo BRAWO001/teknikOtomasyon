@@ -286,6 +286,12 @@ export default function SatinAlmaFiyatlandirPage() {
           <div><strong>Tarih:</strong> {tarih ? new Date(tarih).toLocaleString("tr-TR") : "-"}</div>
           <div><strong>Talep Cinsi:</strong> {talepCinsi}</div>
           <div><strong>Açıklama:</strong> {aciklama || "-"}</div>
+
+          {/* ✅ NOT EKLENDİ (üst bilgi kartı içinde, açıklamanın hemen altı) */}
+          <div>
+            <strong>Not:</strong>{" "}
+            {(data.not ?? data.Not ?? data.notu ?? data.Notu) || "-"}
+          </div>
         </div>
       </div>
 
@@ -299,7 +305,7 @@ export default function SatinAlmaFiyatlandirPage() {
           backgroundColor: "#f8fafc",
         }}
       >
-        <label  className="text-center" style={{ display: "block", fontWeight: 900, marginBottom: "0.35rem", color: "#0f172a" }}>
+        <label className="text-center" style={{ display: "block", fontWeight: 900, marginBottom: "0.35rem", color: "#0f172a" }}>
           Tedarikçi Adı / Firma Adı <span style={{ color: "#b91c1c" }}>*</span>
         </label>
 
@@ -318,8 +324,6 @@ export default function SatinAlmaFiyatlandirPage() {
             textTransform: "uppercase",
           }}
         />
-
-        
       </div>
 
       {/* Ürün kartları */}

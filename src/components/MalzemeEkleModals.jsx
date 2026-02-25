@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getDataAsync, postDataAsync } from "../utils/apiService";
+import IsEmriToSatinalmaTalepModal from "@/components/teknik/IsEmriToSatinalmaTalepModal";
+
 
 function formatTR(iso) {
   if (!iso) return "-";
@@ -34,6 +36,10 @@ export default function MalzemeEkleModals({
 }) {
   // Modal kapalıysa hiç render etme
   if (!isOpen) return null;
+
+
+  const [teknikTalepModalOpen, setTeknikTalepModalOpen] = useState(false);
+
 
   const [loadingList, setLoadingList] = useState(false);
   const [listError, setListError] = useState("");
@@ -220,8 +226,16 @@ export default function MalzemeEkleModals({
             <div className="text-xs uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
               İş Emri
             </div>
-            <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            <div className="text-sm  font-semibold text-zinc-900 dark:text-zinc-50">
               {isEmriKod ? `#${isEmriKod}` : `ID: ${isEmriId}`}
+
+              <button
+                type="button"
+                onClick={() => setTeknikTalepModalOpen(true)}
+                className="ml-2 rounded-xl border border-zinc-300 bg-emerald-600 px-3 py-2 text-[12px] font-extrabold text-white hover:bg-emerald-700"
+              >
+                + Hızlı Satın Alma Talebi Oluştur
+              </button>
             </div>
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Malzeme / İşçilik ekle, listeyi oluştur ve tek seferde kaydet.
@@ -247,7 +261,6 @@ export default function MalzemeEkleModals({
                   Özet
                 </div>
                 <div className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-300">
-                  Sunucuda kayıtlı:{" "}
                   <span className="font-semibold">{malzemeler.length}</span> •
                   Yeni (kaydedilmemiş):{" "}
                   <span className="font-semibold">{pendingList.length}</span>
@@ -309,9 +322,8 @@ export default function MalzemeEkleModals({
                             {m.malzemeAdi}
                           </div>
                           <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                            Adet:{" "}
-                            <span className="font-semibold">{adet}</span> •
-                            Kaynak:{" "}
+                            Adet: <span className="font-semibold">{adet}</span>{" "}
+                            • Kaynak:{" "}
                             <span className="font-semibold">
                               {kaynakLabelFromItem(m)}
                             </span>
@@ -444,9 +456,7 @@ export default function MalzemeEkleModals({
                       min="0"
                       className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:ring-zinc-200"
                       value={form.birimFiyat}
-                      onChange={(e) =>
-                        setField("birimFiyat", e.target.value)
-                      }
+                      onChange={(e) => setField("birimFiyat", e.target.value)}
                       placeholder="Örn: 150"
                     />
                   </div>
@@ -490,8 +500,8 @@ export default function MalzemeEkleModals({
 
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                    Satırı önce listeye ekle, ardından <b>Listeyi Kaydet</b>{" "}
-
+                    Satırı önce listeye ekle, ardından{" "}
+                    <b>Listeyi Kaydet</b>{" "}
                   </div>
                   <button
                     type="submit"
@@ -523,9 +533,17 @@ export default function MalzemeEkleModals({
             </div>
           </div>
         </div>
-
-     
       </div>
+
+      <IsEmriToSatinalmaTalepModal
+        isOpen={teknikTalepModalOpen}
+        onClose={() => setTeknikTalepModalOpen(false)}
+        isEmriId={isEmriId}
+        onAfterCreated={async () => {
+          setTeknikTalepModalOpen(false);
+          await loadPrefill(); // badge güncellensin
+        }}
+      />
     </div>
   );
 }

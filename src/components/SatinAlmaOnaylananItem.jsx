@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { postDataAsync, getDataAsync } from "@/utils/apiService";
-
+import { useRouter } from "next/router";
 /* ========================
    OPTIONS
 ======================== */
@@ -376,18 +376,28 @@ export default function SatinAlmaOnaylananItem({
     }
   };
 
+  const router = useRouter();
+
   const handleDelete = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const ok = confirm(`Bu satın alma talebi silinsin mi?\n#${id} • Seri: ${seriNo || "-"}`);
+    const ok = confirm(
+      `Bu satın alma talebi silinsin mi?\n#${id} • Seri: ${seriNo || "-"}`
+    );
     if (!ok) return;
 
     try {
       await postDataAsync("satinalma/delete", { id, reason: "UI Silme" });
+
+      // varsa parent state güncellemen kalsın
       onDeleted?.(id);
+
       alert("Silindi");
       setOpenEdit(false);
+
+      // ✅ Sayfayı yenile (soft refresh)
+      await router.reload();
     } catch (ex) {
       alert(ex?.message || "Silme sırasında hata oluştu");
     }

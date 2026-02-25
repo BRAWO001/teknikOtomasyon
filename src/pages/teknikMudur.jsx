@@ -9,6 +9,11 @@ import { useEffect, useState } from "react";
 import TeknikIsEmriCard from "@/components/TeknikIsEmriCard";
 import { getDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+import { roleGuard } from "@/utils/roleGuard";
+
+export const getServerSideProps = (ctx) =>
+  roleGuard(ctx, { allow: [90], redirectTo: "/" });
+
 
 // Basit durum filtreleri: Tüm / Devam / Biten
 const STATUS_FILTERS = [

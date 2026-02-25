@@ -9,6 +9,9 @@ export default function UrunCard({ urun, formRow, onChange }) {
   const kullanimAmaci = urun.kullanimAmaci ?? urun.KullanimAmaci ?? "-";
   const ornekLink = urun.ornekUrunLinki ?? urun.OrnekUrunLinki;
 
+  // ✅ MALZEME NOTU (API'den gelen)
+  const malzemeNotu = urun.not ?? urun.Not ?? "";
+
   return (
     <div className="rounded-xl border border-blue-700 bg-gradient-to-b from-blue to-blue-50 p-4 shadow-sm">
       {/* Üst başlık */}
@@ -23,6 +26,14 @@ export default function UrunCard({ urun, formRow, onChange }) {
             <span className="mx-2 text-slate-300">•</span>
             <span className="font-bold text-slate-700">Adet:</span> {adet} {birim}
           </div>
+
+          {/* ✅ MALZEME NOTU GÖSTER */}
+          {String(malzemeNotu || "").trim() ? (
+            <div className="mt-2 rounded-lg border border-slate-200 bg-white/70 p-2 text-[12px] text-slate-800 break-words">
+              <span className="font-extrabold text-slate-700">Not:</span>{" "}
+              {malzemeNotu}
+            </div>
+          ) : null}
         </div>
 
         {/* Link */}

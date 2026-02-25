@@ -4,11 +4,7 @@ export default function SatinalmaMalzemeTeklifList({
   tekliflerByMalzeme,
 }) {
   if (malzemeler.length === 0) {
-    return (
-      <div style={{ fontSize: 14 }}>
-        Malzeme bulunmuyor.
-      </div>
-    );
+    return <div style={{ fontSize: 14 }}>Malzeme bulunmuyor.</div>;
   }
 
   const formatCurrency = (val) =>
@@ -37,6 +33,7 @@ export default function SatinalmaMalzemeTeklifList({
           const marka = m.marka ?? m.Marka ?? "-";
           const adet = m.adet ?? m.Adet;
           const birim = m.birim ?? m.Birim ?? "-";
+          const Not = m.not ?? m.Not ?? "-";
           const kullanimAmaci = m.kullanimAmaci ?? m.KullanimAmaci ?? "-";
 
           const offers = tekliflerByMalzeme[mid] || [];
@@ -74,7 +71,29 @@ export default function SatinalmaMalzemeTeklifList({
                   <div style={{ fontSize: 12, color: "#6b7280" }}>
                     Marka: {marka}
                   </div>
+
+                  {/* ✅ MALZEME NOTU (en uygun yer: başlık altında, marka altı) */}
+                  {Not && Not !== "-" ? (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 12,
+                        color: "#374151",
+                        background: "#f9fafb",
+                        border: "1px dashed #d1d5db",
+                        borderRadius: 6,
+                        padding: "6px 8px",
+                        lineHeight: 1.35,
+                        maxWidth: 520,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <strong style={{ color: "#111827" }}>Not:</strong> {Not}
+                    </div>
+                  ) : null}
                 </div>
+
                 <div style={{ fontSize: 12, color: "#374151" }}>
                   <div>
                     Adet:{" "}
@@ -269,9 +288,7 @@ export default function SatinalmaMalzemeTeklifList({
                                 padding: "0.35rem",
                               }}
                             >
-                              {kdvOrani > 0
-                                ? `${kdvYuzde.toFixed(0)}%`
-                                : "-"}
+                              {kdvOrani > 0 ? `${kdvYuzde.toFixed(0)}%` : "-"}
                             </td>
                             <td
                               style={{
