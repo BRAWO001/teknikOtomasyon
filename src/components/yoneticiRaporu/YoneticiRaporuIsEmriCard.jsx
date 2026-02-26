@@ -125,6 +125,7 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
       "Depo",
       "Yeni Alım",
       "İşveren",
+      
     ],
     []
   );
@@ -234,6 +235,8 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                 <td className="px-2 py-[2px] whitespace-nowrap">
                   {moneyTR(r?.isverenTeminiTutar, "TRY")}
                 </td>
+                
+                
 
                
               </tr>

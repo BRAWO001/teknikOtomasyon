@@ -6,6 +6,8 @@ import YoneticiRaporuIsEmriCard from "@/components/yoneticiRaporu/YoneticiRaporu
 import YoneticiRaporuSatinAlmaCard from "@/components/yoneticiRaporu/YoneticiRaporuSatinAlmaCard";
 import YoneticiRaporuSatinAlmaGrafikPanel from "@/components/yoneticiRaporu/YoneticiRaporuSatinAlmaGrafikPanel";
 import YoneticiRaporuIsEmriGrafikPanel from "@/components/yoneticiRaporu/YoneticiRaporuIsEmriGrafikPanel";
+import IsEmriRemoveModal from "@/components/yoneticiRaporu/IsEmriRemoveModal";
+
 
 export default function YoneticiRaporuPage() {
   const router = useRouter();
@@ -212,6 +214,9 @@ export default function YoneticiRaporuPage() {
     return s ? `?${s}` : "";
   };
 
+
+  const [removeOpen, setRemoveOpen] = useState(false);
+
   function downloadBlob(blob, baseFilename) {
     const d = new Date();
     const gun = String(d.getDate()).padStart(2, "0");
@@ -296,11 +301,12 @@ export default function YoneticiRaporuPage() {
         <div className="flex items-center justify-between gap-2">
           <div>
             <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-              Yönetici Raporu – İş Emirleri 
+              Yönetici Raporu – İş Emirleri
             </div>
 
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              İş Emri: {isEmriTotalCount} kayıt • Sayfa: {isEmriPage}/{isEmriTotalPages}
+              İş Emri: {isEmriTotalCount} kayıt • Sayfa: {isEmriPage}/
+              {isEmriTotalPages}
               <span className="mx-2">•</span>
               Satın Alma: {saTotalCount} kayıt • Sayfa: {saPage}/{saTotalPages}
             </div>
@@ -333,6 +339,15 @@ export default function YoneticiRaporuPage() {
 
             <button
               type="button"
+              onClick={() => setRemoveOpen(true)}
+              className="rounded-md border cursor-pointer border-red-200 bg-red-50 px-2 py-1 text-[11px] font-bold text-red-700 hover:bg-red-100
+               dark:border-red-900 dark:bg-red-900/20 dark:text-red-200 dark:hover:bg-red-900/30"
+            >
+              🗑 İş Emri Sil
+            </button>
+
+            <button
+              type="button"
               onClick={refreshAll}
               className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200 dark:hover:bg-emerald-900/45"
             >
@@ -355,7 +370,9 @@ export default function YoneticiRaporuPage() {
               disabled={downloading}
               onClick={handleDownloadSatinAlmaExcel}
               className={`rounded-md px-2 py-1 text-[11px] font-semibold text-white ${
-                downloading ? "bg-zinc-400" : "bg-indigo-600 hover:bg-indigo-700"
+                downloading
+                  ? "bg-zinc-400"
+                  : "bg-indigo-600 hover:bg-indigo-700"
               }`}
             >
               {downloading ? "İndiriliyor..." : "SATIN ALMA EXCEL"}
@@ -465,11 +482,27 @@ export default function YoneticiRaporuPage() {
 
       <YoneticiRaporuIsEmriGrafikPanel />
 
+      <IsEmriRemoveModal
+        isOpen={removeOpen}
+        onClose={() => setRemoveOpen(false)}
+        onDeleted={() => {
+          setRemoveOpen(false);
+          loadIsEmri(); // listeyi tazele
+        }}
+      />
+
       {/* ===== İş Emri Pagination ===== */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">İş Emirleri</div>
-          {isEmriLoading && <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Yükleniyor…</span>}
+          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
+            İş Emirleri
+          </div>
+
+          {isEmriLoading && (
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Yükleniyor…
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -485,7 +518,9 @@ export default function YoneticiRaporuPage() {
           <button
             type="button"
             disabled={isEmriPage >= isEmriTotalPages}
-            onClick={() => setIsEmriPage((p) => Math.min(isEmriTotalPages, p + 1))}
+            onClick={() =>
+              setIsEmriPage((p) => Math.min(isEmriTotalPages, p + 1))
+            }
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
             Sonraki ▶
@@ -493,10 +528,11 @@ export default function YoneticiRaporuPage() {
         </div>
       </div>
 
-      <YoneticiRaporuIsEmriCard data={isEmriItems} page={isEmriPage} pageSize={isEmriPageSize} />
-
-
-     
+      <YoneticiRaporuIsEmriCard
+        data={isEmriItems}
+        page={isEmriPage}
+        pageSize={isEmriPageSize}
+      />
     </div>
   );
 }
