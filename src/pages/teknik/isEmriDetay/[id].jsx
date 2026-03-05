@@ -141,8 +141,8 @@ export default function IsEmriDetayPage() {
   };
 
   const handlePrint = () => {
-    if (typeof window !== "undefined") window.print();
-  };
+  window.open(`/teknik/isEmriDetay/print/${id}`, "_blank", "noopener,noreferrer");
+};
 
   if (loading) {
     return (

@@ -146,6 +146,8 @@ export default function ProjeGorevlileriPage() {
 
   const handleProjemIletiler = () =>
     router.push("/projeGorevlileri/projeGorevlileriIletiler");
+  const handleProjemDestekTalepler = () =>
+    router.push("/projeGorevlileri/DestekTalepler");
 
   const handlePilotFeatureClick = (featureName) => {
     setPilotInfo(
@@ -409,6 +411,43 @@ export default function ProjeGorevlileriPage() {
                 {!selectedSiteId && (
                   <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
                     Site seçilmeden ileti işlemi yapılamaz.
+                  </div>
+                )}
+              </div>
+              {/* ✅ Destek Talepler*/}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50 text-center">
+                    📣 Destek Talepler
+                  </h3>
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300 text-center">
+                    Projeye ait kat maliklerinin destek talepleri.
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                  {/* <button
+                    type="button"
+                    onClick={handleYeniIleti}
+                    disabled={!selectedSiteId}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    ➕ Yeni İleti Oluştur
+                  </button> */}
+
+                  <button
+                    type="button"
+                    onClick={handleProjemDestekTalepler}
+                    disabled={!selectedSiteId}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    📄 Destek Talepleri Görüntüle
+                  </button>
+                </div>
+
+                {!selectedSiteId && (
+                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                    Site seçilmeden destek talebi işlemi yapılamaz.
                   </div>
                 )}
               </div>

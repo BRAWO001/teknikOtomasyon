@@ -94,6 +94,10 @@ export default function TeknikMudurPage() {
   const handleTalepRaporu = () => {
     router.push("/detayliTaleplerRaporu");
   };
+  // Destek Talepleri raporu
+  const handleDestekTalepleriRaporu = () => {
+    router.push("/YonetimKuruluYoneticiRaporu/DestekTalepler");
+  };
   // Yönetim Kurulu Yönetici Raporu
   const handleYonetimKurulu= () => {
     router.push("/YonetimKuruluYoneticiRaporu");
@@ -314,6 +318,22 @@ export default function TeknikMudurPage() {
                     <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                   </svg>
                   Talep Raporu
+                </button>
+                <button
+                  onClick={handleDestekTalepleriRaporu}
+                  className="group inline-flex h-9 cursor-pointer  items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
+                     hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98]"
+                >
+                  <svg
+                    className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                  </svg>
+                  Destek Talepleri  Raporu
                 </button>
               </div>
 
