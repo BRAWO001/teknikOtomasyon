@@ -35,6 +35,77 @@ function isProbablyPdfOrDoc(file) {
   return ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt"].includes(ext);
 }
 
+/**
+ * Görseli yeniden boyutlandırıp JPEG olarak sıkıştırır.
+ * quality: 0-1
+ * maxWidth / maxHeight: maksimum çözünürlük sınırı
+ */
+async function compressImageFile(
+  file,
+  quality = 0.75,
+  maxWidth = 1920,
+  maxHeight = 1920
+) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        let { width, height } = img;
+
+        const widthRatio = maxWidth / width;
+        const heightRatio = maxHeight / height;
+        const ratio = Math.min(widthRatio, heightRatio, 1);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(width * ratio);
+        canvas.height = Math.round(height * ratio);
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Canvas context alınamadı."));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Görsel sıkıştırılamadı."));
+              return;
+            }
+
+            const safeName = String(file?.name || "photo.jpg").replace(
+              /\.(png|webp|heic)$/i,
+              ".jpg"
+            );
+
+            const compressedFile = new File([blob], safeName, {
+              type: "image/jpeg",
+            });
+
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          quality
+        );
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    img.onerror = (err) => reject(err);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.src = e.target?.result;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled }) {
   const _ticketId = useMemo(() => {
     const n = Number(ticketId || 0);
@@ -118,7 +189,7 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
     });
   };
 
-  // ✅ ticketId sonradan geldiyse pending’i tek seferde DB’ye bağla
+  // ticketId sonradan geldiyse pending’i tek seferde DB’ye bağla
   useEffect(() => {
     const run = async () => {
       if (!_ticketId) return;
@@ -145,7 +216,6 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_ticketId, pending.length]);
 
-  // ✅ çoklu seçimi normalize et
   const normalizeSelectedFiles = (fileList, tur) => {
     const arr = Array.from(fileList || []);
     if (!arr.length) return [];
@@ -161,11 +231,8 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
     return arr;
   };
 
-  // ✅ Çoklu upload + (ticket varsa) batch attach
-    const handlePickAndUpload = async (e, tur) => {
-    // ✅ ÖNCE dosyaları kopyala (kritik!)
+  const handlePickAndUpload = async (e, tur) => {
     const selectedFiles = Array.from(e?.target?.files || []);
-    // ✅ sonra input'u temizle
     if (e?.target) e.target.value = "";
 
     if (selectedFiles.length === 0) return;
@@ -173,19 +240,18 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
     setUploadError("");
     setAttachError("");
 
-    // ✅ tür kontrolü (çoklu)
     try {
-        if (tur === TUR.FOTO) {
+      if (tur === TUR.FOTO) {
         const bad = selectedFiles.find((f) => !isProbablyImage(f));
         if (bad) throw new Error(`Sadece fotoğraf seç: ${bad.name}`);
-        }
-        if (tur === TUR.BELGE) {
+      }
+      if (tur === TUR.BELGE) {
         const bad = selectedFiles.find((f) => !isProbablyPdfOrDoc(f));
         if (bad) throw new Error(`Sadece belge seç: ${bad.name}`);
-        }
+      }
     } catch (err) {
-        setUploadError(err?.message || "Dosya tipi hatalı.");
-        return;
+      setUploadError(err?.message || "Dosya tipi hatalı.");
+      return;
     }
 
     setUploading(true);
@@ -196,49 +262,52 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
     const uploadedItems = [];
 
     try {
-        // ✅ tek tek upload (SIRAYLA)
-        for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
-        setUploadingName(file?.name || "");
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const originalFile = selectedFiles[i];
+        setUploadingName(originalFile?.name || "");
 
-        const url = await uploadOnly(file); // FTP upload
+        let fileToUpload = originalFile;
+        let finalDosyaAdi = originalFile?.name || "dosya";
+
+        // Sadece fotoğraflarda kalite düşürme + resize uygula
+        if (tur === TUR.FOTO) {
+          fileToUpload = await compressImageFile(originalFile, 0.75, 1920, 1920);
+          finalDosyaAdi = fileToUpload?.name || originalFile?.name || "foto.jpg";
+        }
+
+        const url = await uploadOnly(fileToUpload);
 
         uploadedItems.push({
-            url,
-            dosyaAdi: file.name,
-            tur,
-            createdAt: new Date().toISOString(),
+          url,
+          dosyaAdi: finalDosyaAdi,
+          tur,
+          createdAt: new Date().toISOString(),
         });
 
         setUploadDone(i + 1);
-        }
+      }
 
-        // ✅ ticketId varsa: DB’ye yaz
-        if (_ticketId) {
+      if (_ticketId) {
         setAttaching(true);
         try {
-            await attachToTicket(uploadedItems); // batch attach
-            await loadFiles();
+          await attachToTicket(uploadedItems);
+          await loadFiles();
         } finally {
-            setAttaching(false);
+          setAttaching(false);
         }
-        } else {
-        // ✅ ticketId yoksa: pending’de tut
+      } else {
         setPending((prev) => [...uploadedItems, ...prev]);
-        }
+      }
     } catch (err) {
-        console.error("UPLOAD ERROR:", err);
-        setUploadError(err?.message || "Yükleme sırasında hata oluştu.");
+      console.error("UPLOAD ERROR:", err);
+      setUploadError(err?.message || "Yükleme sırasında hata oluştu.");
     } finally {
-        setUploading(false);
-        setUploadingName("");
-        setUploadTotal(0);
-        setUploadDone(0);
+      setUploading(false);
+      setUploadingName("");
+      setUploadTotal(0);
+      setUploadDone(0);
     }
-    };
-
-
-
+  };
 
   return (
     <section className="mt-5 space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -247,10 +316,7 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
           <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             Ticket Dosyaları
           </div>
-          
         </div>
-
-        
       </div>
 
       {uploadError ? (
@@ -320,7 +386,6 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
         </div>
       </div>
 
-      {/* Pending */}
       <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
         <div className="mb-2 text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">
           Eklenen Görsel Ve Ya Belgeler
@@ -365,8 +430,6 @@ export default function TicketDosyaPanel({ ticketId, onStatusChange, disabled })
           </div>
         )}
       </div>
-
-      
     </section>
   );
 }
