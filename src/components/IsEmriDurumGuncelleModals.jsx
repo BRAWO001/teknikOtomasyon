@@ -1,8 +1,3 @@
-
-
-
-
-
 // src/components/IsEmriDurumGuncelleModals.jsx
 import { useEffect, useState } from "react";
 import { postDataAsync } from "@/utils/apiService";
@@ -30,11 +25,14 @@ export default function IsEmriDurumGuncelleModals({
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  // ✅ İş Bitti onay modali
+  // İş Bitti onay modali
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmChecked, setConfirmChecked] = useState(false);
 
-  // ✅ Hangi durum için onay açıldıysa burada tutulur
+  // Yeni iki checkbox
+  const [confirmMalzeme, setConfirmMalzeme] = useState(false);
+  const [confirmNotlar, setConfirmNotlar] = useState(false);
+
+  // Hangi durum için onay açıldıysa burada tutulur
   const [pendingDurum, setPendingDurum] = useState(null);
 
   // Modal açılınca state reset
@@ -44,15 +42,16 @@ export default function IsEmriDurumGuncelleModals({
       setError("");
       setSuccessMsg("");
       setConfirmOpen(false);
-      setConfirmChecked(false);
+      setConfirmMalzeme(false);
+      setConfirmNotlar(false);
       setPendingDurum(null);
     }
   }, [isOpen, currentDurumKod]);
 
   const current = Number(currentDurumKod ?? 0);
 
-  // ✅ 10'dayken sadece 20'yi aç, diğerlerini kapat.
-  // ✅ current>=20 iken geriye gitme yok.
+  // 10'dayken sadece 20'yi aç, diğerlerini kapat.
+  // current>=20 iken geriye gitme yok.
   const isStepDisabled = (stepValue) => {
     if (loading) return true;
 
@@ -63,7 +62,7 @@ export default function IsEmriDurumGuncelleModals({
     return stepValue < current;
   };
 
-  // ✅ Tek bir fonksiyon: istenen durumu backend'e gönderir
+  // Tek bir fonksiyon: istenen durumu backend'e gönderir
   const submitDurum = async (durumToSend) => {
     try {
       setLoading(true);
@@ -107,13 +106,14 @@ export default function IsEmriDurumGuncelleModals({
   const handleConfirmClose = () => {
     if (loading) return;
     setConfirmOpen(false);
-    setConfirmChecked(false);
+    setConfirmMalzeme(false);
+    setConfirmNotlar(false);
     setPendingDurum(null);
   };
 
   const handleConfirmAccept = async () => {
     if (!pendingDurum) return;
-    if (!confirmChecked) return;
+    if (!confirmMalzeme || !confirmNotlar) return;
 
     setConfirmOpen(false);
     setSelectedDurum(pendingDurum);
@@ -121,14 +121,15 @@ export default function IsEmriDurumGuncelleModals({
     await submitDurum(pendingDurum);
   };
 
-  // ✅ Hooklardan sonra early return
+  // Hooklardan sonra early return
   if (!isOpen) return null;
   if (!personelId || !isEmriId) return null;
 
   const handleSubmit = () => {
     if (Number(selectedDurum) === 100) {
       setPendingDurum(100);
-      setConfirmChecked(false);
+      setConfirmMalzeme(false);
+      setConfirmNotlar(false);
       setConfirmOpen(true);
       return;
     }
@@ -136,11 +137,12 @@ export default function IsEmriDurumGuncelleModals({
     submitDurum(selectedDurum);
   };
 
+  const canFinishConfirm = confirmMalzeme && confirmNotlar;
+
   return (
     <>
       <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black p-2">
         <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-          {/* Başlık */}
           <div className="mb-3 flex items-start justify-between gap-2">
             <div>
               <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -175,7 +177,6 @@ export default function IsEmriDurumGuncelleModals({
             </button>
           </div>
 
-          {/* Liste */}
           <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-xl border border-zinc-200 p-2 dark:border-zinc-800">
             {DURUM_STEPS.map((step) => {
               const isCurrent = step.value === currentDurumKod;
@@ -188,21 +189,19 @@ export default function IsEmriDurumGuncelleModals({
                   type="button"
                   disabled={disabled}
                   onClick={() => {
-                    // ✅ Beklemede iken 20'ye tıklandıysa: anında backend'e gönder
                     if (current <= 10 && step.value === 20) {
                       submitDurum(20);
                       return;
                     }
 
-                    // ✅ 100'e tıklanınca önce onay modali aç
                     if (step.value === 100) {
                       setPendingDurum(100);
-                      setConfirmChecked(false);
+                      setConfirmMalzeme(false);
+                      setConfirmNotlar(false);
                       setConfirmOpen(true);
                       return;
                     }
 
-                    // ✅ Normal akış: sadece seçim yap
                     setSelectedDurum(step.value);
                   }}
                   className={[
@@ -241,7 +240,6 @@ export default function IsEmriDurumGuncelleModals({
             })}
           </div>
 
-          {/* Hata / başarı */}
           <div className="mt-2 space-y-1 text-[11px]">
             {error && (
               <p className="rounded-md bg-red-50 px-2 py-1 text-red-700 dark:bg-red-950/40 dark:text-red-200">
@@ -255,7 +253,6 @@ export default function IsEmriDurumGuncelleModals({
             )}
           </div>
 
-          {/* Butonlar */}
           <div className="mt-3 flex items-center justify-end gap-2">
             <button
               type="button"
@@ -278,45 +275,44 @@ export default function IsEmriDurumGuncelleModals({
         </div>
       </div>
 
-      {/* ✅ 100% İş Bitti onay modali */}
       {confirmOpen && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 p-3">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 p-1">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl dark:bg-zinc-900">
-            <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-              <div className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
-                İş Bitirme Onayı
-              </div>
-              
-            </div>
+            
 
             <div className="space-y-3 px-4 py-4">
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
                 <div className="font-semibold">Değerli Personelimiz</div>
 
-                <div className="mt-2">
-                  Kullanılan Malzeme Durumunu kontrol edin ve eksiksiz girin.
+                <div className="mt-0.5">
+                  Lütfen aşağıdaki kontrolleri tamamladıktan sonra işi bitirin.
                 </div>
 
-                <div className="mt-2">
-                  Ayrıca işi anlatan detaylı notlar bıraktığınızdan emin olun.
-                </div>
-
-                <div className="mt-2">
+                <div className="mt-0.5">
                   İşin mesuliyeti size aittir.
                 </div>
               </div>
 
-              <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100">
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100">
                 <input
                   type="checkbox"
-                  checked={confirmChecked}
-                  onChange={(e) => setConfirmChecked(e.target.checked)}
+                  checked={confirmMalzeme}
+                  onChange={(e) => setConfirmMalzeme(e.target.checked)}
                   disabled={loading}
                   className="mt-0.5 h-4 w-4 rounded border-zinc-300"
                 />
-                <span className="font-medium">
-                  Onaylıyorum, işi eksiksiz ve doğru şekilde bitirdiğime eminim.
-                </span>
+                <span className="font-medium">Kullanılan Malzeme Kontrol Edildi</span>
+              </label>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100">
+                <input
+                  type="checkbox"
+                  checked={confirmNotlar}
+                  onChange={(e) => setConfirmNotlar(e.target.checked)}
+                  disabled={loading}
+                  className="mt-0.5 h-4 w-4 rounded border-zinc-300"
+                />
+                <span className="font-medium">Notlar Eksiksiz Bırakıldı</span>
               </label>
             </div>
 
@@ -333,7 +329,7 @@ export default function IsEmriDurumGuncelleModals({
               <button
                 type="button"
                 onClick={handleConfirmAccept}
-                disabled={loading || !confirmChecked}
+                disabled={loading || !canFinishConfirm}
                 className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
               >
                 {loading ? "Onaylanıyor..." : "Onayla ve Bitir"}
