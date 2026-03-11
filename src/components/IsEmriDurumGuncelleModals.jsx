@@ -285,7 +285,7 @@ export default function IsEmriDurumGuncelleModals({
                 <div className="font-semibold">Değerli Personelimiz</div>
 
                 <div className="mt-0.5">
-                  Lütfen aşağıdaki kontrolleri tamamladıktan sonra işi bitirin.
+                  Lütfen aşağıdaki kontroller sonrası işi bitirin.
                 </div>
 
                 <div className="mt-0.5">
@@ -301,7 +301,7 @@ export default function IsEmriDurumGuncelleModals({
                   disabled={loading}
                   className="mt-0.5 h-4 w-4 rounded border-zinc-300"
                 />
-                <span className="font-medium">Kullanılan Malzeme Kontrol Edildi</span>
+                <span className="font-medium">Kullanılan Malzeme Varsa Girişi Yapıldı Mı ? </span>
               </label>
 
               <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-1 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100">
@@ -312,7 +312,7 @@ export default function IsEmriDurumGuncelleModals({
                   disabled={loading}
                   className="mt-0.5 h-4 w-4 rounded border-zinc-300"
                 />
-                <span className="font-medium">Notlar Eksiksiz Bırakıldı</span>
+                <span className="font-medium">İş Açıklamaları (Notlar) bırakıldı mı ? </span>
               </label>
             </div>
 
