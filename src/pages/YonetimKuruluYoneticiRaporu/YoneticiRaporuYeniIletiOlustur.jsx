@@ -394,18 +394,7 @@ export default function YoneticiRaporuYeniIletiOlusturPage() {
               )}
             </div>
 
-            {/* <div>
-              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">Durum</label>
-
-              <input
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-                value={durum}
-                onChange={(e) => setDurum(e.target.value)}
-                placeholder="Beklemede"
-                maxLength={60}
-                disabled={showRedirectInfo}
-              />
-            </div> */}
+           
           </div>
 
           {/* Katılımcılar */}
