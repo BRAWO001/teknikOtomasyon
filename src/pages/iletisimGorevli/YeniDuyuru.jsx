@@ -244,18 +244,12 @@ export default function YeniDuyuruPage() {
               )}
 
               <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={handleOpenLink}
-                  className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                >
-                  Linki Aç
-                </button>
+                
 
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                  className="flex-1 rounded-xl cursor-pointer bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                 >
                   Linki Kopyala
                 </button>
