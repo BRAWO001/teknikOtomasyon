@@ -148,7 +148,13 @@ export default function BelgeFotoModals({ isOpen, onClose, isEmriId, isEmriKod }
             <BelgeUploadBlock uploadAndAttach={uploadAndAttach} />
           </div>
 
-          <UploadedFilesSection files={files} loadingFiles={loadingFiles} filesError={filesError} />
+          <UploadedFilesSection
+            isEmriId={isEmriId}
+            files={files}
+            loadingFiles={loadingFiles}
+            filesError={filesError}
+            onFilesUpdated={(updatedFiles) => setFiles(updatedFiles)}
+          />
         </div>
       </div>
     </div>

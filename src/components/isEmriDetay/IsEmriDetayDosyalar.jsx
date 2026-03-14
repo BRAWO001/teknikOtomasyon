@@ -22,7 +22,7 @@ export default function IsEmriDetayDosyalar({ dosyalar = [], onAddFile }) {
           onClick={onAddFile}
           className="rounded-full border border-zinc-300 bg-white px-2 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 print:hidden"
         >
-          Belge / Foto ekle
+          Belge / Foto Düzenle
         </button>
       </div>
 
