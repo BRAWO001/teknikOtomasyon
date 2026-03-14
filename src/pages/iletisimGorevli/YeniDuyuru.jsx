@@ -79,7 +79,7 @@ export default function YeniDuyuruPage() {
 
   const publicLink = useMemo(() => {
     if (!createdToken) return "";
-    return `https://eosyonetim.tr/Duyuru/${createdToken}`;
+    return `eosyonetim.tr/Duyuru/${createdToken}`;
   }, [createdToken]);
 
   useEffect(() => {
