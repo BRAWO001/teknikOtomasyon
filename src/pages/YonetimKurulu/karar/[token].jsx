@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
+import KararDuzenleModal from "@/components/ProjeYonetimKurulu/KararDuzenleModal";
 
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -39,6 +40,7 @@ export default function KararTokenDetayPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   // Rol11 oy/düşünce
   const [secim, setSecim] = useState("");
@@ -74,6 +76,11 @@ export default function KararTokenDetayPage() {
   const canEdit = useMemo(() => {
     return isRol11 && !!myOnerenKaydi && duzenlemeAcikMi;
   }, [isRol11, myOnerenKaydi, duzenlemeAcikMi]);
+
+  const canOpenKararEditModal = useMemo(() => {
+  if (isRol90) return true;
+    return canEdit;
+  }, [isRol90, canEdit]);
 
   // cookie -> personel
   useEffect(() => {
@@ -381,6 +388,7 @@ export default function KararTokenDetayPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+      
       {/* ✅ KURUMSAL STICKY HEADER */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -398,8 +406,12 @@ export default function KararTokenDetayPage() {
             </div>
 
             <div className="leading-tight">
-              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
-              <div className="text-xs text-zinc-600 dark:text-zinc-400">Yönetim Kurulu • Karar Detayı</div>
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                Yönetim Kurulu • Karar Detayı
+              </div>
             </div>
           </div>
 
@@ -421,7 +433,8 @@ export default function KararTokenDetayPage() {
             </button>
 
             <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-              Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve arşivlenir.
+              Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve
+              arşivlenir.
             </span>
 
             {/* ✅✅✅ BURASI: YAZDIR YOK — PDF İNDİR VAR */}
@@ -452,7 +465,20 @@ export default function KararTokenDetayPage() {
               tone={duzenlemeAcikMi ? "ok" : "bad"}
               label={duzenlemeAcikMi ? "Düzenleme Açık" : "Düzenleme Kapalı"}
             />
-            <StatusPill tone={data?.nihaiSonuc ? "neutral" : "warn"} label={`Nihai: ${data?.nihaiSonuc ?? "-"}`} />
+            <StatusPill
+              tone={data?.nihaiSonuc ? "neutral" : "warn"}
+              label={`Nihai: ${data?.nihaiSonuc ?? "-"}`}
+            />
+
+            {canOpenKararEditModal && (
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              >
+                ✏️ Kararı Düzenle
+              </button>
+            )}
           </div>
 
           <div className="text-right text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -486,8 +512,10 @@ export default function KararTokenDetayPage() {
                     Karar No:
                     <span className="ml-1 font-semibold text-zinc-900 dark:text-zinc-100">
                       {(() => {
-                        const siteBazliNo = data?.siteBazliNo ?? data?.SiteBazliNo;
-                        if (typeof siteBazliNo === "number" && siteBazliNo > 0) return `# ${siteBazliNo}`;
+                        const siteBazliNo =
+                          data?.siteBazliNo ?? data?.SiteBazliNo;
+                        if (typeof siteBazliNo === "number" && siteBazliNo > 0)
+                          return `# ${siteBazliNo}`;
                         return `#${safeText(data?.id ?? data?.Id)}`;
                       })()}
                     </span>
@@ -536,7 +564,8 @@ export default function KararTokenDetayPage() {
 
               {isRol11 && !myOnerenKaydi && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
-                  Bu karar için “söz sahibi üye” listesinde değilsin. Oy/düşünce giremezsin.
+                  Bu karar için “söz sahibi üye” listesinde değilsin. Oy/düşünce
+                  giremezsin.
                 </div>
               )}
 
@@ -549,7 +578,9 @@ export default function KararTokenDetayPage() {
               {canEdit && (
                 <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <div className="mb-3">
-                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Karar Düşüncen</div>
+                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      Karar Düşüncen
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -620,14 +651,16 @@ export default function KararTokenDetayPage() {
                 </div>
               )}
 
-              {Array.isArray(data.onerenKisiler) && data.onerenKisiler.length > 0 ? (
+              {Array.isArray(data.onerenKisiler) &&
+              data.onerenKisiler.length > 0 ? (
                 <SoftCard
                   title="Söz Sahibi Üyeler"
                   subtitle="Üyelerin seçimi ve açıklamaları bu kararın kayıt sürecinin parçasıdır."
                 >
                   <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
                     {data.onerenKisiler.map((o) => {
-                      const isMe = Number(o.personelId) === Number(personel?.id);
+                      const isMe =
+                        Number(o.personelId) === Number(personel?.id);
                       const dusunce = o.kararDusuncesi ?? "-";
                       return (
                         <div key={o.id} className="px-4 py-3">
@@ -635,7 +668,8 @@ export default function KararTokenDetayPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <div className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-50">
-                                  {o.personel?.ad ?? "-"} {o.personel?.soyad ?? ""}
+                                  {o.personel?.ad ?? "-"}{" "}
+                                  {o.personel?.soyad ?? ""}
                                 </div>
                                 {isMe ? (
                                   <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
@@ -649,7 +683,9 @@ export default function KararTokenDetayPage() {
                                   {o.kararDusunceAciklamasi}
                                 </div>
                               ) : (
-                                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Açıklama yok</div>
+                                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                  Açıklama yok
+                                </div>
                               )}
                             </div>
 
@@ -677,10 +713,16 @@ export default function KararTokenDetayPage() {
                       onClick={handleToggleDuzenleme}
                       className={[
                         "h-10 rounded-md px-3 text-[12px] font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60",
-                        duzenlemeAcikMi ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700",
+                        duzenlemeAcikMi
+                          ? "bg-red-600 hover:bg-red-700"
+                          : "bg-emerald-600 hover:bg-emerald-700",
                       ].join(" ")}
                     >
-                      {adminSaving ? "İşleniyor..." : duzenlemeAcikMi ? "Düzenlemeyi Kapat" : "Düzenlemeyi Aç"}
+                      {adminSaving
+                        ? "İşleniyor..."
+                        : duzenlemeAcikMi
+                          ? "Düzenlemeyi Kapat"
+                          : "Düzenlemeyi Aç"}
                     </button>
                   }
                 >
@@ -733,14 +775,20 @@ export default function KararTokenDetayPage() {
                     Yönetim Kurulu Karar Bilgilendirmesi
                   </div>
                   <p className="text-[12px] leading-relaxed">
-                    Bu ekranda görüntülenen kararlar, <b>Kat Mülkiyeti Kanunu</b> ve ilgili mevzuat hükümleri
-                    çerçevesinde site/apartman yönetim kurulu tarafından oluşturulan resmi kararlardır.
+                    Bu ekranda görüntülenen kararlar,{" "}
+                    <b>Kat Mülkiyeti Kanunu</b> ve ilgili mevzuat hükümleri
+                    çerçevesinde site/apartman yönetim kurulu tarafından
+                    oluşturulan resmi kararlardır.
                   </p>
                   <p className="mt-2 text-[12px] leading-relaxed">
-                    Nihai sonuç ve düzenleme yetkileri yalnızca yönetim planında tanımlı <b>yetkili yönetici</b>{" "}
-                    tarafından kullanılabilir. Üyelerin görüş ve oyları sistem üzerinde kayıt altına alınır.
+                    Nihai sonuç ve düzenleme yetkileri yalnızca yönetim planında
+                    tanımlı <b>yetkili yönetici</b> tarafından kullanılabilir.
+                    Üyelerin görüş ve oyları sistem üzerinde kayıt altına
+                    alınır.
                   </p>
-                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">EOS Management</p>
+                  <p className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
+                    EOS Management
+                  </p>
                 </div>
               )}
             </div>
@@ -766,7 +814,25 @@ export default function KararTokenDetayPage() {
         <div id="pdf-a4-root" ref={pdfRef}>
           <KararPrintA4 data={data} />
         </div>
+        
       </div>
+
+      <KararDuzenleModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          data={data}
+          personel={personel}
+          onSaved={(res) => {
+            const updated = res?.data ?? res?.Data ?? res;
+            const dto = updated?.data ?? updated?.Data ?? updated;
+            if (dto) {
+              setData(dto);
+            }
+          }}
+        />
+
+
     </div>
+    
   );
 }
