@@ -63,6 +63,7 @@ export default function KararTokenDetayPage() {
 
   const isRol11 = useMemo(() => Number(personel?.rol) === 11, [personel]);
   const isRol90 = useMemo(() => Number(personel?.rol) === 90, [personel]);
+  const isRol40 = useMemo(() => Number(personel?.rol) === 40, [personel]);
 
   const myOnerenKaydi = useMemo(() => {
     const pid = Number(personel?.id);
@@ -78,9 +79,9 @@ export default function KararTokenDetayPage() {
   }, [isRol11, myOnerenKaydi, duzenlemeAcikMi]);
 
   const canOpenKararEditModal = useMemo(() => {
-  if (isRol90) return true;
+  if (isRol90 || isRol40) return true;
     return canEdit;
-  }, [isRol90, canEdit]);
+  }, [isRol90, isRol40, canEdit]);
 
   // cookie -> personel
   useEffect(() => {
@@ -388,7 +389,7 @@ export default function KararTokenDetayPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      
+
       {/* ✅ KURUMSAL STICKY HEADER */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -470,15 +471,15 @@ export default function KararTokenDetayPage() {
               label={`Nihai: ${data?.nihaiSonuc ?? "-"}`}
             />
 
-            {canOpenKararEditModal && (
-              <button
-                type="button"
-                onClick={() => setEditOpen(true)}
-                className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
-              >
-                ✏️ Kararı Düzenle
-              </button>
-            )}
+            {isRol90 && (
+  <button
+    type="button"
+    onClick={() => setEditOpen(true)}
+    className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+  >
+    ✏️ Kararı Düzenle
+  </button>
+)}
           </div>
 
           <div className="text-right text-[11px] text-zinc-500 dark:text-zinc-400">
