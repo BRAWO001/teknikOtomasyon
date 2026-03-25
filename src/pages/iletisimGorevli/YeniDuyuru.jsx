@@ -299,7 +299,7 @@ export default function YeniDuyuruPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/")}
               disabled={showSuccessModal}
               className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             >

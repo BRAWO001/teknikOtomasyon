@@ -137,6 +137,10 @@ export default function ProjeGorevlileriPage() {
 
   const handleTaleplerim = () => router.push("/projeGorevlileri/taleplerim");
 
+    // Sadece yeni duyuru aktif
+  const handleYeniDuyuru = () => router.push("/iletisimGorevli/YeniDuyuru");
+
+
   // ✅ yeni sayfalar
   const handleProjemKararlar = () =>
     router.push("/projeGorevlileri/projeGorevlileriKararlar");
@@ -370,11 +374,44 @@ export default function ProjeGorevlileriPage() {
                   </button>
                 </div>
 
+             
+
                 {!selectedSiteId && (
                   <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-200">
                     ⚠️ Site seçilmeden karar işlemi yapılamaz.
                   </div>
                 )}
+              </div>
+
+
+
+               {/* Duyuru Yönetimi */}
+              <div className="flex flex-col justify-center rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="flex items-center justify-center gap-1 text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
+                    📢 Duyuru Yönetimi
+                  </h3>
+                  <p className="mt-1 justify-center text-center text-[11px] text-zinc-600 dark:text-zinc-300">
+                    Yeni duyuru oluşturma ve mevcut duyuruları görüntüleme
+                    ekranlarına buradan geçebilirsiniz.
+                  </p>
+                </div>
+
+                <div className="mt-3 flex justify-evenly gap-2 flex-wrap">
+                  <button
+                    onClick={handleYeniDuyuru}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                  >
+                    ➕ Yeni Duyuru
+                  </button>
+
+                  {/* <button
+                    onClick={() => handleDevelopmentInfo("Duyurular")}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    📋 Duyurular
+                  </button> */}
+                </div>
               </div>
 
               {/* ✅ İletiler (Yeni kart) */}
