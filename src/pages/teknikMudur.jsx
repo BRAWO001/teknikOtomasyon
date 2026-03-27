@@ -86,6 +86,10 @@ export default function TeknikMudurPage() {
   const handleNewIsEmri = () => {
     router.push("/teknikIsEmriEkle");
   };
+
+  const handleDuyurular = () => {
+  router.push("/Duyurular");
+  };
   // Yonetici raporu
   const handleYoneticiRaporu = () => {
     router.push("/yoneticiRaporu");
@@ -102,6 +106,14 @@ export default function TeknikMudurPage() {
   const handleYonetimKurulu= () => {
     router.push("/YonetimKuruluYoneticiRaporu");
   };
+
+  const handleYonetimKuruluKararlar = () => {
+  router.push("/YonetimKuruluYoneticiRaporu/kararlar");
+};
+
+const handleYonetimKuruluIletiler = () => {
+  router.push("/YonetimKuruluYoneticiRaporu/iletiler");
+};
 
   // Satın alma sayfası
   const handleSatinalma = () => {
@@ -268,23 +280,42 @@ export default function TeknikMudurPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
               {/* ===== YÖNETİM GRUBU ===== */}
               <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/80 p-1.5 shadow-sm backdrop-blur">
-                {personel?.ad === "Özer" && (
-                  <button
-                    onClick={handleYonetimKurulu}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition
-               hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-900 active:scale-[0.98]"
-                  >
-                    <svg
-                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-indigo-600"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
+                {(personel?.id === 4 || personel?.id === 20) && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={handleYonetimKuruluKararlar}
+                      className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 active:scale-[0.98]"
                     >
-                      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-                    </svg>
-                    Yönetim Kurulu Karar / İleti
-                  </button>
+                      <svg
+                        className="h-3.5 w-3.5 text-zinc-500 group-hover:text-emerald-600"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M9 5h6M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                        <path d="M8 9h8M8 13h8M8 17h5" />
+                      </svg>
+                      YK.Kararlar
+                    </button>
+
+                    <button
+                      onClick={handleYonetimKuruluIletiler}
+                      className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98]"
+                    >
+                      <svg
+                        className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M4 6h16v12H4z" />
+                        <path d="m4 7 8 6 8-6" />
+                      </svg>
+                      YK.İletiler
+                    </button>
+                  </div>
                 )}
 
                 <button
@@ -301,7 +332,7 @@ export default function TeknikMudurPage() {
                   >
                     <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                   </svg>
-                  İş Emirleri Raporu
+                  İş Emirleri
                 </button>
                 <button
                   onClick={handleTalepRaporu}
@@ -317,7 +348,7 @@ export default function TeknikMudurPage() {
                   >
                     <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                   </svg>
-                  Talep Raporu
+                  Talepler
                 </button>
                 <button
                   onClick={handleDestekTalepleriRaporu}
@@ -333,8 +364,28 @@ export default function TeknikMudurPage() {
                   >
                     <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                   </svg>
-                  Destek Talepleri  Raporu
+                  Destek (Ticket)
                 </button>
+
+                {(personel?.id === 4 || personel?.id === 20) && (
+                  <button
+                    onClick={handleDuyurular}
+                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-fuchsia-200 hover:bg-fuchsia-50 hover:text-fuchsia-900 active:scale-[0.98]"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-fuchsia-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M3 11v2l14 4V7L3 11z" />
+                      <path d="M17 7v10" />
+                      <path d="M7 13v4a2 2 0 0 0 2 2h1" />
+                    </svg>
+                    Duyurular
+                  </button>
+                )}
               </div>
 
               {/* ===== OPERASYON GRUBU ===== */}

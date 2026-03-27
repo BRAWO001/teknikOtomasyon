@@ -1,12 +1,5 @@
-
-
-
-
-
-// components/YoneticiRaporuIsEmriCard.jsx
 import React, { useMemo } from "react";
 
-/* ===== helpers (AYNEN TARZ) ===== */
 function safeText(v) {
   if (v === null || v === undefined) return "-";
   const s = String(v).trim();
@@ -17,7 +10,7 @@ function formatDateTR(iso) {
   if (!iso) return "-";
   try {
     const d = new Date(iso);
-    d.setHours(d.getHours() + 3); // ⬅️ +3 saat ekle
+    d.setHours(d.getHours() + 3);
 
     return d.toLocaleString("tr-TR", {
       day: "2-digit",
@@ -31,8 +24,6 @@ function formatDateTR(iso) {
   }
 }
 
-
-
 function moneyTR(val, currency = "TRY") {
   if (val === null || val === undefined || Number.isNaN(Number(val))) return "-";
   return new Intl.NumberFormat("tr-TR", {
@@ -44,107 +35,102 @@ function moneyTR(val, currency = "TRY") {
 
 function durumChipClassByKod(durumKod) {
   switch (durumKod) {
-    case 10: // Beklemede
+    case 10:
       return "bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-200";
-
-    case 30: // Devam Ediyor
+    case 30:
       return "bg-sky-100 text-sky-700 dark:bg-sky-900/35 dark:text-sky-200";
-
-    case 50: // Malzeme Temini
+    case 50:
       return "bg-violet-100 text-violet-700 dark:bg-violet-900/35 dark:text-violet-200";
-
-    case 100: // İş Bitirildi
+    case 100:
       return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200";
-
-    case 90: // İptal / Reddedildi (ileride lazım olur)
+    case 90:
       return "bg-red-100 text-red-700 dark:bg-red-900/35 dark:text-red-200";
-
     default:
       return "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100";
   }
 }
 
-
-
-
-
+function surecDotClass(val) {
+  switch ((val || "").trim()) {
+    case "İncelemede":
+      return "bg-amber-500";
+    case "Kontrol Ediliyor":
+      return "bg-sky-500";
+    case "Tamamlandı":
+      return "bg-emerald-500";
+    default:
+      return "bg-zinc-300 dark:bg-zinc-600";
+  }
+}
 
 function joinPeople(list) {
   if (!Array.isArray(list) || list.length === 0) return "—";
   return list.join(" • ");
 }
 
-/** Başlangıç/Bitiş arası süreyi hesaplar
- *  - eksikse null döner
- *  - negatifse 0’a çeker
- */
-function calcDurationMs(startIso, endIso) {
-  if (!startIso || !endIso) return null;
-  const s = new Date(startIso).getTime();
-  const e = new Date(endIso).getTime();
-  if (!Number.isFinite(s) || !Number.isFinite(e)) return null;
-  return Math.max(0, e - s);
+function tekGorunumMetni(r) {
+  const kisaBaslik = String(r?.kisaBaslik || "").trim();
+  const aciklama = String(r?.aciklama || "").trim();
+  return kisaBaslik || aciklama || "-";
 }
 
-/** 1s 25dk gibi kısa TR format */
-function formatDurationTR(ms) {
-  if (ms === null || ms === undefined) return "—";
-  const totalMinutes = Math.floor(ms / 60000);
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
+function SurecDot({ value }) {
+  if (!value) return null;
 
-  const parts = [];
-  if (days > 0) parts.push(`${days}g`);
-  if (hours > 0) parts.push(`${hours}s`);
-  // 0 dakika bile olsa (süre 0 ise) "0dk" gösterelim
-  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}dk`);
-  return parts.join(" ");
+  return (
+    <span
+      title={value}
+      className={`inline-block h-2.5 w-2.5 rounded-full ${surecDotClass(value)}`}
+    />
+  );
 }
 
-function durationMinutes(ms) {
-  if (ms === null || ms === undefined) return null;
-  return Math.floor(ms / 60000);
+function CellLink({ href, title, className = "", children }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={title}
+      className={`block w-full h-full text-inherit no-underline ${className}`}
+      onClick={(e) => {
+        // normal sol tıkta da yeni sekme açılır, mevcut sayfa kalır
+        // target="_blank" bunu zaten native olarak yapıyor
+      }}
+    >
+      {children}
+    </a>
+  );
 }
-/* ================================= */
 
 export default function YoneticiRaporuIsEmriCard({ data = [] }) {
   const headers = useMemo(
     () => [
-      
       "Oluşturma",
-      "İş Başlangıç",
-      "iş Bitiş",
-      "Süre",
-      "SeriKod",
-      "Kısa Başlık",
-      "Durum",
       "Site",
+      "Seri Kod",
+      "Başlık",
+      "Durum",
       "Personeller",
       "Toplam",
       "Depo",
-      "Yeni Alım",
+      "Yeni",
       "İşveren",
-      
     ],
     []
   );
 
-  const rowOpen = (id) => {
-    if (!id) return;
-    const href = `/teknik/isEmriDetay/${id}`;
-    window.open(href, "_blank", "noopener,noreferrer");
-  };
+  const getHref = (id) => `/teknik/isEmriDetay/${id}`;
 
   return (
     <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <table className="min-w-[1200px] w-full border-collapse text-[10px]">
-        <thead className="sticky top-0 z-10 bg-zinc-100 dark:bg-zinc-800">
+      <table className="min-w-[1000px] w-full text-[10px]">
+        <thead className="bg-zinc-50 dark:bg-zinc-900/60">
           <tr>
             {headers.map((h) => (
               <th
                 key={h}
-                className="px-2 py-[2px] text-left font-semibold border-b border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 whitespace-nowrap"
+                className="px-2 py-2 text-left font-semibold whitespace-nowrap text-zinc-600 dark:text-zinc-300"
               >
                 {h}
               </th>
@@ -154,102 +140,94 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
 
         <tbody>
           {data.map((r, i) => {
-            const ms = calcDurationMs(r?.baslangicTarihi, r?.bitisTarihi);
-            const sureText = formatDurationTR(ms);
-            const sureDk = durationMinutes(ms); // istersen tooltip veya debug için
+            const href = getHref(r?.id);
 
             return (
               <tr
                 key={r?.id ?? i}
-                onClick={() => rowOpen(r?.id)}
-                className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
-                title={sureDk !== null ? `Süre: ${sureDk} dk` : ""}
+                className="border-b border-zinc-100/80 hover:bg-zinc-50/80 dark:border-zinc-800/70 dark:hover:bg-zinc-800/30"
               >
-                
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {formatDateTR(r?.olusturmaTarihi)}
+                <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
+                  <CellLink href={href}>
+                    {formatDateTR(r?.olusturmaTarihi)}
+                  </CellLink>
                 </td>
 
-                
-
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {formatDateTR(r?.baslangicTarihi)}
-                </td>
-                
-
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {formatDateTR(r?.bitisTarihi)}
+                <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
+                  <CellLink href={href}>
+                    {safeText(r?.siteAdi)}
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap font-semibold">
-                  {sureText}
+                <td className="px-2 py-2 whitespace-nowrap font-semibold text-zinc-800 dark:text-zinc-100">
+                  <CellLink href={href}>
+                    {[safeText(r?.kod), r?.kod_2, r?.kod_3].filter(Boolean).join(" | ")}
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] font-semibold whitespace-nowrap">
-                  
-                  <span className="text-zinc-500 dark:text-zinc-400 font-medium">
-                    ({safeText(r?.kod)})
-                  </span>
-                  <div className="text-[9px] text-zinc-500 dark:text-zinc-400 font-medium">
-                    {safeText(r?.kod_2)} {r?.kod_2 ? "•" : ""} {safeText(r?.kod_3)}
-                  </div>
+                <td className="px-2 py-2 max-w-[200px] truncate text-zinc-700 dark:text-zinc-200">
+                  <CellLink href={href} title={tekGorunumMetni(r)}>
+                    {tekGorunumMetni(r)}
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {safeText(r?.kisaBaslik)}
+                <td className="px-2 py-2 whitespace-nowrap">
+                  <CellLink href={href}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-[2px] rounded-full text-[10px] font-semibold ${durumChipClassByKod(
+                          r?.durumKod
+                        )}`}
+                      >
+                        {safeText(r?.durumAd)}
+                      </span>
+
+                      <div className="flex gap-1">
+                        <SurecDot value={r?.projeYoneticiSurecDurumu} />
+                        <SurecDot value={r?.operasyonTeknikMudurSurecDurumu} />
+                        <SurecDot value={r?.operasyonGenelMudurSurecDurumu} />
+                      </div>
+                    </div>
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  <span
-                    className={`rounded-full  px-2 py-[1px] font-semibold ${durumChipClassByKod(
-                      r?.durumKod
-                    )}`}
-                  >
-                    {safeText(r?.durumAd)}
-                  </span>
-                </td>
-
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {safeText(r?.siteAdi)}
-                </td>
-
-                {/* Personeller - satır içinde ama çoksa taşmasın */}
-                <td className="px-1 py-[2px]">
-                  <div className="max-w-[150px] truncate text-zinc-700 dark:text-zinc-200">
+                <td className="px-2 py-2 max-w-[140px] truncate text-zinc-700 dark:text-zinc-200">
+                  <CellLink href={href} title={joinPeople(r?.personeller)}>
                     {joinPeople(r?.personeller)}
-                  </div>
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap font-semibold">
-                  {moneyTR(r?.malzemeToplamTutar, "TRY")}
+                <td className="px-2 py-2 whitespace-nowrap font-semibold text-zinc-800 dark:text-zinc-100">
+                  <CellLink href={href}>
+                    {moneyTR(r?.malzemeToplamTutar)}
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {moneyTR(r?.depoTutar, "TRY")}
+                <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
+                  <CellLink href={href}>
+                    {moneyTR(r?.depoTutar)}
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {moneyTR(r?.yeniAlimTutar, "TRY")}
+                <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
+                  <CellLink href={href}>
+                    {moneyTR(r?.yeniAlimTutar)}
+                  </CellLink>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {moneyTR(r?.isverenTeminiTutar, "TRY")}
+                <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
+                  <CellLink href={href}>
+                    {moneyTR(r?.isverenTeminiTutar)}
+                  </CellLink>
                 </td>
-                
-                
-
-               
               </tr>
             );
           })}
 
-          {!data?.length && (
+          {!data.length && (
             <tr>
-              <td
-                colSpan={headers.length}
-                className="py-6 text-center text-zinc-500 dark:text-zinc-400"
-              >
-                Kayıt bulunamadı
+              <td colSpan={headers.length} className="py-6 text-center text-zinc-500">
+                Kayıt yok
               </td>
             </tr>
           )}

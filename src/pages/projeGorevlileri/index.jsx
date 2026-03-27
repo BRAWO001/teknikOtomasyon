@@ -361,7 +361,7 @@ export default function ProjeGorevlileriPage() {
                     disabled={!selectedSiteId}
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
-                    ➕ Yeni Talepte Bulun
+                    ➕ Yeni Karar Oluştur
                   </button>
 
                   <button
