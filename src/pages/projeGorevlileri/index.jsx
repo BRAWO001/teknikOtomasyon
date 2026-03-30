@@ -139,6 +139,8 @@ export default function ProjeGorevlileriPage() {
 
     // Sadece yeni duyuru aktif
   const handleYeniDuyuru = () => router.push("/iletisimGorevli/YeniDuyuru");
+    // Projemin duyuruları
+  const handleProjemDuyurular = () => router.push("/projeGorevlileri/projeGorevlileriDuyurular");
 
 
   // ✅ yeni sayfalar
@@ -400,11 +402,17 @@ export default function ProjeGorevlileriPage() {
                 <div className="mt-3 flex justify-evenly gap-2 flex-wrap">
                   <button
                     onClick={handleYeniDuyuru}
-                    className="flex items-center cursor-pointer gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     ➕ Yeni Duyuru
                   </button>
-
+                  <button
+                    onClick={handleProjemDuyurular}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    📄 Projemin Duyuruları
+                  </button>
+ 
                   {/* <button
                     onClick={() => handleDevelopmentInfo("Duyurular")}
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
