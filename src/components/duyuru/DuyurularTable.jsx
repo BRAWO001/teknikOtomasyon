@@ -1,9 +1,4 @@
-
-
-
-
-
-import React from "react";
+import React, { useState } from "react";
 
 function safeText(v) {
   if (v === null || v === undefined) return "-";
@@ -71,14 +66,55 @@ export default function DuyurularTable({
   loading = false,
   onRowOpen,
 }) {
+  const [copiedRowKey, setCopiedRowKey] = useState(null);
+
   const rowOpen = (token) => {
     if (!token) return;
     onRowOpen?.(token);
   };
 
+  const copyLink = async (e, row, rowKey) => {
+    e.stopPropagation();
+
+    const token = row?.publicToken ?? row?.PublicToken;
+    const sistemUretilmisLink =
+      row?.sistemUretilmisLink ?? row?.SistemUretilmisLink;
+
+    const baseUrl = "eosyonetim.tr";
+
+    const link =
+      sistemUretilmisLink
+        ? `${baseUrl}${sistemUretilmisLink.startsWith("/") ? "" : "/"}${sistemUretilmisLink}`
+        : token
+        ? `${baseUrl}/Duyuru/${token}`
+        : "";
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedRowKey(rowKey);
+      setTimeout(() => setCopiedRowKey(null), 1500);
+    } catch (err) {
+      console.error("COPY LINK ERROR:", err);
+
+      try {
+        const el = document.createElement("textarea");
+        el.value = link;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+
+        setCopiedRowKey(rowKey);
+        setTimeout(() => setCopiedRowKey(null), 1500);
+      } catch (fallbackErr) {
+        console.error("FALLBACK COPY ERROR:", fallbackErr);
+      }
+    }
+  };
+
   return (
     <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <table className="min-w-[1100px] w-full border-collapse text-[11px]">
+      <table className="min-w-[1220px] w-full border-collapse text-[11px]">
         <thead className="sticky top-0 z-10 bg-zinc-100 dark:bg-zinc-800">
           <tr>
             {[
@@ -89,6 +125,7 @@ export default function DuyurularTable({
               "Durum",
               "Düzenleme",
               "Dosya",
+              "Link",
             ].map((h) => (
               <th
                 key={h}
@@ -123,9 +160,14 @@ export default function DuyurularTable({
             const dosyaSayisi = r?.dosyaSayisi ?? r?.DosyaSayisi ?? 0;
             const tarih = r?.tarihUtc ?? r?.TarihUtc;
 
+            const rowKey = id ?? i;
+            const canCopy = Boolean(
+              r?.sistemUretilmisLink ?? r?.SistemUretilmisLink ?? token
+            );
+
             return (
               <tr
-                key={id ?? i}
+                key={rowKey}
                 onClick={() => rowOpen(token)}
                 className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
                 title={token ? "Detaya git" : "Token yok"}
@@ -169,6 +211,18 @@ export default function DuyurularTable({
                     {safeText(dosyaSayisi)}
                   </span>
                 </td>
+
+                <td className="px-3 py-3 align-top whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={(e) => copyLink(e, r, rowKey)}
+                    disabled={!canCopy}
+                    className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-900/25 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                    title={canCopy ? "Linki panoya kopyala" : "Link bulunamadı"}
+                  >
+                    {copiedRowKey === rowKey ? "✓ Kopyalandı" : "Linki Kopyala"}
+                  </button>
+                </td>
               </tr>
             );
           })}
@@ -176,7 +230,7 @@ export default function DuyurularTable({
           {!loading && !items?.length && (
             <tr>
               <td
-                colSpan={7}
+                colSpan={8}
                 className="py-10 text-center text-zinc-500 dark:text-zinc-400"
               >
                 Kayıt bulunamadı
@@ -187,7 +241,7 @@ export default function DuyurularTable({
           {loading && (
             <tr>
               <td
-                colSpan={7}
+                colSpan={8}
                 className="py-10 text-center text-zinc-500 dark:text-zinc-400"
               >
                 Yükleniyor...
