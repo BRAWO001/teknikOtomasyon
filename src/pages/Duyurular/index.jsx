@@ -105,7 +105,7 @@ export default function DuyurularPage() {
   };
 
   const handleYeni = () => {
-    router.push("/Duyurular/yeni");
+    router.push("/iletisimGorevli/YeniDuyuru");
   };
 
   const rowOpen = (token) => {

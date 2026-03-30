@@ -214,7 +214,7 @@ export default function ProjeGorevlileriDuyurularPage() {
 
   const goYeniDuyuru = () => {
     // istersen bunu kendi yeni duyuru sayfana göre değiştir
-    router.push("/Duyurular/yeni");
+    router.push("/iletisimGorevli/YeniDuyuru");
   };
 
   const rowOpen = (token) => {
