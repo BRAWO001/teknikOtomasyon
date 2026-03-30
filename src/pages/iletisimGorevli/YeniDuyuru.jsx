@@ -82,40 +82,40 @@ export default function YeniDuyuruPage() {
     return `eosyonetim.tr/Duyuru/${createdToken}`;
   }, [createdToken]);
 
-  useEffect(() => {
-    let cancelled = false;
+useEffect(() => {
+  let cancelled = false;
 
-    const loadSites = async () => {
-      try {
-        setSitesLoading(true);
-        setSitesError("");
+  const loadSites = async () => {
+    try {
+      setSitesLoading(true);
+      setSitesError("");
 
-        const data = await getDataAsync("SiteAptEvControllerSet/sites");
-        if (cancelled) return;
+      const data = await getDataAsync("SiteAptEvControllerSet/sites");
+      if (cancelled) return;
 
-        const list = Array.isArray(data) ? data : [];
-        setSites(list);
+      const list = Array.isArray(data) ? data : [];
+      setSites(list);
 
-        const firstId = list?.[0]?.id ?? list?.[0]?.Id ?? null;
-        setSiteId(firstId ? String(firstId) : "");
-      } catch (e) {
-        console.error("SITES LOAD ERROR:", e);
-        if (cancelled) return;
+      setSiteId("");
+    } catch (e) {
+      console.error("SITES LOAD ERROR:", e);
+      if (cancelled) return;
 
-        setSites([]);
-        setSiteId("");
-        setSitesError("Site listesi alınamadı.");
-      } finally {
-        if (!cancelled) setSitesLoading(false);
-      }
-    };
+      setSites([]);
+      setSiteId("");
+      setSitesError("Site listesi alınamadı.");
+    } finally {
+      if (!cancelled) setSitesLoading(false);
+    }
+  };
 
-    loadSites();
+  loadSites();
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  return () => {
+    cancelled = true;
+  };
+}, []);
+
 
   const handlePanelStatus = (st) => {
     setPanelStatus(
@@ -244,8 +244,6 @@ export default function YeniDuyuruPage() {
               )}
 
               <div className="flex flex-col gap-2 sm:flex-row">
-                
-
                 <button
                   type="button"
                   onClick={handleCopyLink}
@@ -299,7 +297,7 @@ export default function YeniDuyuruPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() => router.back()} // ✅ ARTIK GERİ GELİR
               disabled={showSuccessModal}
               className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             >
@@ -357,14 +355,15 @@ export default function YeniDuyuruPage() {
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950"
                 >
                   <option value="">
-                    {sitesLoading ? "Yükleniyor..." : "Seçiniz..."}
+                    {sitesLoading ? "Yükleniyor..." : "Duyuru Sitesi Seçiniz"}
                   </option>
+
                   {sites.map((s) => {
                     const id = s?.id ?? s?.Id;
                     const ad = s?.ad ?? s?.Ad ?? s?.siteAdi ?? s?.SiteAdi;
                     return (
                       <option key={id} value={id}>
-                        {ad ?? `Site #${safeText(id)}`}
+                        {ad ?? `Site #${id}`}
                       </option>
                     );
                   })}
