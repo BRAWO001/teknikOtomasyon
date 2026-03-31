@@ -1,3 +1,7 @@
+
+
+
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 
@@ -65,18 +69,22 @@ export default function KararDuzenleModal({
   const [msg, setMsg] = useState("");
 
   const isRol90 = useMemo(() => Number(personel?.rol) === 90, [personel]);
+  const isRol40 = useMemo(() => Number(personel?.rol) === 40, [personel]);
   const isRol11 = useMemo(() => Number(personel?.rol) === 11, [personel]);
 
   const canOpenEdit = useMemo(() => {
     if (!data) return false;
-    if (isRol90) return true;
+
+    if (isRol90 || isRol40) return true;
+
     if (isRol11 && data?.duzenlemeDurumu) {
       return (data?.onerenKisiler || []).some(
         (x) => Number(x.personelId) === Number(personel?.id)
       );
     }
+
     return false;
-  }, [data, isRol90, isRol11, personel?.id]);
+  }, [data, isRol90, isRol40, isRol11, personel?.id]);
 
   useEffect(() => {
     if (!open || !data) return;
@@ -149,8 +157,6 @@ export default function KararDuzenleModal({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-
-  
 
   useEffect(() => {
     if (!open) return;
@@ -248,7 +254,6 @@ export default function KararDuzenleModal({
             <div className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Karar Düzenle
             </div>
-           
           </div>
 
           <button
@@ -270,8 +275,6 @@ export default function KararDuzenleModal({
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.5fr_0.9fr]">
             <div className="space-y-5">
               <div className={sectionClass}>
-               
-
                 <div className="mb-3 flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -393,8 +396,6 @@ export default function KararDuzenleModal({
                     {katilanlarText || "-"}
                   </div>
                 </div>
-
-                
               </div>
             </div>
           </div>

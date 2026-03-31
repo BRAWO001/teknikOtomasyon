@@ -389,7 +389,6 @@ export default function KararTokenDetayPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-
       {/* ✅ KURUMSAL STICKY HEADER */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -471,15 +470,15 @@ export default function KararTokenDetayPage() {
               label={`Nihai: ${data?.nihaiSonuc ?? "-"}`}
             />
 
-            {isRol90 && (
-  <button
-    type="button"
-    onClick={() => setEditOpen(true)}
-    className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
-  >
-    ✏️ Kararı Düzenle
-  </button>
-)}
+            {(isRol90 || isRol40) && (
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              >
+                ✏️ Kararı Düzenle
+              </button>
+            )}
           </div>
 
           <div className="text-right text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -815,25 +814,21 @@ export default function KararTokenDetayPage() {
         <div id="pdf-a4-root" ref={pdfRef}>
           <KararPrintA4 data={data} />
         </div>
-        
       </div>
 
       <KararDuzenleModal
-          open={editOpen}
-          onClose={() => setEditOpen(false)}
-          data={data}
-          personel={personel}
-          onSaved={(res) => {
-            const updated = res?.data ?? res?.Data ?? res;
-            const dto = updated?.data ?? updated?.Data ?? updated;
-            if (dto) {
-              setData(dto);
-            }
-          }}
-        />
-
-
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        data={data}
+        personel={personel}
+        onSaved={(res) => {
+          const updated = res?.data ?? res?.Data ?? res;
+          const dto = updated?.data ?? updated?.Data ?? updated;
+          if (dto) {
+            setData(dto);
+          }
+        }}
+      />
     </div>
-    
   );
 }
