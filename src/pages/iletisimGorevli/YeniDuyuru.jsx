@@ -385,7 +385,7 @@ useEffect(() => {
                 disabled={showSuccessModal}
                 className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950"
               >
-                <option value="Beklemede">Beklemede</option>
+                
                 <option value="Yayında">Yayında</option>
                 <option value="Pasif">Pasif</option>
                 <option value="Kapatıldı">Kapatıldı</option>
