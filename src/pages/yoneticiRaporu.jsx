@@ -496,7 +496,6 @@ export default function YoneticiRaporuPage() {
         </div>
       </div>
 
-      <YoneticiRaporuIsEmriGrafikPanel />
 
       <IsEmriRemoveModal
         isOpen={removeOpen}

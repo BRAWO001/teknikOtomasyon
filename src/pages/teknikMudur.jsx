@@ -335,12 +335,12 @@ export default function TeknikMudurPage() {
             </div>
 
             {/* SAĞ: Aksiyonlar */}
-            <div className="flex flex-col gap-2 2xl:grid 2xl:grid-cols-[1.5fr_1fr_auto]">
+            <div className="flex  flex-col gap-2 2xl:grid 2xl:grid-cols-[1.5fr_1fr_auto]">
               {/* ===== YÖNETİM GRUBU ===== */}
               <div className={ui.softPanel}>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {(personel?.id === 4 || personel?.id === 20) && (
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex flex-wrap justify-evenly items-center gap-1.5">
                       <button
                         onClick={handleYonetimKuruluKararlar}
                         className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 dark:hover:border-emerald-700/50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300`}
@@ -476,12 +476,9 @@ export default function TeknikMudurPage() {
                       Duyurular
                     </button>
                   )}
-                </div>
-              </div>
 
-              {/* ===== OPERASYON GRUBU ===== */}
-              <div className={ui.softPanel}>
-                <div className="flex flex-wrap items-center gap-1.5">
+
+
                   <button
                     onClick={handleNewIsEmri}
                     className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnPrimary}`}
@@ -530,16 +527,8 @@ export default function TeknikMudurPage() {
                     </svg>
                     Taleplerim
                   </button>
-                </div>
-              </div>
 
-              {/* ===== ÇIKIŞ ===== */}
-              <div className={ui.softPanel}>
-                <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                  Oturum
-                </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     onClick={handleLogout}
                     className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnDanger}`}
@@ -557,6 +546,10 @@ export default function TeknikMudurPage() {
                   </button>
                 </div>
               </div>
+
+              
+
+              
             </div>
           </div>
         </section>
