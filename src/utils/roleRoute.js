@@ -10,6 +10,10 @@ export function getRouteByRole(rol) {
       return "/iletisimGorevli";
     case 30:
       return "/personel";
+    case 33:
+      return "/peyzajPersonel";
+    case 34:
+      return "/havuzPersonel";
     case 40:
       return "/projeGorevlileri";
     case 35:
