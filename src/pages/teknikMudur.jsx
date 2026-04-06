@@ -70,6 +70,40 @@ export default function TeknikMudurPage() {
   const [personelList, setPersonelList] = useState([]);
   const [siteList, setSiteList] = useState([]);
 
+  const ui = {
+    pageWrap:
+      "mx-auto flex min-h-screen w-full max-w-[1600px] flex-col gap-3 px-2 py-2 sm:px-3 lg:px-4 xl:px-4",
+    panel:
+      "rounded-xl border border-zinc-200 bg-white px-2.5 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900",
+    softPanel:
+      "rounded-xl border border-zinc-200 bg-zinc-50/80 p-1.5 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/50",
+    main:
+      "flex-1 rounded-xl border border-zinc-200 bg-white p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900",
+    filterBox:
+      "mb-2.5 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-2.5 text-xs shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40",
+
+    btnBase:
+      "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg text-[10px] font-semibold shadow-sm transition active:scale-[0.98]",
+    btnSm: "h-8 px-2.5",
+    btnMd: "h-9 px-2.5",
+
+    btnGhost:
+      "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800",
+    btnPrimary: "bg-emerald-600 text-white hover:bg-emerald-700",
+    btnWarning: "bg-amber-500 text-white hover:bg-amber-600",
+    btnDanger:
+      "border border-red-200 bg-white text-red-700 hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/20",
+
+    icon: "h-3.5 w-3.5",
+    helper: "text-[10px] text-zinc-500 dark:text-zinc-400",
+    label:
+      "mb-1 block text-[10px] font-medium text-zinc-700 dark:text-zinc-200",
+    input:
+      "h-9 w-full rounded-lg border border-zinc-300 px-2.5 text-[11px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50",
+    filterChip:
+      "inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-2.5 text-[10px] font-semibold shadow-sm transition active:scale-[0.99]",
+  };
+
   // Çıkış
   const handleLogout = async () => {
     try {
@@ -263,22 +297,22 @@ export default function TeknikMudurPage() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col gap-4 px-3 py-3 sm:px-4 lg:px-5 xl:px-6">
+      <div className={ui.pageWrap}>
         {/* ÜSTTE TEKNİK MÜDÜR PANELİ */}
-        <section className="rounded-xl border border-zinc-200 bg-white px-3 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-3">
+        <section className={ui.panel}>
+          <div className="flex flex-col gap-2.5">
             {/* Üst bilgi satırı */}
             <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
               {/* SOL: Kimlik + Bilgi */}
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 text-[10px] font-semibold tracking-wide text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
                     TEKNİK MÜDÜR PANELİ
                   </span>
 
                   {personel ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
                       <span className="font-semibold text-zinc-900 dark:text-white">
                         {personel.ad} {personel.soyad}
                       </span>
@@ -288,31 +322,31 @@ export default function TeknikMudurPage() {
                       </span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
+                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
                       PersonelUserInfo bulunamadı
                     </span>
                   )}
                 </div>
               </div>
 
-              <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              <div className={ui.helper}>
                 Teknik müdür işlemleri ve iş emri yönetimi
               </div>
             </div>
 
             {/* SAĞ: Aksiyonlar */}
-            <div className="grid grid-cols-1 gap-2.5 2xl:grid-cols-[1.6fr_1fr_auto]">
+            <div className="flex flex-col gap-2 2xl:grid 2xl:grid-cols-[1.5fr_1fr_auto]">
               {/* ===== YÖNETİM GRUBU ===== */}
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-2 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/50">
+              <div className={ui.softPanel}>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {(personel?.id === 4 || personel?.id === 20) && (
                     <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         onClick={handleYonetimKuruluKararlar}
-                        className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-emerald-700/50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300"
+                        className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 dark:hover:border-emerald-700/50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300`}
                       >
                         <svg
-                          className="h-3.5 w-3.5 text-zinc-500 group-hover:text-emerald-600"
+                          className={`${ui.icon} text-zinc-500 group-hover:text-emerald-600`}
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -326,10 +360,10 @@ export default function TeknikMudurPage() {
 
                       <button
                         onClick={handleYonetimKuruluIletiler}
-                        className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300"
+                        className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
                       >
                         <svg
-                          className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                          className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -345,10 +379,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleYoneticiRaporu}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -361,10 +395,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleYoneticiRaporuHavuz}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -377,10 +411,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleYoneticiRaporuPeyzaj}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -393,10 +427,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleTalepRaporu}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -409,10 +443,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleDestekTalepleriRaporu}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-zinc-500 group-hover:text-sky-600"
+                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -426,10 +460,10 @@ export default function TeknikMudurPage() {
                   {(personel?.id === 4 || personel?.id === 20) && (
                     <button
                       onClick={handleDuyurular}
-                      className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-sm transition hover:border-fuchsia-200 hover:bg-fuchsia-50 hover:text-fuchsia-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-fuchsia-700/50 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-300"
+                      className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-fuchsia-200 hover:bg-fuchsia-50 hover:text-fuchsia-900 dark:hover:border-fuchsia-700/50 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-300`}
                     >
                       <svg
-                        className="h-3.5 w-3.5 text-zinc-500 group-hover:text-fuchsia-600"
+                        className={`${ui.icon} text-zinc-500 group-hover:text-fuchsia-600`}
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
@@ -446,14 +480,14 @@ export default function TeknikMudurPage() {
               </div>
 
               {/* ===== OPERASYON GRUBU ===== */}
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-2 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/50">
+              <div className={ui.softPanel}>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     onClick={handleNewIsEmri}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnPrimary}`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-white/90"
+                      className={`${ui.icon} text-white/90`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -466,10 +500,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleNewIsEmriPeyzaj}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnPrimary}`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-white/90 transition group-hover:rotate-90"
+                      className={`${ui.icon} text-white/90 transition group-hover:rotate-90`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -483,10 +517,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleSatinalma}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-[11px] font-semibold text-white shadow-sm transition hover:bg-amber-600 active:scale-[0.98]"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnWarning}`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-white"
+                      className={`${ui.icon} text-white`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -500,18 +534,18 @@ export default function TeknikMudurPage() {
               </div>
 
               {/* ===== ÇIKIŞ ===== */}
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-2 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/50">
-                <div className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              <div className={ui.softPanel}>
+                <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   Oturum
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     onClick={handleLogout}
-                    className="group inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-[11px] font-semibold text-red-700 shadow-sm transition hover:border-red-300 hover:bg-red-50 active:scale-[0.98] dark:border-red-900/40 dark:bg-zinc-900 dark:text-red-300 dark:hover:bg-red-950/20"
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnDanger}`}
                   >
                     <svg
-                      className="h-3.5 w-3.5 text-red-500 group-hover:text-red-600"
+                      className={`${ui.icon} text-red-500 group-hover:text-red-600`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -528,14 +562,14 @@ export default function TeknikMudurPage() {
         </section>
 
         {/* ALTA GENİŞ TEKNİK İŞ EMİRLERİ */}
-        <main className="flex-1 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <main className={ui.main}>
           {/* Başlık + durum filtresi + yenile */}
-          <div className="mb-3 flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <h1 className="text-xl font-semibold sm:text-2xl">
+          <div className="mb-2.5 flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold sm:text-xl">
                 Teknik İş Emirleri
               </h1>
-              <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
+              <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
                 Aktif filtre:{" "}
                 <span className="font-semibold">{activeFilterObj.label}</span> –{" "}
                 {activeFilterObj.description}
@@ -550,7 +584,7 @@ export default function TeknikMudurPage() {
                     key={f.key}
                     onClick={() => setStatusFilter(f.key)}
                     className={[
-                      "inline-flex h-9 items-center justify-center rounded-full border px-3 text-[11px] font-semibold shadow-sm transition active:scale-[0.99]",
+                      ui.filterChip,
                       isActive
                         ? "border-zinc-700 bg-zinc-800 text-white dark:border-zinc-300 dark:bg-zinc-100 dark:text-zinc-900"
                         : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800",
@@ -564,7 +598,7 @@ export default function TeknikMudurPage() {
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 px-3 text-[11px] font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-zinc-300 px-2.5 text-[10px] font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
               >
                 Yenile
               </button>
@@ -572,17 +606,15 @@ export default function TeknikMudurPage() {
           </div>
 
           {/* Filtre bar – personel + site + tarih */}
-          <section className="mb-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-xs shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[240px_240px_1fr_auto] xl:items-end">
+          <section className={ui.filterBox}>
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-[220px_220px_1fr_auto] xl:items-end">
               {/* Personel filtresi */}
-              <div className="w-full">
-                <label className="mb-1.5 block text-[10px] font-medium text-zinc-700 dark:text-zinc-200">
-                  Personel (Atanan)
-                </label>
+              <div className="w-full min-w-0">
+                <label className={ui.label}>Personel (Atanan)</label>
                 <select
                   value={filterPersonelId}
                   onChange={(e) => setFilterPersonelId(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-[12px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  className={ui.input}
                 >
                   <option value="">Tüm Personeller</option>
                   {personelList.map((p) => {
@@ -599,14 +631,12 @@ export default function TeknikMudurPage() {
               </div>
 
               {/* Site filtresi */}
-              <div className="w-full">
-                <label className="mb-1.5 block text-[10px] font-medium text-zinc-700 dark:text-zinc-200">
-                  Site / Proje
-                </label>
+              <div className="w-full min-w-0">
+                <label className={ui.label}>Site / Proje</label>
                 <select
                   value={filterSiteId}
                   onChange={(e) => setFilterSiteId(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-[12px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  className={ui.input}
                 >
                   <option value="">Tüm Siteler</option>
                   {siteList.map((s) => {
@@ -622,27 +652,23 @@ export default function TeknikMudurPage() {
               </div>
 
               {/* Tarih aralığı */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex-1">
-                  <label className="mb-1.5 block text-[10px] font-medium text-zinc-700 dark:text-zinc-200">
-                    Başlangıç Tarihi
-                  </label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="min-w-0">
+                  <label className={ui.label}>Başlangıç Tarihi</label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-[12px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                    className={ui.input}
                   />
                 </div>
-                <div className="flex-1">
-                  <label className="mb-1.5 block text-[10px] font-medium text-zinc-700 dark:text-zinc-200">
-                    Bitiş Tarihi
-                  </label>
+                <div className="min-w-0">
+                  <label className={ui.label}>Bitiş Tarihi</label>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-zinc-300 px-3 text-[12px] text-zinc-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                    className={ui.input}
                   />
                 </div>
               </div>
@@ -653,7 +679,7 @@ export default function TeknikMudurPage() {
                   type="button"
                   onClick={handleFilterApply}
                   disabled={loading}
-                  className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-3 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-emerald-600 px-2.5 text-[10px] font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Filtrele
                 </button>
@@ -661,7 +687,7 @@ export default function TeknikMudurPage() {
                   type="button"
                   onClick={handleFilterReset}
                   disabled={loading}
-                  className="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                  className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-zinc-300 bg-white px-2.5 text-[10px] font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
                 >
                   Temizle
                 </button>
@@ -671,26 +697,26 @@ export default function TeknikMudurPage() {
 
           {/* İçerik */}
           {loading && (
-            <p className="text-[12px] text-zinc-500 dark:text-zinc-400">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
               İş emirleri yükleniyor...
             </p>
           )}
 
           {error && !loading && (
-            <p className="text-[12px] text-red-600">
+            <p className="text-[11px] text-red-600">
               İş emirleri yüklenirken hata: {error}
             </p>
           )}
 
           {!loading && !error && isEmirleri.length === 0 && (
-            <p className="text-[12px] text-zinc-500 dark:text-zinc-400">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Bu filtrelere uygun iş emri bulunamadı.
             </p>
           )}
 
           {!loading && !error && isEmirleri.length > 0 && (
-            <div className="mt-3 max-h-[72vh] overflow-y-auto pr-1">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            <div className="mt-2.5 max-h-[72vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {isEmirleri.map((item) => (
                   <TeknikIsEmriCard key={item.id} data={item} />
                 ))}
