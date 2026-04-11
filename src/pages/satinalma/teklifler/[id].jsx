@@ -246,8 +246,8 @@ export default function SatinAlmaTekliflerPage() {
   // ✅ Rol 35 satın alındı yetkisi
   const currentRolRaw = personel ? personel.rol ?? personel.Rol : null;
   const currentRol = currentRolRaw != null ? Number(currentRolRaw) : null;
-  const satinAlindiYetkiliMi = currentRol === 35;
-
+  const satinAlindiYetkiliMi = currentRol === 35 || currentRol === 90 ;
+  
   // ✅ Talep açan kişi mi? (Not_5 sadece talep açan için)
   const talepEdenId = talepEden ? (talepEden.id ?? talepEden.Id) : null;
   const surecIsaretYetkiliMi =
