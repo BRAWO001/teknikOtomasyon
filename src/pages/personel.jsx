@@ -323,6 +323,9 @@ export default function PersonelPage() {
       router.push("/");
     }
   };
+  const handleGunlukRapor = async () => {
+    router.push("/gunlukRapor/yeni");
+  };
 
   // ✅ Quick ranges (listeyi değiştirir) — KPI sabit kalır
   const applyQuickRange = async (key) => {
@@ -420,6 +423,12 @@ export default function PersonelPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               
+              <TopButton
+                onClick={handleGunlukRapor}
+                className="bg-blue-600 text-white hover:bg-blue-700"
+              >
+                📋 Günlük Rapor
+              </TopButton>
               <TopButton
                 onClick={handleLogout}
                 className="bg-rose-600 text-white hover:bg-rose-700"
