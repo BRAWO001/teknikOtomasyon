@@ -1,9 +1,3 @@
-
-
-
-
-
-// pages/DestekTalepTicket/YeniTicket.jsx
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -29,9 +23,11 @@ function safeTrim(v) {
   const s = String(v ?? "").trim();
   return s.length ? s : null;
 }
+
 function toUpperTR(s) {
   return String(s ?? "").trim().toLocaleUpperCase("tr-TR");
 }
+
 function normalizeTel(telRaw) {
   const digits = String(telRaw ?? "").replace(/\D/g, "");
   if (!digits) return "";
@@ -142,6 +138,17 @@ export default function YeniTicketPage() {
     };
   }, []);
 
+  const telStartsWithZero = useMemo(() => {
+    const rawDigits = String(form.tel ?? "").replace(/\D/g, "");
+    if (!rawDigits) return true;
+    return rawDigits.startsWith("0");
+  }, [form.tel]);
+
+  const showTelZeroWarn = useMemo(() => {
+    const rawDigits = String(form.tel ?? "").replace(/\D/g, "");
+    return rawDigits.length > 0 && !rawDigits.startsWith("0");
+  }, [form.tel]);
+
   const validate = () => {
     if (!siteId) return "Proje (Site) seçmelisin.";
     if (!String(form.departman || "").trim()) return "Departman seçmelisin.";
@@ -153,7 +160,7 @@ export default function YeniTicketPage() {
 
     const telNorm = normalizeTel(form.tel);
     if (!telNorm) return "Telefon zorunlu.";
-    if (!telNorm.startsWith("0")) return "Telefon numarası 0 ile başlamalıdır. (Örn: 05xx...)";
+    if (!telStartsWithZero) return "Telefon numarası 0 ile başlamalıdır. (Örn: 05xx...)";
     if (telNorm.length < 10) return "Telefon numarası eksik görünüyor.";
 
     if (!String(form.konu || "").trim()) return "Konu zorunlu.";
@@ -312,13 +319,13 @@ export default function YeniTicketPage() {
           <button
             type="button"
             onClick={() => router.push("/Destek/Giris")}
-            className="group w-full rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-4 py-4 text-left text-white shadow-[0_10px_30px_rgba(37,99,235,0.20)] transition hover:-translate-y-[1px] hover:shadow-[0_14px_34px_rgba(37,99,235,0.28)] focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-blue-800"
+            className="group w-full rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-1 py-1 text-left text-white shadow-[0_10px_30px_rgba(37,99,235,0.20)] transition hover:-translate-y-[1px] hover:shadow-[0_14px_34px_rgba(37,99,235,0.28)] focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-blue-800"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
                 
                 <div className="mt-1 text-base font-semibold sm:text-lg">
-                  Mevcut talebini görüntülemek için giriş yap
+                  Mevcut talebinizi görüntülemek için giriş yapın
                 </div>
                 
               </div>
@@ -434,14 +441,26 @@ export default function YeniTicketPage() {
             </Field>
 
             <Field label="Telefon *">
-              <input
-                inputMode="tel"
-                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
-                value={form.tel}
-                onChange={(e) => setField("tel", e.target.value)}
-                placeholder="05xx..."
-                disabled={disabledAll}
-              />
+              <>
+                <input
+                  inputMode="tel"
+                  className={`h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 dark:bg-zinc-950 ${
+                    showTelZeroWarn
+                      ? "border-amber-400 focus:ring-amber-500 dark:border-amber-700 dark:focus:ring-amber-400"
+                      : "border-zinc-200 focus:ring-zinc-900 dark:border-zinc-700 dark:focus:ring-zinc-50"
+                  }`}
+                  value={form.tel}
+                  onChange={(e) => setField("tel", e.target.value)}
+                  placeholder="05xx..."
+                  disabled={disabledAll}
+                />
+
+                {showTelZeroWarn ? (
+                  <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                    Telefon numarası 0 ile başlamalıdır. Örn: 05xx...
+                  </div>
+                ) : null}
+              </>
             </Field>
 
             <Field label="E-posta *">

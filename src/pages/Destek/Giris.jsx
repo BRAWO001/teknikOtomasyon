@@ -8,46 +8,38 @@ function safeTrim(v) {
   return s.length ? s : "";
 }
 
-/** TR telefon için basit normalize: boşluk/()/- temizler, +90/90 başını sadeleştirir */
+/** TR telefon normalize */
 function normalizeTelTR(input) {
   let s = safeTrim(input);
   if (!s) return "";
 
-  // boşluk, parantez, tire vs kaldır
   s = s.replace(/[^\d+]/g, "");
 
-  // +90 -> 0 ile başlat (isteğine göre değiştirebiliriz)
   if (s.startsWith("+90")) s = "0" + s.slice(3);
   else if (s.startsWith("90") && s.length >= 12) s = "0" + s.slice(2);
 
-  // sadece rakam kalsın
   s = s.replace(/[^\d]/g, "");
   return s;
 }
 
 function normalizeEmail(input) {
-  const s = safeTrim(input).toLowerCase();
-  return s;
+  return safeTrim(input).toLowerCase();
 }
 
 function isEmailLike(s) {
-  // çok basic kontrol (a@b.c)
   if (!s) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
-/** Axios/Fetch hatasını tek yerden okunur hale getir */
 function parseRequestError(err) {
   const status = err?.response?.status ?? err?.status ?? null;
 
-  // backend bazen {message:"..."} bazen string döner
   const serverMsg =
     err?.response?.data?.message ||
     err?.response?.data?.Message ||
     (typeof err?.response?.data === "string" ? err.response.data : "") ||
     "";
 
-  // axios network error gibi durumlarda response olmayabilir
   const rawMsg = serverMsg || err?.message || "İstek başarısız.";
 
   return { status, rawMsg };
@@ -55,7 +47,7 @@ function parseRequestError(err) {
 
 export default function DestekGirisPage() {
   const router = useRouter();
-  const reqSeq = useRef(0); // eski istek dönüşlerini yoksaymak için
+  const reqSeq = useRef(0);
 
   const [ticketNo, setTicketNo] = useState("");
   const [tel, setTel] = useState("");
@@ -68,11 +60,23 @@ export default function DestekGirisPage() {
   const normalizedTel = useMemo(() => normalizeTelTR(tel), [tel]);
   const normalizedEposta = useMemo(() => normalizeEmail(eposta), [eposta]);
 
+  const telStartsWithZero = useMemo(() => {
+    const rawDigits = String(tel ?? "").replace(/\D/g, "");
+    if (!rawDigits) return true;
+    return rawDigits.startsWith("0");
+  }, [tel]);
+
+  const showZeroWarn = useMemo(() => {
+    const rawDigits = String(tel ?? "").replace(/\D/g, "");
+    return rawDigits.length > 0 && !rawDigits.startsWith("0");
+  }, [tel]);
+
   const validate = () => {
     const no = Number(normalizedTicketNo);
 
     if (!Number.isInteger(no) || no <= 0) return "Talep No (TicketNo) zorunlu.";
     if (!normalizedTel) return "Telefon zorunlu.";
+    if (!telStartsWithZero) return "Telefon numarası 0 ile başlamalıdır. (Örn: 05xx...)";
     if (normalizedTel.length < 10) return "Telefon formatı geçersiz görünüyor.";
     if (!normalizedEposta) return "E-posta zorunlu.";
     if (!isEmailLike(normalizedEposta)) return "E-posta formatı geçersiz.";
@@ -81,7 +85,7 @@ export default function DestekGirisPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return; // double submit engel
+    if (loading) return;
     setMsg("");
 
     const v = validate();
@@ -97,7 +101,6 @@ export default function DestekGirisPage() {
 
       const no = Number(normalizedTicketNo);
 
-      // ✅ URL’i güvenli kur
       const qs = new URLSearchParams({
         ticketNo: String(no),
         tel: normalizedTel,
@@ -106,7 +109,6 @@ export default function DestekGirisPage() {
 
       const res = await getDataAsync(`destek-talep-ticket/giris?${qs}`);
 
-      // Bu sırada yeni bir submit olduysa eski response’u yoksay
       if (mySeq !== reqSeq.current) return;
 
       const token = res?.token ?? res?.Token ?? null;
@@ -116,38 +118,34 @@ export default function DestekGirisPage() {
         return;
       }
 
-      // push da bazen hata verebilir; yakalayalım
       await router.push(`/Destek/TalepDetay/${encodeURIComponent(token)}`);
     } catch (err) {
-  if (mySeq !== reqSeq.current) return;
+      if (mySeq !== reqSeq.current) return;
 
-  const { status, rawMsg } = parseRequestError(err);
+      const { status, rawMsg } = parseRequestError(err);
 
-  // ❌ console.error kaldırıyoruz
-  // console.error("DESTEK GIRIS ERROR:", err);
+      if (status === 401) {
+        setMsg("Bilgiler hatalı.");
+        return;
+      }
 
-  if (status === 401) {
-    setMsg("Bilgiler hatalı.");
-    return;
-  }
+      if (status === 404) {
+        setMsg("Ticket bulunamadı.");
+        return;
+      }
 
-  if (status === 404) {
-    setMsg("Ticket bulunamadı.");
-    return;
-  }
+      if (status === 422) {
+        setMsg(rawMsg || "Girilen bilgiler doğrulanamadı.");
+        return;
+      }
 
-  if (status === 422) {
-    setMsg(rawMsg || "Girilen bilgiler doğrulanamadı.");
-    return;
-  }
+      if (!status) {
+        setMsg("Bağlantı hatası.");
+        return;
+      }
 
-  if (!status) {
-    setMsg("Bağlantı hatası.");
-    return;
-  }
-
-  setMsg(rawMsg || "Giriş yapılamadı.");
-}finally {
+      setMsg(rawMsg || "Giriş yapılamadı.");
+    } finally {
       if (mySeq === reqSeq.current) setLoading(false);
     }
   };
@@ -199,15 +197,23 @@ export default function DestekGirisPage() {
               </div>
               <input
                 inputMode="tel"
-                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
+                className={`h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 dark:bg-zinc-950 ${
+                  showZeroWarn
+                    ? "border-amber-400 focus:ring-amber-500 dark:border-amber-700 dark:focus:ring-amber-400"
+                    : "border-zinc-200 focus:ring-zinc-900 dark:border-zinc-700 dark:focus:ring-zinc-50"
+                }`}
                 value={tel}
                 onChange={(e) => setTel(e.target.value)}
                 placeholder="05xx..."
                 disabled={loading}
               />
-              {/* küçük bilgi: normalize edilmiş hali */}
-              {tel && normalizedTel ? (
-                <div className="mt-1 text-[11px] text-zinc-500">
+
+              {showZeroWarn ? (
+                <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                  Telefon numarası 0 ile başlamalıdır. Örn: 05xx...
+                </div>
+              ) : tel && normalizedTel ? (
+                <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
                   Gönderilecek: {normalizedTel}
                 </div>
               ) : null}
