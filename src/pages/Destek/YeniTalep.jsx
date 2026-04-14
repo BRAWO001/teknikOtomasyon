@@ -1,3 +1,8 @@
+
+
+
+
+
 // pages/DestekTalepTicket/YeniTicket.jsx
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -25,16 +30,13 @@ function safeTrim(v) {
   return s.length ? s : null;
 }
 function toUpperTR(s) {
-  // TR büyük harf dönüşümü (i/ı vs.)
   return String(s ?? "").trim().toLocaleUpperCase("tr-TR");
 }
 function normalizeTel(telRaw) {
-  // sadece rakam
   const digits = String(telRaw ?? "").replace(/\D/g, "");
-  // "0" ile başlaması zorunlu
   if (!digits) return "";
   if (digits.startsWith("0")) return digits;
-  return digits; // otomatik 0 eklemiyoruz (kural: kullanıcı 0 yazmalı)
+  return digits;
 }
 
 function extractBackendMsg(err) {
@@ -63,7 +65,6 @@ function extractBackendMsg(err) {
 export default function YeniTicketPage() {
   const router = useRouter();
 
-  // ✅ siteler backend’den
   const [sites, setSites] = useState([]);
   const [siteId, setSiteId] = useState("");
   const [sitesLoading, setSitesLoading] = useState(false);
@@ -93,11 +94,9 @@ export default function YeniTicketPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  // ✅ ticket result
   const [createdTicketId, setCreatedTicketId] = useState(null);
   const [createdTicketNo, setCreatedTicketNo] = useState(null);
 
-  // ✅ panel status
   const [panelStatus, setPanelStatus] = useState({
     uploading: false,
     attaching: false,
@@ -105,10 +104,8 @@ export default function YeniTicketPage() {
     hasTicketId: false,
   });
 
-  // ✅ başarı sonrası "dosyalar bağlandı" bilgisini göstermek için
   const [allDone, setAllDone] = useState(false);
 
-  // siteler
   useEffect(() => {
     let cancelled = false;
 
@@ -129,8 +126,6 @@ export default function YeniTicketPage() {
           .filter((x) => x.id > 0 && x.ad);
 
         setSites(mapped);
-
-        
       } catch (e) {
         console.error("SITE LIST ERROR:", e);
         if (cancelled) return;
@@ -147,9 +142,6 @@ export default function YeniTicketPage() {
     };
   }, []);
 
-  // ✅ Zorunlu alanlar:
-  // tel, eposta, adSoyad, daire, blok, proje(site), departman
-  // + konu + aciklama zaten vardı
   const validate = () => {
     if (!siteId) return "Proje (Site) seçmelisin.";
     if (!String(form.departman || "").trim()) return "Departman seçmelisin.";
@@ -177,9 +169,9 @@ export default function YeniTicketPage() {
       departman: safeTrim(form.departman),
       blok: safeTrim(form.blok),
       daire: safeTrim(form.daire),
-      adSoyad: safeTrim(toUpperTR(form.adSoyad)), // ✅ İSİM BÜYÜK HARF
+      adSoyad: safeTrim(toUpperTR(form.adSoyad)),
       eposta: safeTrim(form.eposta),
-      tel: safeTrim(telDigits), // sadece rakam göndermek istersen
+      tel: safeTrim(telDigits),
       konu: safeTrim(form.konu),
       aciklama: safeTrim(form.aciklama),
       tarihUtc: null,
@@ -191,7 +183,6 @@ export default function YeniTicketPage() {
 
   const showSuccess = !!createdTicketId;
 
-  // ✅ ticket oluşturulduktan sonra panel bitince "tamamlandı" bandı
   useEffect(() => {
     if (!createdTicketId) return;
 
@@ -317,11 +308,32 @@ export default function YeniTicketPage() {
           </div>
         </div>
 
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => router.push("/Destek/Giris")}
+            className="group w-full rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-4 py-4 text-left text-white shadow-[0_10px_30px_rgba(37,99,235,0.20)] transition hover:-translate-y-[1px] hover:shadow-[0_14px_34px_rgba(37,99,235,0.28)] focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-blue-800"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                
+                <div className="mt-1 text-base font-semibold sm:text-lg">
+                  Mevcut talebini görüntülemek için giriş yap
+                </div>
+                
+              </div>
+
+              <div className="shrink-0 rounded-xl bg-white/15 px-3 py-2 text-[12px] font-semibold text-white backdrop-blur-sm transition group-hover:bg-white/20">
+                Talep Girişi →
+              </div>
+            </div>
+          </button>
+        </div>
+
         <form
           onSubmit={onSubmit}
           className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900"
         >
-          {/* Site + Departman */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Site (Proje) *">
               <select
@@ -378,7 +390,6 @@ export default function YeniTicketPage() {
             </Field>
           </div>
 
-          {/* Blok + Daire */}
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Blok *">
               <select
@@ -410,7 +421,6 @@ export default function YeniTicketPage() {
             </Field>
           </div>
 
-          {/* Ad Soyad + Tel + Eposta */}
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
             <Field label="Ad Soyad *">
               <input
@@ -432,7 +442,6 @@ export default function YeniTicketPage() {
                 placeholder="05xx..."
                 disabled={disabledAll}
               />
-              
             </Field>
 
             <Field label="E-posta *">
@@ -447,7 +456,6 @@ export default function YeniTicketPage() {
             </Field>
           </div>
 
-          {/* Konu + Açıklama */}
           <div className="mt-4 grid grid-cols-1 gap-4">
             <Field label="Konu *">
               <input
@@ -471,7 +479,6 @@ export default function YeniTicketPage() {
             </Field>
           </div>
 
-          {/* ✅ panel upload -> pending, ticketId gelince attach */}
           <TicketDosyaPanel
             ticketId={createdTicketId}
             onStatusChange={setPanelStatus}
