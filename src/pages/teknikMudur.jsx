@@ -119,6 +119,9 @@ export default function TeknikMudurPage() {
   const handleNewIsEmri = () => {
     router.push("/teknikIsEmriEkle");
   };
+  const handleNewAnket = () => {
+    router.push("/anket/yeni");
+  };
 
   // Yeni iş emri ekle Peyzaj
   const handleNewIsEmriPeyzaj = () => {
@@ -473,7 +476,6 @@ export default function TeknikMudurPage() {
                     >
                       <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                     </svg>
-                      
                     Günlük Raporlar
                   </button>
 
@@ -496,8 +498,6 @@ export default function TeknikMudurPage() {
                       Duyurular
                     </button>
                   )}
-
-
 
                   <button
                     onClick={handleNewIsEmri}
@@ -533,6 +533,26 @@ export default function TeknikMudurPage() {
                   </button>
 
                   <button
+                    onClick={handleNewAnket}
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-blue-200 bg-blue-400 text-white hover:bg-blue-500 hover:border-blue-200 shadow-sm`}
+                  >
+                    <svg
+                      className={`${ui.icon} text-white/90`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-9 0h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm5 4v6m-3-3h6"
+                      />
+                    </svg>
+                    Anket Oluştur
+                  </button>
+
+                  <button
                     onClick={handleSatinalma}
                     className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnWarning}`}
                   >
@@ -547,7 +567,6 @@ export default function TeknikMudurPage() {
                     </svg>
                     Taleplerim
                   </button>
-
 
                   <button
                     onClick={handleLogout}
@@ -566,10 +585,6 @@ export default function TeknikMudurPage() {
                   </button>
                 </div>
               </div>
-
-              
-
-              
             </div>
           </div>
         </section>

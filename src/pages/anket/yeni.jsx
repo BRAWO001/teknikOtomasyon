@@ -542,9 +542,7 @@ export default function YeniAnketPage() {
               <div className="text-base font-semibold tracking-tight">
                 Yeni Anket Oluştur
               </div>
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Site bazlı anket oluşturun, soruları ekleyin ve yayın linkini alın.
-              </div>
+              
             </div>
 
             <div className="flex flex-wrap items-center gap-2 justify-end">
