@@ -1,6 +1,6 @@
 // src/pages/peyzajIsEmriEkle.jsx
 
-import { useEffect, useMemo, useState, useRef, useLayoutEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "../utils/apiService";
 
@@ -32,29 +32,7 @@ export default function PeyzajIsEmriEkle() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  const preserveScrollRef = useRef(false);
-  const scrollYRef = useRef(0);
-
-  const rememberScroll = () => {
-    if (typeof window === "undefined") return;
-    preserveScrollRef.current = true;
-    scrollYRef.current = window.scrollY || window.pageYOffset || 0;
-  };
-
-  useLayoutEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!preserveScrollRef.current) return;
-
-    window.scrollTo({
-      top: scrollYRef.current,
-      behavior: "auto",
-    });
-
-    preserveScrollRef.current = false;
-  });
-
   const setField = (key, value) => {
-    rememberScroll();
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -135,8 +113,6 @@ export default function PeyzajIsEmriEkle() {
   }, [form.isEmriTipi]);
 
   const onSiteChange = async (value) => {
-    rememberScroll();
-
     setForm((prev) => ({
       ...prev,
       siteId: value,
@@ -164,8 +140,6 @@ export default function PeyzajIsEmriEkle() {
   };
 
   const togglePersonel = (id) => {
-    rememberScroll();
-
     setSelectedPersonelIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -258,33 +232,91 @@ export default function PeyzajIsEmriEkle() {
           </div>
         </div>
 
-        {sitesLoading && (
-          <div className="mb-4 rounded-xl border border-zinc-200 bg-zinc-100 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
-            Siteler yükleniyor...
-          </div>
-        )}
+        {/* SABİT STATUS ALANI */}
+        <div
+          className="mb-4 space-y-3"
+          style={{
+            minHeight: "132px",
+            overflowAnchor: "none",
+          }}
+        >
+          {sitesLoading ? (
+            <div className="rounded-xl border border-zinc-200 bg-zinc-100 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+              Siteler yükleniyor...
+            </div>
+          ) : (
+            <div className="hidden" aria-hidden="true" />
+          )}
 
-        {sitesError && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            {sitesError}
-          </div>
-        )}
+          {sitesError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+              {sitesError}
+            </div>
+          ) : (
+            <div className="hidden" aria-hidden="true" />
+          )}
 
-        {personelLoading && (
-          <div className="mb-4 rounded-xl border border-zinc-200 bg-zinc-100 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
-            Personeller yükleniyor...
-          </div>
-        )}
+          {personelLoading ? (
+            <div className="rounded-xl border border-zinc-200 bg-zinc-100 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+              Personeller yükleniyor...
+            </div>
+          ) : (
+            <div className="hidden" aria-hidden="true" />
+          )}
 
-        {personelError && (
-          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            {personelError}
-          </div>
-        )}
+          {personelError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+              {personelError}
+            </div>
+          ) : (
+            <div className="hidden" aria-hidden="true" />
+          )}
+
+          {error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+              {typeof error === "string" ? error : JSON.stringify(error)}
+            </div>
+          ) : (
+            <div className="hidden" aria-hidden="true" />
+          )}
+
+          {result ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+              <div className="font-semibold">Kayıt başarılı ✅</div>
+              <div className="mt-1">{result.message}</div>
+              <div className="mt-1 text-xs">
+                {result.id ? (
+                  <>
+                    ID: <span className="font-semibold">{result.id}</span>
+                  </>
+                ) : null}
+                {result.kod ? (
+                  <>
+                    {" "}
+                    — Kod: <span className="font-semibold">{result.kod}</span>
+                  </>
+                ) : null}
+              </div>
+
+              {Array.isArray(result.personellers) &&
+                result.personellers.length > 0 && (
+                  <div className="mt-2 text-xs">
+                    Görevlendirilen personel sayısı:{" "}
+                    <span className="font-semibold">
+                      {result.personellers.length}
+                    </span>
+                  </div>
+                )}
+            </div>
+          ) : (
+            <div className="hidden" aria-hidden="true" />
+          )}
+        </div>
 
         <form
           onSubmit={onSubmit}
           className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+          style={{ overflowAnchor: "none" }}
         >
           <div className="mb-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -390,10 +422,7 @@ export default function PeyzajIsEmriEkle() {
               <select
                 className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
                 value={form.aptId}
-                onChange={(e) => {
-                  rememberScroll();
-                  setField("aptId", e.target.value);
-                }}
+                onChange={(e) => setField("aptId", e.target.value)}
                 disabled={!form.siteId || siteDetailLoading}
               >
                 <option value="">
@@ -413,7 +442,10 @@ export default function PeyzajIsEmriEkle() {
           </div>
 
           {(selectedSite || selectedApt) && (
-            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div
+              className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3"
+              style={{ overflowAnchor: "none" }}
+            >
               <MiniInfo label="Tür" value={isHavuz ? "Havuz" : "Peyzaj"} />
               <MiniInfo label="Seçilen Site" value={selectedSite?.ad || "-"} />
               <MiniInfo label="Seçilen Blok" value={selectedApt?.ad || "-"} />
@@ -444,7 +476,7 @@ export default function PeyzajIsEmriEkle() {
             </Field>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-5" style={{ overflowAnchor: "auto" }}>
             <div className="mb-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
               {isHavuz ? "Havuz Personeli Görevlendir" : "Peyzaj Personeli Görevlendir"}
             </div>
@@ -469,6 +501,7 @@ export default function PeyzajIsEmriEkle() {
                       <button
                         key={personelId}
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => togglePersonel(personelId)}
                         className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
                           selected
@@ -488,42 +521,6 @@ export default function PeyzajIsEmriEkle() {
               Seçilen personel sayısı: {selectedPersonelIds.length}
             </div>
           </div>
-
-          {error && (
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-              {typeof error === "string" ? error : JSON.stringify(error)}
-            </div>
-          )}
-
-          {result && (
-            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
-              <div className="font-semibold">Kayıt başarılı ✅</div>
-              <div className="mt-1">{result.message}</div>
-              <div className="mt-1 text-xs">
-                {result.id ? (
-                  <>
-                    ID: <span className="font-semibold">{result.id}</span>
-                  </>
-                ) : null}
-                {result.kod ? (
-                  <>
-                    {" "}
-                    — Kod: <span className="font-semibold">{result.kod}</span>
-                  </>
-                ) : null}
-              </div>
-
-              {Array.isArray(result.personellers) &&
-                result.personellers.length > 0 && (
-                  <div className="mt-2 text-xs">
-                    Görevlendirilen personel sayısı:{" "}
-                    <span className="font-semibold">
-                      {result.personellers.length}
-                    </span>
-                  </div>
-                )}
-            </div>
-          )}
 
           <div className="mt-6 flex items-center justify-end">
             {!result && (
