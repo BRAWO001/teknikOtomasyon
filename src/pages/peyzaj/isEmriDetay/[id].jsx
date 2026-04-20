@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { getDataAsync } from "../../../utils/apiService";
 import { getCookie as getClientCookie } from "../../../utils/cookieService";
 
@@ -29,10 +29,10 @@ export default function PeyzajIsEmriDetayPage() {
 
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   const [currentPersonelId, setCurrentPersonelId] = useState(null);
-  const [localDurumKod, setLocalDurumKod] = useState(0);
 
   const [isYapilanIslemModalOpen, setIsYapilanIslemModalOpen] = useState(false);
   const [isNotModalOpen, setIsNotModalOpen] = useState(false);
@@ -40,6 +40,8 @@ export default function PeyzajIsEmriDetayPage() {
   const [isBelgeFotoModalOpen, setIsBelgeFotoModalOpen] = useState(false);
 
   const [copyMessage, setCopyMessage] = useState("");
+
+  const scrollYRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -62,39 +64,73 @@ export default function PeyzajIsEmriDetayPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!id) return;
+  const restoreScroll = useCallback(() => {
+    if (typeof window === "undefined") return;
 
-    const load = async () => {
+    const y = scrollYRef.current || 0;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({
+          top: y,
+          behavior: "auto",
+        });
+      });
+    });
+  }, []);
+
+  const loadRecord = useCallback(
+    async ({ silent = false, preserveScroll = false } = {}) => {
+      if (!id) return;
+
       try {
-        setLoading(true);
+        if (typeof window !== "undefined" && preserveScroll) {
+          scrollYRef.current = window.scrollY || window.pageYOffset || 0;
+        }
+
+        if (silent) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+
         setError("");
 
         const data = await getDataAsync(`peyzaj-is-emri-formu/${id}`);
         setRecord(data || null);
 
-        const rawDurumKod =
-          data?.durumKod ??
-          data?.DurumKod ??
-          0;
-
-        setLocalDurumKod(Number(rawDurumKod) || 0);
+        if (preserveScroll) {
+          restoreScroll();
+        }
       } catch (err) {
         console.error("Peyzaj iş emri detay yüklenirken hata:", err);
         setError(
           err?.message || "Peyzaj iş emri detayları alınırken bir hata oluştu."
         );
       } finally {
-        setLoading(false);
+        if (silent) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
       }
-    };
+    },
+    [id, restoreScroll]
+  );
 
-    load();
-  }, [id]);
+  useEffect(() => {
+    if (!id) return;
+    loadRecord();
+  }, [id, loadRecord]);
+
+  const refreshAfterModalClose = useCallback(async () => {
+    await loadRecord({ silent: true, preserveScroll: true });
+  }, [loadRecord]);
 
   const progress = useMemo(() => {
-    return Math.max(0, Math.min(100, Number(localDurumKod) || 0));
-  }, [localDurumKod]);
+    const value = record?.durumKod ?? record?.DurumKod ?? 0;
+    return Math.max(0, Math.min(100, Number(value) || 0));
+  }, [record]);
 
   const progressClass = useMemo(() => {
     if (progress < 30) return "bg-red-500";
@@ -162,10 +198,6 @@ export default function PeyzajIsEmriDetayPage() {
     }
   };
 
-  const handleDurumUpdated = (newKod) => {
-    setLocalDurumKod(Number(newKod) || 0);
-  };
-
   let kod3Label = null;
   let kod3Class = "";
 
@@ -182,7 +214,13 @@ export default function PeyzajIsEmriDetayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-xs text-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+    <div
+      className="
+        min-h-screen bg-zinc-50 text-xs text-zinc-800
+        dark:bg-zinc-950 dark:text-zinc-100
+      "
+    >
+      {/* ÜST BAR */}
       <div className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-50/95 px-3 py-2 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/85">
         <div className="mx-auto w-full max-w-6xl">
           <div className="flex w-full flex-col gap-2">
@@ -192,21 +230,11 @@ export default function PeyzajIsEmriDetayPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => router.push("/")}
-                  className="rounded-full border border-zinc-300 bg-white px-3 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
-                  Ana Sayfa
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => router.back()}
-                  className="rounded-full border border-zinc-300 bg-white px-3 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
-                  Geri
-                </button>
+                {refreshing && (
+                  <div className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                    Güncelleniyor...
+                  </div>
+                )}
 
                 {currentPersonelId ? (
                   <button
@@ -226,12 +254,70 @@ export default function PeyzajIsEmriDetayPage() {
                 style={{ width: `${progress}%` }}
               />
             </div>
+
+            <div className="flex w-full items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push("/");
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                Geri
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 10l9-7 9 7"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 21V12h6v9"
+                  />
+                </svg>
+                Ana Sayfa
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-6xl space-y-4 px-3 py-4">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      {/* İÇERİK */}
+      <div className="px-3 py-3">
+        <div className="mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <header className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -286,84 +372,102 @@ export default function PeyzajIsEmriDetayPage() {
               {aciklama}
             </div>
           )}
-        </div>
 
-        <div className="space-y-2">
-          <button
-            type="button"
-            onClick={handleCopyPublicLink}
-            disabled={!publicFullLink}
-            className="w-full rounded-xl border border-zinc-300 bg-emerald-100 px-3 py-2 text-[11px] font-semibold text-zinc-700 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-emerald-900 dark:text-zinc-200 dark:hover:bg-emerald-800"
-            title={publicFullLink || "Public link bulunamadı"}
-          >
-            {publicFullLink ? "Linki Kopyala" : "Link Bulunamadı"}
-          </button>
+          <div className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleCopyPublicLink}
+                disabled={!publicFullLink}
+                className="w-full rounded-xl border border-zinc-300 bg-emerald-100 px-3 py-2 text-[11px] font-semibold text-zinc-700 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-emerald-900 dark:text-zinc-200 dark:hover:bg-emerald-800"
+                title={publicFullLink || "Public link bulunamadı"}
+              >
+                {publicFullLink ? "Linki Kopyala" : "Link Bulunamadı"}
+              </button>
 
-          {copyMessage && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
-              {copyMessage}
+              {copyMessage && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+                  {copyMessage}
+                </div>
+              )}
             </div>
-          )}
+
+            <PeyzajIsEmriDetayPublicKontrol
+              publicAdi={publicAdi}
+              publicSoyadi={publicSoyadi}
+              publicTel={publicTel}
+              publicOnayDurumu={publicOnayDurumu}
+              publicTokenUrl={peyzajPublicTokenUrl}
+            />
+
+            <PeyzajIsEmriDetaySurecDurumlari
+              record={record}
+              onUpdated={refreshAfterModalClose}
+            />
+
+            <PeyzajIsEmriDetayYapilanIslemler
+              yapilanIslemler={yapilanIslemler}
+              onEdit={() => setIsYapilanIslemModalOpen(true)}
+            />
+
+            <PeyzajIsEmriDetayNotlar
+              notlar={notlar}
+              onAddNote={() => setIsNotModalOpen(true)}
+            />
+
+            <PeyzajIsEmriDetayDosyalar
+              dosyalar={dosyalar}
+              onAddFile={() => setIsBelgeFotoModalOpen(true)}
+            />
+          </div>
         </div>
-
-        <PeyzajIsEmriDetayPublicKontrol
-          publicAdi={publicAdi}
-          publicSoyadi={publicSoyadi}
-          publicTel={publicTel}
-          publicOnayDurumu={publicOnayDurumu}
-          publicTokenUrl={peyzajPublicTokenUrl}
-        />
-
-        <PeyzajIsEmriDetaySurecDurumlari
-          record={record}
-        />
-
-        <PeyzajIsEmriDetayYapilanIslemler
-          yapilanIslemler={yapilanIslemler}
-          onEdit={() => setIsYapilanIslemModalOpen(true)}
-        />
-
-        <PeyzajIsEmriDetayNotlar
-          notlar={notlar}
-          onAddNote={() => setIsNotModalOpen(true)}
-        />
-
-        <PeyzajIsEmriDetayDosyalar
-          dosyalar={dosyalar}
-          onAddFile={() => setIsBelgeFotoModalOpen(true)}
-        />
-
-        <PeyzajYapilanIslemDuzenleModals
-          isOpen={isYapilanIslemModalOpen}
-          onClose={() => setIsYapilanIslemModalOpen(false)}
-          peyzajIsEmriId={peyzajIsEmriId}
-          peyzajIsEmriKod={kod}
-        />
-
-        <PeyzajNotEkleModals
-          isOpen={isNotModalOpen}
-          onClose={() => setIsNotModalOpen(false)}
-          isEmriId={peyzajIsEmriId}
-          isEmriKod={kod}
-        />
-
-        <PeyzajIsEmriDurumGuncelleModals
-          isOpen={isDurumModalOpen}
-          onClose={() => setIsDurumModalOpen(false)}
-          isEmriId={peyzajIsEmriId}
-          isEmriKod={kod}
-          currentDurumKod={localDurumKod}
-          personelId={currentPersonelId}
-          onUpdated={handleDurumUpdated}
-        />
-
-        <PeyzajBelgeFotoModals
-          isOpen={isBelgeFotoModalOpen}
-          onClose={() => setIsBelgeFotoModalOpen(false)}
-          peyzajIsEmriId={peyzajIsEmriId}
-          peyzajIsEmriKod={kod}
-        />
       </div>
+
+      {/* MODALLAR */}
+      <PeyzajYapilanIslemDuzenleModals
+        isOpen={isYapilanIslemModalOpen}
+        onClose={async () => {
+          setIsYapilanIslemModalOpen(false);
+          await refreshAfterModalClose();
+        }}
+        peyzajIsEmriId={peyzajIsEmriId}
+        peyzajIsEmriKod={kod}
+      />
+
+      <PeyzajNotEkleModals
+        isOpen={isNotModalOpen}
+        onClose={async () => {
+          setIsNotModalOpen(false);
+          await refreshAfterModalClose();
+        }}
+        isEmriId={peyzajIsEmriId}
+        isEmriKod={kod}
+      />
+
+      <PeyzajIsEmriDurumGuncelleModals
+        isOpen={isDurumModalOpen}
+        onClose={async () => {
+          setIsDurumModalOpen(false);
+          await refreshAfterModalClose();
+        }}
+        isEmriId={peyzajIsEmriId}
+        isEmriKod={kod}
+        currentDurumKod={Number(record?.durumKod ?? record?.DurumKod) || 0}
+        personelId={currentPersonelId}
+        onUpdated={async () => {
+          await refreshAfterModalClose();
+        }}
+      />
+
+      <PeyzajBelgeFotoModals
+        isOpen={isBelgeFotoModalOpen}
+        onClose={async () => {
+          setIsBelgeFotoModalOpen(false);
+          await refreshAfterModalClose();
+        }}
+        peyzajIsEmriId={peyzajIsEmriId}
+        peyzajIsEmriKod={kod}
+      />
     </div>
   );
 }
