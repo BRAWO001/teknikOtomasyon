@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getDataAsync } from "../../../utils/apiService";
 import { getCookie as getClientCookie } from "../../../utils/cookieService";
 
@@ -29,6 +29,8 @@ export default function PeyzajIsEmriDetayPage() {
 
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   const [currentPersonelId, setCurrentPersonelId] = useState(null);
@@ -39,6 +41,8 @@ export default function PeyzajIsEmriDetayPage() {
   const [isBelgeFotoModalOpen, setIsBelgeFotoModalOpen] = useState(false);
 
   const [copyMessage, setCopyMessage] = useState("");
+
+  const lastScrollYRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -61,28 +65,64 @@ export default function PeyzajIsEmriDetayPage() {
     }
   }, []);
 
-  const loadRecord = async () => {
+  const restoreScrollPosition = () => {
+    if (typeof window === "undefined") return;
+
+    const y = Number(lastScrollYRef.current || 0);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({
+          top: y,
+          behavior: "auto",
+        });
+      });
+    });
+  };
+
+  const loadRecord = async (options = {}) => {
+    const { preserveScroll = false, silent = false } = options;
+
     if (!id) return;
 
+    if (preserveScroll && typeof window !== "undefined") {
+      lastScrollYRef.current = window.scrollY || window.pageYOffset || 0;
+    }
+
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+
       setError("");
 
       const data = await getDataAsync(`peyzaj-is-emri-formu/${id}`);
       setRecord(data || null);
+      setInitialLoaded(true);
     } catch (err) {
       console.error("Peyzaj iş emri detay yüklenirken hata:", err);
       setError(
         err?.message || "Peyzaj iş emri detayları alınırken bir hata oluştu."
       );
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
+
+      if (preserveScroll) {
+        restoreScrollPosition();
+      }
     }
   };
 
   useEffect(() => {
     if (!id) return;
     loadRecord();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const progress = useMemo(() => {
@@ -96,7 +136,7 @@ export default function PeyzajIsEmriDetayPage() {
     return "bg-emerald-500";
   }, [progress]);
 
-  if (loading) {
+  if (loading && !initialLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-sm text-zinc-600 dark:bg-zinc-950 dark:text-zinc-200">
         Peyzaj iş emri detayları yükleniyor...
@@ -177,8 +217,16 @@ export default function PeyzajIsEmriDetayPage() {
         <div className="mx-auto w-full max-w-6xl">
           <div className="flex w-full flex-col gap-2">
             <div className="flex w-full items-center justify-between">
-              <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
-                %{progress}
+              <div className="flex items-center gap-2">
+                <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                  %{progress}
+                </div>
+
+                {refreshing ? (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200">
+                    Güncelleniyor...
+                  </span>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2">
@@ -286,9 +334,7 @@ export default function PeyzajIsEmriDetayPage() {
             className="w-full rounded-xl border border-zinc-300 bg-emerald-100 px-3 py-2 text-[11px] font-semibold text-zinc-700 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-emerald-900 dark:text-zinc-200 dark:hover:bg-emerald-800"
             title={publicFullLink || "Public link bulunamadı"}
           >
-            {publicFullLink
-              ? "Linki Kopyala"
-              : "Link Bulunamadı"}
+            {publicFullLink ? "Linki Kopyala" : "Link Bulunamadı"}
           </button>
 
           {copyMessage && (
@@ -308,7 +354,9 @@ export default function PeyzajIsEmriDetayPage() {
 
         <PeyzajIsEmriDetaySurecDurumlari
           record={record}
-          onUpdated={loadRecord}
+          onUpdated={async () => {
+            await loadRecord({ preserveScroll: true, silent: true });
+          }}
         />
 
         <PeyzajIsEmriDetayYapilanIslemler
@@ -348,15 +396,15 @@ export default function PeyzajIsEmriDetayPage() {
           currentDurumKod={Number(durumKod) || 0}
           personelId={currentPersonelId}
           onUpdated={async () => {
-            await loadRecord();
+            await loadRecord({ preserveScroll: true, silent: true });
           }}
         />
 
         <PeyzajBelgeFotoModals
           isOpen={isBelgeFotoModalOpen}
-          onClose={() => {
+          onClose={async () => {
             setIsBelgeFotoModalOpen(false);
-            loadRecord();
+            await loadRecord({ preserveScroll: true, silent: true });
           }}
           peyzajIsEmriId={peyzajIsEmriId}
           peyzajIsEmriKod={kod}
