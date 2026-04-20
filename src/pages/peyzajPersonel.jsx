@@ -487,6 +487,18 @@ export default function PeyzajPersonelPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPersonelId]);
 
+
+  const handleGunlukRapor = async () => {
+    router.push("/gunlukRapor/yeni");
+  };
+
+
+      // Yeni iş emri ekle Peyzaj
+  const handleNewIsEmriPeyzaj = () => {
+    router.push("/peyzajIsEmriEkle");
+  };
+
+
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -593,6 +605,21 @@ export default function PeyzajPersonelPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+
+              
+
+              <TopButton
+                onClick={handleGunlukRapor}
+                className="bg-blue-600 text-white hover:bg-blue-700"
+              >
+                📋 Günlük Rapor
+              </TopButton>
+              <TopButton
+                onClick={handleNewIsEmriPeyzaj}
+                className="bg-lime-300 text-black hover:bg-lime-500"
+              >
+                Peyzaj / Havuz iş Emri Ekle
+              </TopButton>
               <TopButton
                 onClick={handleLogout}
                 className="bg-rose-600 text-white hover:bg-rose-700"

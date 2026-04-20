@@ -12,6 +12,7 @@ import ProjeGorevlileriSonYorumOzetCard from "@/components/projeGorevlileri/Proj
 import ProjeDosyaModals from "@/components/ProjeDosyaModals";
 
 import { getDataAsync } from "@/utils/apiService";
+import YoneticiAnketListesiPage from "./yoneticiAnketListesi";
 
 export default function ProjeGorevlileriPage() {
   const router = useRouter();
@@ -137,6 +138,8 @@ export default function ProjeGorevlileriPage() {
 
   const handleTaleplerim = () => router.push("/projeGorevlileri/taleplerim");
 
+  const handleProjemTalepler = () => router.push("/projeGorevlileri/projeminTalepleri");
+
     // Sadece yeni duyuru aktif
   const handleYeniDuyuru = () => router.push("/iletisimGorevli/YeniDuyuru");
     // Projemin duyuruları
@@ -154,6 +157,8 @@ export default function ProjeGorevlileriPage() {
     router.push("/projeGorevlileri/projeGorevlileriIletiler");
   const handleProjemDestekTalepler = () =>
     router.push("/projeGorevlileri/DestekTalepler");
+  const handleProjemAnketler = () =>
+    router.push("/projeGorevlileri/yoneticiAnketListesi");
 
   const handlePilotFeatureClick = (featureName) => {
     setPilotInfo(
@@ -261,16 +266,53 @@ export default function ProjeGorevlileriPage() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleYeniTalep}
-              className="rounded-md cursor-pointer bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+              className="flex items-center gap-1 rounded-md cursor-pointer bg-emerald-400 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
             >
+              {/* ➕ ikon */}
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
               Yeni Talep Oluştur
             </button>
 
             <button
               onClick={handleTaleplerim}
-              className="rounded-md cursor-pointer bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700"
+              className="flex items-center gap-1 rounded-md cursor-pointer bg-sky-400 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-500"
             >
+              {/* 📋 liste ikon */}
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+              </svg>
               Taleplerim
+            </button>
+
+            <button
+              onClick={handleProjemTalepler}
+              className="flex items-center gap-1 rounded-md cursor-pointer bg-indigo-400 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500"
+            >
+              {/* 🏢 proje ikon */}
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6" />
+              </svg>
+              Projemin Talepleri
             </button>
           </div>
 
@@ -376,8 +418,6 @@ export default function ProjeGorevlileriPage() {
                   </button>
                 </div>
 
-             
-
                 {!selectedSiteId && (
                   <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-200">
                     ⚠️ Site seçilmeden karar işlemi yapılamaz.
@@ -385,9 +425,7 @@ export default function ProjeGorevlileriPage() {
                 )}
               </div>
 
-
-
-               {/* Duyuru Yönetimi */}
+              {/* Duyuru Yönetimi */}
               <div className="flex flex-col justify-center rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
                   <h3 className="flex items-center justify-center gap-1 text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
@@ -412,7 +450,7 @@ export default function ProjeGorevlileriPage() {
                   >
                     📄 Projemin Duyuruları
                   </button>
- 
+
                   {/* <button
                     onClick={() => handleDevelopmentInfo("Duyurular")}
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
@@ -426,10 +464,11 @@ export default function ProjeGorevlileriPage() {
               <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div>
                   <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50 text-center">
-                    📣 İletiler
+                    📋 İletiler
                   </h3>
                   <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300 text-center">
-                    Projeye ait bilgilendirme iletileri, duyurular ve yönetim notları.
+                    Projeye ait bilgilendirme iletileri, duyurular ve yönetim
+                    notları.
                   </p>
                 </div>
 
@@ -487,6 +526,43 @@ export default function ProjeGorevlileriPage() {
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📄 Destek Talepleri Görüntüle
+                  </button>
+                </div>
+
+                {!selectedSiteId && (
+                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                    Site seçilmeden destek talebi işlemi yapılamaz.
+                  </div>
+                )}
+              </div>
+              {/* ✅ Destek Talepler*/}
+              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50 text-center">
+                    📊 Anketler
+                  </h3>
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300 text-center">
+                    Projeye ait düzenlenmiş anketler ve kat maliklerinin katılım durumları.
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                  {/* <button
+                    type="button"
+                    onClick={handleYeniIleti}
+                    disabled={!selectedSiteId}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    ➕ Yeni İleti Oluştur
+                  </button> */}
+
+                  <button
+                    type="button"
+                    onClick={handleProjemAnketler}
+                    disabled={!selectedSiteId}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    📄 Anketleri Görüntüle
                   </button>
                 </div>
 
