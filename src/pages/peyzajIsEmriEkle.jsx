@@ -1,6 +1,6 @@
 // src/pages/peyzajIsEmriEkle.jsx
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useLayoutEffect } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "../utils/apiService";
 
@@ -32,7 +32,29 @@ export default function PeyzajIsEmriEkle() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
+  const preserveScrollRef = useRef(false);
+  const scrollYRef = useRef(0);
+
+  const rememberScroll = () => {
+    if (typeof window === "undefined") return;
+    preserveScrollRef.current = true;
+    scrollYRef.current = window.scrollY || window.pageYOffset || 0;
+  };
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!preserveScrollRef.current) return;
+
+    window.scrollTo({
+      top: scrollYRef.current,
+      behavior: "auto",
+    });
+
+    preserveScrollRef.current = false;
+  });
+
   const setField = (key, value) => {
+    rememberScroll();
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -113,6 +135,8 @@ export default function PeyzajIsEmriEkle() {
   }, [form.isEmriTipi]);
 
   const onSiteChange = async (value) => {
+    rememberScroll();
+
     setForm((prev) => ({
       ...prev,
       siteId: value,
@@ -140,6 +164,8 @@ export default function PeyzajIsEmriEkle() {
   };
 
   const togglePersonel = (id) => {
+    rememberScroll();
+
     setSelectedPersonelIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -219,7 +245,10 @@ export default function PeyzajIsEmriEkle() {
   }, [result, router]);
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-6 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+    <div
+      className="min-h-screen bg-zinc-50 p-6 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50"
+      style={{ overflowAnchor: "none" }}
+    >
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
@@ -361,7 +390,10 @@ export default function PeyzajIsEmriEkle() {
               <select
                 className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
                 value={form.aptId}
-                onChange={(e) => setField("aptId", e.target.value)}
+                onChange={(e) => {
+                  rememberScroll();
+                  setField("aptId", e.target.value);
+                }}
                 disabled={!form.siteId || siteDetailLoading}
               >
                 <option value="">
@@ -533,4 +565,3 @@ function MiniInfo({ label, value }) {
     </div>
   );
 }
-
