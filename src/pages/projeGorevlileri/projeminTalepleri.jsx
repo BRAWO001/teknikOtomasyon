@@ -5,7 +5,6 @@ import { getCookie as getClientCookie } from "@/utils/cookieService";
 import { getDataAsync } from "@/utils/apiService";
 
 import YoneticiRaporuDetayliTalepCard from "@/components/yoneticiRaporu/YoneticiRaporuDetayliTalepCard";
-import SonYorumOzetMiniPanel from "@/components/yoneticiRaporu/SonYorumOzetMiniPanel";
 
 const TALEP_CINSI_OPTIONS = [
   { value: "Satın Alma", label: "Satın Alma" },
@@ -312,7 +311,6 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
               Onayımı Bekleyen Talepler
             </button>
 
-            <SonYorumOzetMiniPanel take={30} stickyTop={8} />
 
             <button
               type="button"

@@ -3,7 +3,6 @@
 
 
 
-// pages/projeGorevlileri/index.jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
@@ -32,6 +31,26 @@ export default function ProjeGorevlileriPage() {
 
   // ✅ Seçilen site
   const [selectedSiteId, setSelectedSiteId] = useState(null);
+
+  // ✅ Açılır-kapanır kartlar
+  const [openSections, setOpenSections] = useState({
+    isEmirleri: true,
+    dokumanlar: true,
+    kararlar: true,
+    duyurular: true,
+    iletiler: true,
+    destekTalepler: true,
+    anketler: true,
+    gunlukRapor: true,
+    ziyaretci: true,
+  });
+
+  const toggleSection = (key) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // Cookie’den personel al
   useEffect(() => {
@@ -129,22 +148,27 @@ export default function ProjeGorevlileriPage() {
 
   const handleYeniIsEmri = () =>
     router.push("/projeGorevlileri/projeSorumlusuISemriOlustur");
+  const handleYeniHavuzPeyzajIsEmri = () =>
+    router.push("/peyzajIsEmriEkle");
 
   const handleYeniKararTalebi = () =>
     router.push("/projeGorevlileri/ProjeSorumlusuYeniKarar");
 
   const handleProjemIsEmirleri = () =>
     router.push("/projeGorevlileri/projeGorevlileriIsEmirleri");
+  const handleProjemHavuzIsEmirleri = () =>
+    router.push("/projeGorevlileri/projeGorevlileriHavuzIsEmirleri");
+  const handleProjemPeyzajIsEmirleri = () =>
+    router.push("/projeGorevlileri/projeGorevlileriPeyzajIsEmirleri");
 
   const handleTaleplerim = () => router.push("/projeGorevlileri/taleplerim");
 
   const handleProjemTalepler = () => router.push("/projeGorevlileri/projeminTalepleri");
 
-    // Sadece yeni duyuru aktif
+  // Sadece yeni duyuru aktif
   const handleYeniDuyuru = () => router.push("/iletisimGorevli/YeniDuyuru");
-    // Projemin duyuruları
+  // Projemin duyuruları
   const handleProjemDuyurular = () => router.push("/projeGorevlileri/projeGorevlileriDuyurular");
-
 
   // ✅ yeni sayfalar
   const handleProjemKararlar = () =>
@@ -159,6 +183,8 @@ export default function ProjeGorevlileriPage() {
     router.push("/projeGorevlileri/DestekTalepler");
   const handleProjemAnketler = () =>
     router.push("/projeGorevlileri/yoneticiAnketListesi");
+  const handleProjemRapor = () =>
+    router.push("/gunlukRapor/yeni");
 
   const handlePilotFeatureClick = (featureName) => {
     setPilotInfo(
@@ -175,22 +201,84 @@ export default function ProjeGorevlileriPage() {
     setIsDosyaModalOpen(true);
   };
 
+  const SectionCard = ({
+    sectionKey,
+    title,
+    description,
+    children,
+    warning,
+    accent = "zinc",
+  }) => {
+    const isOpen = openSections[sectionKey];
+
+    const accentMap = {
+      zinc: "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/40",
+      emerald:
+        "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/60 dark:bg-emerald-950/20",
+      sky: "border-sky-200 bg-sky-50/60 dark:border-sky-900/60 dark:bg-sky-950/20",
+      amber:
+        "border-amber-200 bg-amber-50/60 dark:border-amber-900/60 dark:bg-amber-950/20",
+      indigo:
+        "border-indigo-200 bg-indigo-50/60 dark:border-indigo-900/60 dark:bg-indigo-950/20",
+    };
+
+    return (
+      <div
+        className={`rounded-xl border p-3 text-xs shadow-sm transition-all ${accentMap[accent] || accentMap.zinc}`}
+      >
+        <button
+          type="button"
+          onClick={() => toggleSection(sectionKey)}
+          className="flex w-full cursor-pointer items-start justify-between gap-3 text-left"
+        >
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
+              {title}
+            </h3>
+            <p className="mt-1 text-[11px] leading-snug text-zinc-600 dark:text-zinc-300">
+              {description}
+            </p>
+          </div>
+
+          <span
+            className={`mt-0.5 shrink-0 rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 transition dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 ${
+              isOpen ? "rotate-0" : ""
+            }`}
+          >
+            {isOpen ? "▲ Kapat" : "▼ Aç"}
+          </span>
+        </button>
+
+        <div
+          className={`grid transition-all duration-300 ease-in-out ${
+            isOpen ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0 mt-0"
+          }`}
+        >
+          <div className="overflow-hidden">
+            {children}
+            {warning}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto min-h-screen max-w-4xl p-4 flex flex-col gap-3">
+      <div className="mx-auto min-h-screen w-full max-w-[1800px] px-3 py-4 md:px-5 xl:px-6 flex flex-col gap-4">
         {/* ÜST PANEL */}
-        <section className="rounded-md border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <section className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             {/* LOGO + BAŞLIK */}
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/eos_management_logo.png"
                 alt="EOS Management"
-                className="h-10 w-auto object-contain rounded-md"
+                className="h-11 w-auto object-contain rounded-md"
               />
 
-              <div className="flex flex-col gap-1">
+              <div className="flex min-w-0 flex-col gap-1">
                 <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   Proje Görevlileri Paneli
                 </p>
@@ -203,7 +291,7 @@ export default function ProjeGorevlileriPage() {
                         {personel.ad} {personel.soyad}
                       </span>
                     </p>
-                    <p className="text-xs font-extralight  text-zinc-900 dark:text-zinc-50">
+                    <p className="text-xs font-extralight text-zinc-900 dark:text-zinc-50">
                       Bu site bir Demo sürümüdür. Bazı modüller henüz aktif
                       değildir.
                     </p>
@@ -219,12 +307,7 @@ export default function ProjeGorevlileriPage() {
                       {siteError}
                     </span>
                   ) : selectedSiteId ? (
-                    <span>
-                      Aktif SiteId:{" "}
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-                        {selectedSiteId}
-                      </span>
-                    </span>
+                    <span />
                   ) : (
                     <span className="text-amber-700 dark:text-amber-200">
                       SiteId bulunamadı.
@@ -234,26 +317,30 @@ export default function ProjeGorevlileriPage() {
               </div>
             </div>
 
-            {personel?.id && (
-              <ProjeGorevlileriSonYorumOzetCard personelId={personel.id} />
-            )}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between xl:items-center xl:gap-4">
+              {personel?.id && (
+                <div className="w-full xl:w-auto">
+                  <ProjeGorevlileriSonYorumOzetCard personelId={personel.id} />
+                </div>
+              )}
 
-            {/* ÇIKIŞ BUTONU */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleLogout}
-                className="rounded-md cursor-pointer bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
-              >
-                Çıkış
-              </button>
+              {/* ÇIKIŞ BUTONU */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleLogout}
+                  className="rounded-md cursor-pointer bg-red-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-red-700"
+                >
+                  Çıkış
+                </button>
+              </div>
             </div>
           </div>
         </section>
 
         {/* ANA İÇERİK */}
-        <main className="flex-1 items-center rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-4">
-          <div>
-            <h1 className="text-lg font-semibold justify-center text-center text-zinc-900 dark:text-zinc-50">
+        <main className="flex-1 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col gap-5 xl:p-5">
+          <div className="text-center">
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
               Talep Yönetim Paneli
             </h1>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
@@ -263,12 +350,11 @@ export default function ProjeGorevlileriPage() {
           </div>
 
           {/* Mevcut iki buton */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={handleYeniTalep}
               className="flex items-center gap-1 rounded-md cursor-pointer bg-emerald-400 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
             >
-              {/* ➕ ikon */}
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -285,7 +371,6 @@ export default function ProjeGorevlileriPage() {
               onClick={handleTaleplerim}
               className="flex items-center gap-1 rounded-md cursor-pointer bg-sky-400 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-500"
             >
-              {/* 📋 liste ikon */}
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -302,7 +387,6 @@ export default function ProjeGorevlileriPage() {
               onClick={handleProjemTalepler}
               className="flex items-center gap-1 rounded-md cursor-pointer bg-indigo-400 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500"
             >
-              {/* 🏢 proje ikon */}
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -317,58 +401,76 @@ export default function ProjeGorevlileriPage() {
           </div>
 
           {/* Pilot modüller */}
-          <section className="mt-4 space-y-3 w-full">
-            <div>
-              <p className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-300">
-                Aşağıdaki modüller profesyonel site yönetimi için
-                planlanmaktadır. Şu an pilot deneme sürecinde olduğundan sadece
-                bilgilendirme amaçlı gösterilmektedir.
+          <section className="space-y-4 w-full">
+            <div className="text-center">
+              <p className="text-[12px] text-zinc-600 dark:text-zinc-300">
+                Aşağıdaki modüller profesyonel site yönetimi için planlanmaktadır.
+                Şu an pilot deneme sürecinde olduğundan sadece bilgilendirme
+                amaçlı gösterilmektedir.
               </p>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
               {/* İş Emirleri */}
-              <div className="flex flex-col justify-center rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="flex items-center justify-center gap-1 text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
-                    🛠️ İş Emirleri
-                  </h3>
-                  <p className="mt-1 text-[11px] justify-center text-center text-zinc-600 dark:text-zinc-300">
-                    Site içindeki tüm arıza ve bakım taleplerinin takibi, iş
-                    emirleri ve teknisyen görevlendirmeleri.
-                  </p>
-                </div>
-
-                <div className="mt-3 flex justify-evenly gap-2 flex-wrap">
+              <SectionCard
+                sectionKey="isEmirleri"
+                accent="emerald"
+                title="🛠️ İş Emirleri"
+                description="Site içindeki tüm arıza ve bakım taleplerinin takibi, iş emirleri ve teknisyen görevlendirmeleri."
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                   <button
                     onClick={handleYeniIsEmri}
-                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-emerald-300 bg-emerald-50 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:bg-emerald-900/50"
                   >
                     ➕ İş Emri Oluştur
                   </button>
 
                   <button
+                    onClick={handleYeniHavuzPeyzajIsEmri}
+                    className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-sky-300 bg-sky-50 text-xs font-semibold text-sky-800 hover:bg-sky-100 disabled:opacity-60 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100 dark:hover:bg-sky-900/50"
+                  >
+                    🌿🌊 Havuz / Peyzaj İş Emri Oluştur
+                  </button>
+
+                  <button
                     onClick={handleProjemIsEmirleri}
-                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📋 Projemin İş Emirleri
                   </button>
-                </div>
-              </div>
 
-              {/* ✅ Dokümanlar (MODAL) */}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="text-[13px] font-semibold justify-center text-center text-zinc-900 dark:text-zinc-50">
-                    📎 Dokümanlar
-                  </h3>
-                  <p className="mt-1 text-[11px] justify-center text-center text-zinc-600 dark:text-zinc-300">
-                    Yönetim duyuruları, karar defterleri, toplantı tutanakları
-                    ve önemli dokümanların paylaşımı.
-                  </p>
-                </div>
+                  <button
+                    onClick={handleProjemPeyzajIsEmirleri}
+                    className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-lime-300 bg-lime-50 text-xs font-semibold text-lime-800 hover:bg-lime-100 disabled:opacity-60 dark:border-lime-800 dark:bg-lime-950/40 dark:text-lime-100 dark:hover:bg-lime-900/50"
+                  >
+                    🌿 Projemin Peyzaj Emirleri
+                  </button>
 
-                <div className="mt-3 flex items-center justify-center gap-2">
+                  <button
+                    onClick={handleProjemHavuzIsEmirleri}
+                    className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-cyan-300 bg-cyan-50 text-xs font-semibold text-cyan-800 hover:bg-cyan-100 disabled:opacity-60 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100 dark:hover:bg-cyan-900/50"
+                  >
+                    🌊 Projemin Havuz Emirleri
+                  </button>
+                </div>
+              </SectionCard>
+
+              {/* Dokümanlar */}
+              <SectionCard
+                sectionKey="dokumanlar"
+                accent="sky"
+                title="📎 Dokümanlar"
+                description="Yönetim duyuruları, karar defterleri, toplantı tutanakları ve önemli dokümanların paylaşımı."
+                warning={
+                  !selectedSiteId && (
+                    <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200">
+                      Site seçilmeden doküman yüklenemez.
+                    </div>
+                  )
+                }
+              >
+                <div className="flex items-center justify-center gap-2">
                   <button
                     type="button"
                     onClick={openDosyaModal}
@@ -378,27 +480,23 @@ export default function ProjeGorevlileriPage() {
                     📎 Dosya Ekle / Gör
                   </button>
                 </div>
+              </SectionCard>
 
-                {!selectedSiteId && (
-                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200">
-                    Site seçilmeden doküman yüklenemez.
-                  </div>
-                )}
-              </div>
-
-              {/* ✅ Yönetim Kurulu Karar Talebi Oluştur + Projemin Kararları */}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-gradient-to-br from-zinc-50 to-zinc-100 p-3 text-xs shadow-sm dark:border-zinc-800 dark:from-zinc-950/60 dark:to-zinc-900/40">
-                <div>
-                  <h3 className="text-[13px] text-center font-semibold text-zinc-900 dark:text-zinc-50">
-                    🏛️ Yönetim Kurulu Karar Talebi
-                  </h3>
-                  <p className="mt-0.5 text-[11px] leading-snug text-zinc-600 dark:text-zinc-300 text-center">
-                    Yönetim kuruluna iletilecek karar talebini açıklama ve
-                    ekleriyle kayıt altına alın.
-                  </p>
-                </div>
-
-                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+              {/* Kararlar */}
+              <SectionCard
+                sectionKey="kararlar"
+                accent="amber"
+                title="🏛️ Yönetim Kurulu Karar Talebi"
+                description="Yönetim kuruluna iletilecek karar talebini açıklama ve ekleriyle kayıt altına alın."
+                warning={
+                  !selectedSiteId && (
+                    <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-200">
+                      ⚠️ Site seçilmeden karar işlemi yapılamaz.
+                    </div>
+                  )
+                }
+              >
+                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleYeniKararTalebi}
@@ -417,27 +515,16 @@ export default function ProjeGorevlileriPage() {
                     📚 Projemin Kararları
                   </button>
                 </div>
+              </SectionCard>
 
-                {!selectedSiteId && (
-                  <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-200">
-                    ⚠️ Site seçilmeden karar işlemi yapılamaz.
-                  </div>
-                )}
-              </div>
-
-              {/* Duyuru Yönetimi */}
-              <div className="flex flex-col justify-center rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="flex items-center justify-center gap-1 text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
-                    📢 Duyuru Yönetimi
-                  </h3>
-                  <p className="mt-1 justify-center text-center text-[11px] text-zinc-600 dark:text-zinc-300">
-                    Yeni duyuru oluşturma ve mevcut duyuruları görüntüleme
-                    ekranlarına buradan geçebilirsiniz.
-                  </p>
-                </div>
-
-                <div className="mt-3 flex justify-evenly gap-2 flex-wrap">
+              {/* Duyuru */}
+              <SectionCard
+                sectionKey="duyurular"
+                accent="indigo"
+                title="📢 Duyuru Yönetimi"
+                description="Yeni duyuru oluşturma ve mevcut duyuruları görüntüleme ekranlarına buradan geçebilirsiniz."
+              >
+                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     onClick={handleYeniDuyuru}
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
@@ -450,29 +537,23 @@ export default function ProjeGorevlileriPage() {
                   >
                     📄 Projemin Duyuruları
                   </button>
-
-                  {/* <button
-                    onClick={() => handleDevelopmentInfo("Duyurular")}
-                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    📋 Duyurular
-                  </button> */}
                 </div>
-              </div>
+              </SectionCard>
 
-              {/* ✅ İletiler (Yeni kart) */}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50 text-center">
-                    📋 İletiler
-                  </h3>
-                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300 text-center">
-                    Projeye ait bilgilendirme iletileri, duyurular ve yönetim
-                    notları.
-                  </p>
-                </div>
-
-                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+              {/* İletiler */}
+              <SectionCard
+                sectionKey="iletiler"
+                title="📋 İletiler"
+                description="Projeye ait bilgilendirme iletileri, duyurular ve yönetim notları."
+                warning={
+                  !selectedSiteId && (
+                    <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                      Site seçilmeden ileti işlemi yapılamaz.
+                    </div>
+                  )
+                }
+              >
+                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleYeniIleti}
@@ -491,34 +572,22 @@ export default function ProjeGorevlileriPage() {
                     📄 İletileri Görüntüle
                   </button>
                 </div>
+              </SectionCard>
 
-                {!selectedSiteId && (
-                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
-                    Site seçilmeden ileti işlemi yapılamaz.
-                  </div>
-                )}
-              </div>
-              {/* ✅ Destek Talepler*/}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50 text-center">
-                    📣 Destek Talepler
-                  </h3>
-                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300 text-center">
-                    Projeye ait kat maliklerinin destek talepleri.
-                  </p>
-                </div>
-
-                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-                  {/* <button
-                    type="button"
-                    onClick={handleYeniIleti}
-                    disabled={!selectedSiteId}
-                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    ➕ Yeni İleti Oluştur
-                  </button> */}
-
+              {/* Destek Talepler */}
+              <SectionCard
+                sectionKey="destekTalepler"
+                title="📣 Destek Talepler"
+                description="Projeye ait kat maliklerinin destek talepleri."
+                warning={
+                  !selectedSiteId && (
+                    <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                      Site seçilmeden destek talebi işlemi yapılamaz.
+                    </div>
+                  )
+                }
+              >
+                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleProjemDestekTalepler}
@@ -528,34 +597,22 @@ export default function ProjeGorevlileriPage() {
                     📄 Destek Talepleri Görüntüle
                   </button>
                 </div>
+              </SectionCard>
 
-                {!selectedSiteId && (
-                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
-                    Site seçilmeden destek talebi işlemi yapılamaz.
-                  </div>
-                )}
-              </div>
-              {/* ✅ Destek Talepler*/}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50 text-center">
-                    📊 Anketler
-                  </h3>
-                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300 text-center">
-                    Projeye ait düzenlenmiş anketler ve kat maliklerinin katılım durumları.
-                  </p>
-                </div>
-
-                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-                  {/* <button
-                    type="button"
-                    onClick={handleYeniIleti}
-                    disabled={!selectedSiteId}
-                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    ➕ Yeni İleti Oluştur
-                  </button> */}
-
+              {/* Anketler */}
+              <SectionCard
+                sectionKey="anketler"
+                title="📊 Anketler"
+                description="Projeye ait düzenlenmiş anketler ve kat maliklerinin katılım durumları."
+                warning={
+                  !selectedSiteId && (
+                    <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                      Site seçilmeden destek talebi işlemi yapılamaz.
+                    </div>
+                  )
+                }
+              >
+                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleProjemAnketler}
@@ -565,26 +622,40 @@ export default function ProjeGorevlileriPage() {
                     📄 Anketleri Görüntüle
                   </button>
                 </div>
+              </SectionCard>
 
-                {!selectedSiteId && (
-                  <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
-                    Site seçilmeden destek talebi işlemi yapılamaz.
-                  </div>
-                )}
-              </div>
+              {/* Günlük Rapor */}
+              <SectionCard
+                sectionKey="gunlukRapor"
+                title="🕒 Günlük Rapor"
+                description="Proje Sorumlusunun günlük olarak gireceği raporlar ve yönetimin geri bildirimleri."
+                warning={
+                  !selectedSiteId && (
+                    <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                      Site seçilmeden destek talebi işlemi yapılamaz.
+                    </div>
+                  )
+                }
+              >
+                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleProjemRapor}
+                    disabled={!selectedSiteId}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    🕒📋 Günlük Rapor Gir
+                  </button>
+                </div>
+              </SectionCard>
 
               {/* Ziyaretçi & Güvenlik */}
-              <div className="flex flex-col justify-between rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div>
-                  <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-50">
-                    Ziyaretçi & Güvenlik Kayıtları
-                  </h3>
-                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-zinc-300">
-                    Kapı giriş-çıkış, ziyaretçi kayıtları ve güvenlik
-                    tutanaklarının merkezi takibi.
-                  </p>
-                </div>
-                <div className="mt-2 flex justify-end">
+              <SectionCard
+                sectionKey="ziyaretci"
+                title="Ziyaretçi & Güvenlik Kayıtları"
+                description="Kapı giriş-çıkış, ziyaretçi kayıtları ve güvenlik tutanaklarının merkezi takibi."
+              >
+                <div className="mt-1 flex justify-end">
                   <button
                     type="button"
                     onClick={() =>
@@ -595,18 +666,18 @@ export default function ProjeGorevlileriPage() {
                     Modülü Görüntüle
                   </button>
                 </div>
-              </div>
+              </SectionCard>
             </div>
 
             {/* Pilot bilgi mesajı */}
             {pilotInfo && (
-              <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-100">
+              <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-100">
                 {pilotInfo}
               </div>
             )}
           </section>
 
-          <div className="mt-4 border-t border-zinc-200 pt-3 text-[24px] text-center text-white dark:border-zinc-800 dark:text-zinc-400">
+          <div className="mt-2 border-t border-zinc-200 pt-4 text-[24px] text-center text-white dark:border-zinc-800 dark:text-zinc-400">
             SAYGILARIMIZLA,{" "}
             <span className="font-semibold">EOS MANAGEMENT</span>
           </div>
