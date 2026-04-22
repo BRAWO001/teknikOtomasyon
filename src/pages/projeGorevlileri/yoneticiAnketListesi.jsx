@@ -1,3 +1,8 @@
+
+
+
+
+
 // pages/pojeGorevlileri/yoneticiAnketListesi.jsx
 import Image from "next/image";
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -61,7 +66,7 @@ export default function YoneticiAnketListesiPage() {
   const [siteLoading, setSiteLoading] = useState(false);
   const [siteError, setSiteError] = useState("");
 
-  // site sabit ve whitelist içinden gelecek
+  // seçili site
   const [siteId, setSiteId] = useState("");
 
   const [search, setSearch] = useState("");
@@ -106,6 +111,7 @@ export default function YoneticiAnketListesiPage() {
     }
   }, [router]);
 
+  // çoklu site yükleme
   useEffect(() => {
     let cancelled = false;
 
@@ -117,38 +123,40 @@ export default function YoneticiAnketListesiPage() {
         setSiteError("");
 
         const data = await getDataAsync(
-          `projeYonetimKurulu/site/personel/${encodeURIComponent(personelKodu)}`
+          `ProjeYoneticileri/site/personel/${encodeURIComponent(personelKodu)}`
         );
 
         if (cancelled) return;
 
-        const arr = Array.isArray(data) ? data : [];
+        const arr = Array.isArray(data) ? data : data ? [data] : [];
         setSiteList(arr);
 
+        if (!arr.length) {
+          setSiteId("");
+          setSiteError("Bu kullanıcı için aktif site bulunamadı.");
+          return;
+        }
+
         const allowedIds = arr
-          .map((x) => String(x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id))
+          .map((x) => String(x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id ?? ""))
           .filter(Boolean);
 
-        const directSiteId = personel?.siteId || personel?.SiteId || null;
+        const directSiteId =
+          personel?.siteId ||
+          personel?.SiteId ||
+          personel?.siteID ||
+          personel?.SiteID ||
+          null;
 
         if (directSiteId && allowedIds.includes(String(directSiteId))) {
           setSiteId(String(directSiteId));
           return;
         }
 
-        if (siteId && !allowedIds.includes(String(siteId))) {
-          setSiteId("");
-        }
-
-        if (allowedIds.length === 0) {
-          setSiteId("");
-          setSiteError("Bu kullanıcı için aktif site bulunamadı.");
-          return;
-        }
-
-        if (!siteId) {
-          setSiteId(String(allowedIds[0]));
-        }
+        setSiteId((prev) => {
+          if (prev && allowedIds.includes(String(prev))) return String(prev);
+          return String(allowedIds[0] || "");
+        });
       } catch (e) {
         if (cancelled) return;
         console.error("SITE LIST ERROR:", e);
@@ -165,8 +173,29 @@ export default function YoneticiAnketListesiPage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personelKodu]);
+  }, [personelKodu, personel]);
+
+  const selectedSite = useMemo(() => {
+    return (
+      siteList.find(
+        (x) => String(x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id) === String(siteId)
+      ) || null
+    );
+  }, [siteList, siteId]);
+
+  const selectedSiteName = useMemo(() => {
+    if (!selectedSite) return "";
+
+    return (
+      selectedSite?.SiteAdi ||
+      selectedSite?.siteAdi ||
+      selectedSite?.Site?.Ad ||
+      selectedSite?.site?.ad ||
+      selectedSite?.Ad ||
+      selectedSite?.ad ||
+      "Site adı yok"
+    );
+  }, [selectedSite]);
 
   const safeSiteId = useMemo(() => {
     const allowed = new Set(
@@ -179,7 +208,7 @@ export default function YoneticiAnketListesiPage() {
 
     const first = (siteList || [])
       .map((x) => x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id)
-      .find((v) => v !== undefined && v !== null);
+      .find((v) => v !== undefined && v !== null && String(v).trim() !== "");
 
     return first ? String(first) : "";
   }, [siteId, siteList]);
@@ -187,8 +216,7 @@ export default function YoneticiAnketListesiPage() {
   useEffect(() => {
     if (!safeSiteId) return;
     if (siteId !== safeSiteId) setSiteId(safeSiteId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [safeSiteId]);
+  }, [safeSiteId, siteId]);
 
   const endpoint = useMemo(() => {
     if (!safeSiteId) return null;
@@ -196,8 +224,6 @@ export default function YoneticiAnketListesiPage() {
     const qs = new URLSearchParams();
     qs.set("page", String(page));
     qs.set("pageSize", String(pageSize));
-
-    // site her zaman zorunlu
     qs.set("siteId", String(safeSiteId));
 
     if (search?.trim()) qs.set("search", search.trim());
@@ -240,7 +266,6 @@ export default function YoneticiAnketListesiPage() {
   }, [router.isReady, loadList]);
 
   const resetFilters = () => {
-    // site sıfırlanmaz
     setSearch("");
     setYayinlandiMi("");
     setAktifMi("");
@@ -254,11 +279,6 @@ export default function YoneticiAnketListesiPage() {
   const handleAnaSayfayaDon = () => {
     router.push("/");
   };
-
-  const selectedSiteName =
-    siteList.find((x) => String(x?.SiteId ?? x?.siteId) === String(safeSiteId))?.Site?.Ad ||
-    siteList.find((x) => String(x?.SiteId ?? x?.siteId) === String(safeSiteId))?.site?.ad ||
-    (safeSiteId ? `Site #${safeSiteId}` : "Seçili site yok");
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
@@ -323,7 +343,7 @@ export default function YoneticiAnketListesiPage() {
                 {loading ? <span>• Yükleniyor…</span> : null}
 
                 <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-                  Site: {siteLoading ? "Yükleniyor..." : selectedSiteName}
+                  Site: {siteLoading ? "Yükleniyor..." : (selectedSiteName || "Site seçilmedi")}
                 </span>
               </div>
 
@@ -363,13 +383,44 @@ export default function YoneticiAnketListesiPage() {
           <div className="grid grid-cols-1 gap-2 md:grid-cols-8">
             <div className="flex flex-col gap-1 md:col-span-2">
               <label className="text-[11px] text-zinc-500">Site</label>
-              <input
-                type="text"
-                value={siteLoading ? "Yükleniyor..." : selectedSiteName}
-                readOnly
-                disabled
-                className="h-8 rounded-md border border-zinc-300 bg-zinc-100 px-2 text-[12px] text-zinc-700 disabled:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              />
+
+              {siteList.length > 1 ? (
+                <select
+                  value={siteId}
+                  onChange={(e) => {
+                    setSiteId(e.target.value);
+                    setPage(1);
+                  }}
+                  disabled={siteLoading || !siteList.length}
+                  className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                >
+                  {siteList.map((s) => {
+                    const id = s?.SiteId ?? s?.siteId ?? s?.id ?? s?.Id;
+                    const ad =
+                      s?.SiteAdi ||
+                      s?.siteAdi ||
+                      s?.Site?.Ad ||
+                      s?.site?.ad ||
+                      s?.Ad ||
+                      s?.ad ||
+                      "Site adı yok";
+
+                    return (
+                      <option key={id} value={String(id)}>
+                        {ad}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={siteLoading ? "Yükleniyor..." : (selectedSiteName || "Site seçilmedi")}
+                  readOnly
+                  disabled
+                  className="h-8 rounded-md border border-zinc-300 bg-zinc-100 px-2 text-[12px] text-zinc-700 disabled:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                />
+              )}
             </div>
 
             <div className="flex flex-col gap-1 md:col-span-2">

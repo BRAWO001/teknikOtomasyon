@@ -1,3 +1,8 @@
+
+
+
+
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
@@ -38,7 +43,14 @@ export default function ProjeGorevlileriHavuzIsEmirleriPage() {
     return pick(personel, "id", "Id");
   }, [personel]);
 
-  // otomatik site
+  const personelKodu = useMemo(() => {
+    if (!personel) return null;
+    return (
+      pick(personel, "personelKodu", "PersonelKodu", "kodu", "Kodu") || null
+    );
+  }, [personel]);
+
+  // site
   const [sites, setSites] = useState([]);
   const [siteId, setSiteId] = useState("");
   const [loadingLookups, setLoadingLookups] = useState(false);
@@ -60,15 +72,30 @@ export default function ProjeGorevlileriHavuzIsEmirleriPage() {
   const [startDate, setStartDate] = useState(defaults.startDate);
   const [endDate, setEndDate] = useState(defaults.endDate);
 
-  const getId = (obj) => pick(obj, "id", "Id");
-  const getAd = (obj) => pick(obj, "ad", "Ad");
+  const getSiteId = (obj) =>
+    pick(obj, "SiteId", "siteId", "id", "Id");
+
+  const getSiteName = (obj) =>
+    pick(
+      obj,
+      "SiteAdi",
+      "siteAdi",
+      "Ad",
+      "ad"
+    ) ||
+    pick(obj?.Site, "Ad", "ad") ||
+    pick(obj?.site, "Ad", "ad") ||
+    null;
+
+  const selectedSite = useMemo(() => {
+    const sid = String(siteId || "");
+    if (!sid) return null;
+    return sites.find((x) => String(getSiteId(x)) === sid) || null;
+  }, [siteId, sites]);
 
   const selectedSiteName = useMemo(() => {
-    const sid = siteId ? Number(siteId) : null;
-    if (!sid) return "-";
-    const found = sites.find((x) => Number(getId(x)) === sid);
-    return found ? getAd(found) : `#${siteId}`;
-  }, [siteId, sites]);
+    return getSiteName(selectedSite) || "";
+  }, [selectedSite]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -132,55 +159,70 @@ export default function ProjeGorevlileriHavuzIsEmirleriPage() {
     };
   }, []);
 
-  // site lookup otomatik
+  // çoklu site
   useEffect(() => {
     let cancelled = false;
 
-    const fetchLookups = async () => {
-      if (!personelId) return;
+    const fetchSites = async () => {
+      if (!personelKodu) return;
 
       setLoadingLookups(true);
       setSitesError("");
 
       try {
-        const res = await getDataAsync(
-          `Personeller/satinalma-yeni/lookups?personelId=${personelId}`
+        const resSites = await getDataAsync(
+          `ProjeYoneticileri/site/personel/${encodeURIComponent(personelKodu)}`
         );
 
         if (cancelled) return;
 
-        const resSites = Array.isArray(res?.sites) ? res.sites : [];
-        const defaultSiteId = res?.defaultSiteId ?? null;
+        const normalized = Array.isArray(resSites)
+          ? resSites
+          : resSites
+          ? [resSites]
+          : [];
 
-        setSites(resSites);
+        setSites(normalized);
 
-        if (resSites.length === 1) {
-          const onlyId = getId(resSites[0]);
-          setSiteId(onlyId ? String(onlyId) : "");
-        } else if (defaultSiteId) {
-          setSiteId(String(defaultSiteId));
-        } else if (resSites.length > 0) {
-          const firstId = getId(resSites[0]);
-          setSiteId(firstId ? String(firstId) : "");
-        } else {
+        if (!normalized.length) {
           setSiteId("");
-          setSitesError("Bu kullanıcı için otomatik site bulunamadı.");
+          setSitesError("Bu kullanıcı için aktif site bulunamadı.");
+          return;
         }
+
+        const allowedIds = normalized
+          .map((x) => String(getSiteId(x) ?? ""))
+          .filter(Boolean);
+
+        const directSiteId =
+          pick(personel, "siteId", "SiteId", "siteID", "SiteID") || null;
+
+        if (directSiteId && allowedIds.includes(String(directSiteId))) {
+          setSiteId(String(directSiteId));
+          return;
+        }
+
+        setSiteId((prev) => {
+          if (prev && allowedIds.includes(String(prev))) return String(prev);
+          return String(allowedIds[0] || "");
+        });
       } catch (err) {
         if (cancelled) return;
-        console.error("LOOKUPS ERROR:", err);
+        console.error("SITE LIST ERROR:", err);
+        setSites([]);
+        setSiteId("");
         setSitesError("Site/proje bilgileri alınamadı.");
       } finally {
         if (!cancelled) setLoadingLookups(false);
       }
     };
 
-    fetchLookups();
+    fetchSites();
 
     return () => {
       cancelled = true;
     };
-  }, [personelId]);
+  }, [personelKodu, personel]);
 
   const endpoint = useMemo(() => {
     if (!siteId) return null;
@@ -248,7 +290,11 @@ export default function ProjeGorevlileriHavuzIsEmirleriPage() {
     router.push(`/peyzaj/isEmriDetay/${safeId}`);
   };
 
-  const getSiteText = (item) => pick(pick(item, "Site", "site"), "Ad", "ad") || "-";
+  const getSiteText = (item) =>
+    pick(pick(item, "Site", "site"), "Ad", "ad") ||
+    pick(item, "siteAd", "SiteAd") ||
+    "-";
+
   const getKodText = (item) => pick(item, "Kod", "kod") || "-";
   const getBaslikText = (item) => pick(item, "KisaBaslik", "kisaBaslik") || "-";
   const getAciklamaText = (item) => pick(item, "Aciklama", "aciklama") || "-";
@@ -279,10 +325,7 @@ export default function ProjeGorevlileriHavuzIsEmirleriPage() {
               {loading ? <span>• Yükleniyor...</span> : null}
 
               <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-                Site:{" "}
-                {loadingLookups
-                  ? "Yükleniyor..."
-                  : selectedSiteName || (siteId ? `#${siteId}` : "-")}
+                Site: {loadingLookups ? "Yükleniyor..." : (selectedSiteName || "-")}
               </span>
             </div>
           </div>
@@ -354,12 +397,33 @@ export default function ProjeGorevlileriHavuzIsEmirleriPage() {
             <label className="mb-1 block text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
               Site
             </label>
-            <input
-              type="text"
-              value={loadingLookups ? "Yükleniyor..." : selectedSiteName}
-              disabled
-              className="w-full rounded-md border border-zinc-300 bg-zinc-100 px-2.5 py-2 text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
+
+            {sites.length > 1 ? (
+              <select
+                value={siteId}
+                onChange={(e) => setSiteId(e.target.value)}
+                disabled={loadingLookups || !sites.length}
+                className="w-full rounded-md border border-zinc-300 bg-white px-2.5 py-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              >
+                {sites.map((s) => {
+                  const id = getSiteId(s);
+                  const ad = getSiteName(s) || "Site adı yok";
+
+                  return (
+                    <option key={id} value={String(id)}>
+                      {ad}
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={loadingLookups ? "Yükleniyor..." : (selectedSiteName || "Site seçilmedi")}
+                disabled
+                className="w-full rounded-md border border-zinc-300 bg-zinc-100 px-2.5 py-2 text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+            )}
           </div>
 
           <div>

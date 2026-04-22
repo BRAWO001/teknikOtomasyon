@@ -69,7 +69,6 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
   const [siteLoading, setSiteLoading] = useState(false);
   const [siteError, setSiteError] = useState("");
 
-  // site zorunlu ve kullanıcı müdahale edemez
   const [siteId, setSiteId] = useState("");
 
   const [items, setItems] = useState([]);
@@ -98,6 +97,16 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     );
   }, [personel]);
 
+  const getSiteId = (x) => x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id ?? null;
+  const getSiteName = (x) =>
+    x?.SiteAdi ||
+    x?.siteAdi ||
+    x?.Site?.Ad ||
+    x?.site?.ad ||
+    x?.Ad ||
+    x?.ad ||
+    null;
+
   // cookie -> personel
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -117,7 +126,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     }
   }, [router]);
 
-  // personelin erişebildiği siteyi çek
+  // personelin erişebildiği siteleri çek
   useEffect(() => {
     let cancelled = false;
 
@@ -129,19 +138,24 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
         setSiteError("");
 
         const data = await getDataAsync(
-          `projeYonetimKurulu/site/personel/${encodeURIComponent(personelKodu)}`
+          `ProjeYoneticileri/site/personel/${encodeURIComponent(personelKodu)}`
         );
 
         if (cancelled) return;
 
-        const arr = Array.isArray(data) ? data : [];
+        const arr = Array.isArray(data) ? data : data ? [data] : [];
         setSiteList(arr);
 
         const allowedIds = arr
-          .map((x) => String(x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id))
+          .map((x) => String(getSiteId(x) ?? ""))
           .filter(Boolean);
 
-        const directSiteId = personel?.siteId || personel?.SiteId || null;
+        const directSiteId =
+          personel?.siteId ||
+          personel?.SiteId ||
+          personel?.siteID ||
+          personel?.SiteID ||
+          null;
 
         if (directSiteId && allowedIds.includes(String(directSiteId))) {
           setSiteId(String(directSiteId));
@@ -154,7 +168,10 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
           return;
         }
 
-        setSiteId(String(allowedIds[0]));
+        setSiteId((prev) => {
+          if (prev && allowedIds.includes(String(prev))) return String(prev);
+          return String(allowedIds[0]);
+        });
       } catch (e) {
         if (cancelled) return;
         console.error("SITE LIST ERROR:", e);
@@ -177,14 +194,14 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
   const safeSiteId = useMemo(() => {
     const allowed = new Set(
       (siteList || [])
-        .map((x) => String(x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id))
+        .map((x) => String(getSiteId(x) ?? ""))
         .filter(Boolean)
     );
 
     if (siteId && allowed.has(String(siteId))) return String(siteId);
 
     const first = (siteList || [])
-      .map((x) => x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id)
+      .map((x) => getSiteId(x))
       .find((v) => v !== undefined && v !== null);
 
     return first ? String(first) : "";
@@ -202,7 +219,6 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     qs.set("page", String(page));
     qs.set("pageSize", String(pageSize));
 
-    // siteId HER ZAMAN zorunlu
     qs.set("siteId", String(safeSiteId));
 
     if (talepCinsi) qs.set("talepCinsi", String(talepCinsi));
@@ -248,7 +264,6 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
   }, [router.isReady, loadData]);
 
   const resetFilters = () => {
-    // site sıfırlanmaz, sabit kalır
     setTalepCinsi("");
     setTeknikTalep("");
     const freshDefaults = getDefaultRange();
@@ -261,12 +276,15 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     await loadData();
   };
 
-  const selectedSiteName =
-    siteList.find((x) => String(x?.SiteId ?? x?.siteId) === String(safeSiteId))
-      ?.Site?.Ad ||
-    siteList.find((x) => String(x?.SiteId ?? x?.siteId) === String(safeSiteId))
-      ?.site?.ad ||
-    (safeSiteId ? `Site #${safeSiteId}` : "Seçili site yok");
+  const selectedSite = useMemo(() => {
+    return (
+      siteList.find((x) => String(getSiteId(x)) === String(safeSiteId)) || null
+    );
+  }, [siteList, safeSiteId]);
+
+  const selectedSiteName = useMemo(() => {
+    return getSiteName(selectedSite) || "Seçili site yok";
+  }, [selectedSite]);
 
   return (
     <div className="p-3 space-y-3">
@@ -311,7 +329,6 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
               Onayımı Bekleyen Talepler
             </button>
 
-
             <button
               type="button"
               onClick={() => router.push("/projeGorevlileri")}
@@ -350,13 +367,37 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
         <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Site</label>
-            <input
-              type="text"
-              value={siteLoading ? "Yükleniyor..." : selectedSiteName}
-              readOnly
-              disabled
-              className="h-8 rounded-md border border-zinc-300 bg-zinc-100 px-2 text-[12px] text-zinc-700 disabled:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-            />
+
+            {siteList.length > 1 ? (
+              <select
+                value={siteId}
+                onChange={(e) => {
+                  setSiteId(e.target.value);
+                  setPage(1);
+                }}
+                disabled={siteLoading || !siteList.length}
+                className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              >
+                {siteList.map((s) => {
+                  const id = getSiteId(s);
+                  const ad = getSiteName(s) || "Site adı yok";
+
+                  return (
+                    <option key={id} value={String(id)}>
+                      {ad}
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={siteLoading ? "Yükleniyor..." : selectedSiteName}
+                readOnly
+                disabled
+                className="h-8 rounded-md border border-zinc-300 bg-zinc-100 px-2 text-[12px] text-zinc-700 disabled:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+            )}
           </div>
 
           <div className="flex flex-col gap-1">

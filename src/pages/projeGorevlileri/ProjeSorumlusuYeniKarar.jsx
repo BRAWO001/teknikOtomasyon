@@ -1,3 +1,8 @@
+
+
+
+
+
 // src/pages/YonetimKurulu/yeni.jsx
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -35,10 +40,27 @@ export default function YonetimKuruluYeniKararPage() {
 
   const [sites, setSites] = useState([]);
   const [siteId, setSiteId] = useState("");
-  const selectedSite = useMemo(
-    () => sites.find((x) => String(x.siteId) === String(siteId)) || null,
-    [sites, siteId]
-  );
+
+  const selectedSite = useMemo(() => {
+    return (
+      sites.find(
+        (x) => String(x?.SiteId ?? x?.siteId) === String(siteId)
+      ) || null
+    );
+  }, [sites, siteId]);
+
+  const selectedSiteName = useMemo(() => {
+    if (!selectedSite) return "";
+    return (
+      selectedSite?.SiteAdi ||
+      selectedSite?.siteAdi ||
+      selectedSite?.Site?.Ad ||
+      selectedSite?.site?.ad ||
+      selectedSite?.Ad ||
+      selectedSite?.ad ||
+      "Site adı yok"
+    );
+  }, [selectedSite]);
 
   const [uyeler, setUyeler] = useState([]);
   const [uyelerLoading, setUyelerLoading] = useState(false);
@@ -60,7 +82,7 @@ export default function YonetimKuruluYeniKararPage() {
   const [toplantiYeri, setToplantiYeri] = useState("");
   const [toplantiTarihi, setToplantiTarihi] = useState("");
   const [toplantiSaati, setToplantiSaati] = useState("");
-  const [kararNo, setKararNo] = useState(""); // placeholder var, girilmesi zorunlu
+  const [kararNo, setKararNo] = useState("");
 
   // ✅ Gündem metin olarak kalsın
   const [gundemMetni, setGundemMetni] = useState("");
@@ -96,27 +118,47 @@ export default function YonetimKuruluYeniKararPage() {
     if (!personel?.personelKodu) return;
 
     let cancelled = false;
+
     const loadSites = async () => {
       try {
         const list = await getDataAsync(
-          `ProjeYonetimKurulu/site/personel/${encodeURIComponent(
+          `ProjeYoneticileri/site/personel/${encodeURIComponent(
             personel.personelKodu
           )}`
         );
+
         if (cancelled) return;
 
         const normalized = Array.isArray(list) ? list : list ? [list] : [];
         setSites(normalized);
 
-        const firstSiteId = normalized?.[0]?.siteId;
-        if (firstSiteId) setSiteId(String(firstSiteId));
+        if (!normalized.length) {
+          setSiteId("");
+          return;
+        }
+
+        setSiteId((prev) => {
+          if (prev) {
+            const exists = normalized.some(
+              (x) => String(x?.SiteId ?? x?.siteId) === String(prev)
+            );
+            if (exists) return prev;
+          }
+
+          const firstId = normalized[0]?.SiteId ?? normalized[0]?.siteId ?? "";
+          return firstId ? String(firstId) : "";
+        });
       } catch (e) {
         console.error("SITE LIST ERROR:", e);
-        if (!cancelled) setSites([]);
+        if (!cancelled) {
+          setSites([]);
+          setSiteId("");
+        }
       }
     };
 
     loadSites();
+
     return () => {
       cancelled = true;
     };
@@ -126,7 +168,7 @@ export default function YonetimKuruluYeniKararPage() {
      Karar konusu otomatik
   ======================== */
   useEffect(() => {
-    const siteAdi = selectedSite?.site?.ad ?? "";
+    const siteAdi = selectedSiteName ?? "";
     const konu = `${siteAdi.toUpperCase()}
 SİTE YÖNETİCİLİĞİ
 YÖNETİM KURULU TOPLANTI TUTANAĞI`;
@@ -134,7 +176,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
     setKararKonusu((prev) =>
       !prev || prev.includes("SİTE YÖNETİCİLİĞİ") ? konu.trim() : prev
     );
-  }, [selectedSite?.site?.ad]);
+  }, [selectedSiteName]);
 
   /* ========================
      Üyeleri getir
@@ -156,7 +198,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         const normalized = Array.isArray(list) ? list : list ? [list] : [];
         setUyeler(normalized);
 
-        // sıfırla
         setSelectedPersonelIds([]);
         setProjeSorumlusuId("");
       } catch (e) {
@@ -189,7 +230,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       const has = prev.includes(id);
       const next = has ? prev.filter((x) => x !== id) : [...prev, id];
 
-      // proje sorumlusu: ilk seçilen
       if (!next.length) {
         setProjeSorumlusuId("");
       } else {
@@ -208,13 +248,11 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       .map((u) => ({ id: Number(u.personelId), label: formatUye(u) }));
   }, [uyeler, selectedPersonelIds]);
 
-  // ✅ Katılanlar otomatik
   const katilanlarText = useMemo(() => {
     const s = selectedUyeOptions.map((x) => x.label).filter(Boolean);
     return s.join(", ");
   }, [selectedUyeOptions]);
 
-  // Seçilenler değişince proje sorumlusu otomatik ilk kişi
   useEffect(() => {
     if (!selectedPersonelIds.length) {
       if (projeSorumlusuId) setProjeSorumlusuId("");
@@ -275,7 +313,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
      ✅ Tutanak HTML üretimi
   ======================== */
   const buildTutanakAciklama = () => {
-    const siteAdi = selectedSite?.site?.ad ?? "";
+    const siteAdi = selectedSiteName ?? "";
     const tarihTR = formatDateTRFromISO(toplantiTarihi);
     const saat = (toplantiSaati || "").trim();
 
@@ -298,7 +336,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       ? `<div>${escHtml(araAciklamaFinal)}</div>`
       : "";
 
-    // ✅ Header: Karar Belgesi Başlığı inputundan gelsin (mantıklı + güvenli)
     const defaultHeaderText = `${siteAdi.toUpperCase()}
 SİTE YÖNETİCİLİĞİ
 YÖNETİM KURULU TOPLANTI TUTANAĞI`;
@@ -354,11 +391,11 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
   };
 
   /* ========================
-     ✅ Validasyon (hepsi zorunlu)
+     ✅ Validasyon
   ======================== */
   const validate = () => {
     if (!siteId) return "Proje bilgisi bulunamadı.";
-    if (!selectedSite?.site?.ad) return "Proje bulunamadı.";
+    if (!selectedSiteName) return "Proje bulunamadı.";
 
     if (!selectedPersonelIds.length) return "En az 1 üye seçmelisiniz.";
     if (!projeSorumlusuId) return "Proje sorumlusu seçilemedi (üye seçiniz).";
@@ -373,10 +410,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
     if (!kararNo.trim()) return "Karar no zorunlu.";
 
     if (!katilanlarText.trim()) return "Toplantıya katılanlar otomatik üretilemedi.";
-
     if (!String(kararKonusu ?? "").trim()) return "Karar konusu zorunlu.";
-
-    // ✅ En az 1 karar maddesi zorunlu
     if (!kararItems.length) return "En az 1 karar maddesi eklemelisiniz.";
 
     return null;
@@ -398,7 +432,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       const payload = {
         siteId: Number(siteId),
         kararKonusu: String(kararKonusu ?? "").trim(),
-        kararAciklamasi: finalAciklama, // HTML
+        kararAciklamasi: finalAciklama,
         onerenPersonelIdler: selectedPersonelIds,
       };
 
@@ -419,7 +453,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
   };
 
   const previewText = useMemo(() => buildTutanakAciklama(), [
-    selectedSite,
+    selectedSiteName,
     toplantiYeri,
     toplantiTarihi,
     toplantiSaati,
@@ -435,7 +469,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
-      {/* ✅ KURUMSAL STICKY HEADER */}
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-5 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -470,7 +503,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
       </div>
 
       <div className="mx-auto max-w-5xl px-4 py-6">
-        {/* Üst bar */}
         <div className="mb-4 flex items-start justify-between gap-2">
           <button
             className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium shadow-sm transition hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
@@ -488,9 +520,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
           </div>
         </div>
 
-        {/* Card */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          {/* Başlık satırı */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="text-base font-semibold tracking-tight">Yeni Karar</div>
@@ -498,7 +528,7 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
 
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                {selectedSite?.site?.ad ?? "Proje"}
+                {selectedSiteName || "Proje"}
               </span>
               <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
                 Seçili Üye:{" "}
@@ -521,25 +551,48 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
             </div>
           )}
 
-          {/* Proje */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                 Proje
               </label>
 
-              <div className="flex h-10 w-full items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
-                {selectedSite?.site?.ad ?? "Site seçilmedi"}
-              </div>
+              {sites.length > 1 ? (
+                <select
+                  value={siteId}
+                  onChange={(e) => setSiteId(e.target.value)}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                >
+                  {sites.map((s) => {
+                    const id = s?.SiteId ?? s?.siteId;
+                    const ad =
+                      s?.SiteAdi ||
+                      s?.siteAdi ||
+                      s?.Site?.Ad ||
+                      s?.site?.ad ||
+                      s?.Ad ||
+                      s?.ad ||
+                      "Site adı yok";
+
+                    return (
+                      <option key={id} value={String(id)}>
+                        {ad}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <div className="flex h-10 w-full items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+                  {selectedSiteName || "Site seçilmedi"}
+                </div>
+              )}
 
               <input type="hidden" name="siteId" value={siteId} />
             </div>
 
-            {/* ✅ Proje sorumlusu UI yok */}
             <input type="hidden" value={projeSorumlusuId} readOnly />
           </div>
 
-          {/* ✅ Tutanak Üst Bilgileri */}
           <div className="mt-7">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -578,7 +631,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 />
               </div>
 
-              {/* ✅ Gündem: metin */}
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                   Gündem
@@ -592,7 +644,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 />
               </div>
 
-              {/* ✅ Karar No */}
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
                   Karar No
@@ -605,9 +656,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 />
               </div>
 
-              
-
-              {/* ✅ Katılanlar otomatik */}
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between">
                   <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
@@ -628,7 +676,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
             </div>
           </div>
 
-          {/* Üyeler */}
           <div className="mt-7">
             <div className="flex items-baseline justify-between">
               <div>
@@ -687,7 +734,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
             )}
           </div>
 
-          {/* Karar konusu + Karar Maddeleri */}
           <div className="mt-7 grid grid-cols-1 gap-4">
             <div>
               <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
@@ -702,22 +748,19 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
               />
             </div>
 
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
+                Ara Açıklama
+              </label>
+              <textarea
+                className="min-h-[90px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+                value={araAciklamaMetni}
+                onChange={(e) => setAraAciklamaMetni(e.target.value)}
+                placeholder="KMK paragrafı ile kararların başladığı kısım arasına girecek metin..."
+                maxLength={600}
+              />
+            </div>
 
-            {/* ✅ İki div arasına girecek metin */}
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                  Ara Açıklama
-                </label>
-                <textarea
-                  className="min-h-[90px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
-                  value={araAciklamaMetni}
-                  onChange={(e) => setAraAciklamaMetni(e.target.value)}
-                  placeholder="KMK paragrafı ile kararların başladığı kısım arasına girecek metin..."
-                  maxLength={600}
-                />
-              </div>
-
-            {/* ✅ Karar Metni -> MADDE MADDE EKLEME */}
             <div>
               <div className="flex items-end justify-between">
                 <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
@@ -764,7 +807,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
                 </div>
               </div>
 
-              {/* Liste */}
               <div className="mt-3">
                 {kararItems.length === 0 ? (
                   <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-[12px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
@@ -833,7 +875,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
             </div>
           </div>
 
-          {/* Actions */}
           <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Önizleme alıp kontrol edin, sonra kaydedin.
@@ -870,7 +911,6 @@ YÖNETİM KURULU TOPLANTI TUTANAĞI`;
         </div>
       </div>
 
-      {/* ✅ Önizleme Modal */}
       {previewOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 py-6">
           <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950">

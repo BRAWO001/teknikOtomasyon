@@ -35,28 +35,57 @@ export default function ProjeGorevlileriIsEmirleriPage() {
   // Personel (cookie)
   // ----------------------------
   const [personel, setPersonel] = useState(null);
+
   const personelId = useMemo(() => {
     if (!personel) return null;
     return personel?.id ?? personel?.Id ?? null;
   }, [personel]);
 
+  const personelKodu = useMemo(() => {
+    if (!personel) return null;
+    return (
+      personel?.personelKodu ||
+      personel?.PersonelKodu ||
+      personel?.kodu ||
+      personel?.Kodu ||
+      null
+    );
+  }, [personel]);
+
   // ----------------------------
-  // Lookups -> site otomatik
+  // Sites
   // ----------------------------
   const [sites, setSites] = useState([]);
-  const [siteId, setSiteId] = useState(""); // otomatik set
+  const [siteId, setSiteId] = useState("");
   const [loadingLookups, setLoadingLookups] = useState(false);
   const [sitesError, setSitesError] = useState("");
 
-  const getId = (obj) => obj?.id ?? obj?.Id;
-  const getAd = (obj) => obj?.ad ?? obj?.Ad;
+  const getSiteId = (obj) =>
+    obj?.SiteId ?? obj?.siteId ?? obj?.id ?? obj?.Id ?? null;
+
+  const getSiteName = (obj) =>
+    obj?.SiteAdi ??
+    obj?.siteAdi ??
+    obj?.Site?.Ad ??
+    obj?.site?.ad ??
+    obj?.Ad ??
+    obj?.ad ??
+    null;
+
+  const selectedSite = useMemo(() => {
+    const sid = String(siteId || "");
+    if (!sid) return null;
+    return sites.find((x) => String(getSiteId(x)) === sid) || null;
+  }, [sites, siteId]);
 
   const selectedSiteName = useMemo(() => {
-    const sid = siteId ? Number(siteId) : null;
-    if (!sid) return null;
-    const s = sites.find((x) => Number(getId(x)) === sid);
-    return s ? getAd(s) : null;
-  }, [siteId, sites]);
+    return getSiteName(selectedSite) || null;
+  }, [selectedSite]);
+
+  const isSingleSiteLocked = useMemo(
+    () => Array.isArray(sites) && sites.length === 1,
+    [sites]
+  );
 
   // ----------------------------
   // İş emri state
@@ -69,7 +98,7 @@ export default function ProjeGorevlileriIsEmirleriPage() {
   const [totalCount, setTotalCount] = useState(0);
 
   // ----------------------------
-  // Filtreler (site yok -> otomatik)
+  // Filtreler
   // ----------------------------
   const defaults = getDefaultRange();
   const [start, setStart] = useState(defaults.startDate);
@@ -96,76 +125,92 @@ export default function ProjeGorevlileriIsEmirleriPage() {
   }, [router]);
 
   // ----------------------------
-  // Lookups: site otomatik set
+  // Site listesi: çoklu site desteği
   // ----------------------------
   useEffect(() => {
     let cancelled = false;
 
-    const fetchLookups = async () => {
-      if (!personelId) return;
+    const fetchSites = async () => {
+      if (!personelKodu) return;
 
       setLoadingLookups(true);
       setSitesError("");
 
       try {
-        // ✅ senin mevcut kullandığın endpoint
-        const res = await getDataAsync(
-          `Personeller/satinalma-yeni/lookups?personelId=${personelId}`
+        const resSites = await getDataAsync(
+          `ProjeYoneticileri/site/personel/${encodeURIComponent(personelKodu)}`
         );
 
         if (cancelled) return;
 
-        const resSites = res?.sites || [];
-        const defaultSiteId = res?.defaultSiteId ?? null;
+        const normalized = Array.isArray(resSites)
+          ? resSites
+          : resSites
+          ? [resSites]
+          : [];
 
-        setSites(resSites);
+        setSites(normalized);
 
-        // otomatik seçim kuralı
-        if (Array.isArray(resSites) && resSites.length === 1) {
-          const onlyId = getId(resSites[0]);
-          setSiteId(onlyId ? String(onlyId) : "");
-        } else if (defaultSiteId) {
-          setSiteId(String(defaultSiteId));
-        } else if (Array.isArray(resSites) && resSites.length > 0) {
-          const firstId = getId(resSites[0]);
-          setSiteId(firstId ? String(firstId) : "");
-        } else {
+        if (!normalized.length) {
           setSiteId("");
-          setSitesError("Bu kullanıcı için otomatik site bulunamadı.");
+          setSitesError("Bu kullanıcı için aktif site bulunamadı.");
+          return;
         }
+
+        const allowedIds = normalized
+          .map((x) => String(getSiteId(x) ?? ""))
+          .filter(Boolean);
+
+        const directSiteId =
+          personel?.siteId ||
+          personel?.SiteId ||
+          personel?.siteID ||
+          personel?.SiteID ||
+          null;
+
+        if (directSiteId && allowedIds.includes(String(directSiteId))) {
+          setSiteId(String(directSiteId));
+          return;
+        }
+
+        setSiteId((prev) => {
+          if (prev && allowedIds.includes(String(prev))) return String(prev);
+          return String(allowedIds[0] || "");
+        });
       } catch (err) {
         if (cancelled) return;
-        console.error("LOOKUPS ERROR:", err);
-        setSitesError("Site/proje bilgileri alınamadı. (lookups endpoint kontrol)");
+        console.error("SITE LIST ERROR:", err);
+        setSites([]);
+        setSiteId("");
+        setSitesError("Site/proje bilgileri alınamadı.");
       } finally {
         if (!cancelled) setLoadingLookups(false);
       }
     };
 
-    fetchLookups();
+    fetchSites();
+
     return () => {
       cancelled = true;
     };
-  }, [personelId]);
+  }, [personelKodu, personel]);
 
   // ----------------------------
-  // ✅ Endpoint: senin CURL ile aynı controller
+  // Endpoint
   // ----------------------------
   const endpoint = useMemo(() => {
-    if (!siteId) return null; // site gelmeden fetch yok
+    if (!siteId) return null;
 
     const qs = new URLSearchParams();
     qs.set("page", String(page));
     qs.set("pageSize", String(pageSize));
-    qs.set("siteId", String(siteId)); // ✅ otomatik site filtresi
+    qs.set("siteId", String(siteId));
 
-    // tarih filtresi: sadece ikisi birlikte
     if (start && end) {
       qs.set("start", start);
       qs.set("end", end);
     }
 
-    // ✅ CURL: /api/ProjeYoneticileri/isEmirleriDetayliYoneticiRaporu
     return `ProjeYoneticileri/isEmirleriDetayliYoneticiRaporu?${qs.toString()}`;
   }, [siteId, page, pageSize, start, end]);
 
@@ -175,6 +220,7 @@ export default function ProjeGorevlileriIsEmirleriPage() {
   async function loadItems() {
     if (!endpoint) return;
     setLoading(true);
+
     try {
       const res = await getDataAsync(endpoint);
 
@@ -220,13 +266,14 @@ export default function ProjeGorevlileriIsEmirleriPage() {
               {loading ? <span>• Yükleniyor…</span> : null}
 
               <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-                Site:{" "}
-                {loadingLookups
-                  ? "Yükleniyor..."
-                  : selectedSiteName || (siteId ? `#${siteId}` : "-")}
+                Site: {loadingLookups ? "Yükleniyor..." : (selectedSiteName || "-")}
               </span>
 
-              
+              {isSingleSiteLocked && (
+                <span className="rounded-full bg-zinc-100 px-2 py-1 dark:bg-zinc-900">
+                  (Tek site)
+                </span>
+              )}
             </div>
           </div>
 
@@ -256,8 +303,43 @@ export default function ProjeGorevlileriIsEmirleriPage() {
           </div>
         ) : null}
 
-        {/* Filtre satırı: sadece tarih */}
+        {/* Filtre satırı */}
         <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+          <div className="flex flex-col gap-1 md:col-span-2">
+            <label className="text-[11px] text-zinc-500">Site</label>
+
+            {sites.length > 1 ? (
+              <select
+                value={siteId}
+                onChange={(e) => {
+                  setSiteId(e.target.value);
+                  setPage(1);
+                }}
+                disabled={loadingLookups || !sites.length}
+                className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              >
+                {sites.map((s) => {
+                  const id = getSiteId(s);
+                  const ad = getSiteName(s) || "Site adı yok";
+
+                  return (
+                    <option key={id} value={String(id)}>
+                      {ad}
+                    </option>
+                  );
+                })}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={loadingLookups ? "Yükleniyor..." : (selectedSiteName || "Site seçilmedi")}
+                readOnly
+                disabled
+                className="h-8 rounded-md border border-zinc-300 bg-zinc-100 px-2 text-[12px] text-zinc-700 disabled:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              />
+            )}
+          </div>
+
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Start</label>
             <input

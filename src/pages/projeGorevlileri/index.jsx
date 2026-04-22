@@ -1,8 +1,3 @@
-
-
-
-
-
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
@@ -30,7 +25,7 @@ export default function ProjeGorevlileriPage() {
   const [siteError, setSiteError] = useState("");
 
   // ✅ Seçilen site
-  const [selectedSiteId, setSelectedSiteId] = useState(null);
+  const [selectedSiteId, setSelectedSiteId] = useState("");
 
   // ✅ Açılır-kapanır kartlar
   const [openSections, setOpenSections] = useState({
@@ -82,18 +77,8 @@ export default function ProjeGorevlileriPage() {
     );
   }, [personel]);
 
-  // ✅ SiteId cookie’de var mı? (varsa direkt seç)
+  // ✅ Çoklu site yükleme: her zaman personelKodu ile getir
   useEffect(() => {
-    const directSiteId = personel?.siteId || personel?.SiteId || null;
-    if (directSiteId && !selectedSiteId) {
-      setSelectedSiteId(directSiteId);
-    }
-  }, [personel, selectedSiteId]);
-
-  // ✅ SiteId yoksa: personelKodu ile site(ler)i çek
-  useEffect(() => {
-    const directSiteId = personel?.siteId || personel?.SiteId || null;
-    if (directSiteId) return;
     if (!personelKodu) return;
 
     const loadSites = async () => {
@@ -102,20 +87,47 @@ export default function ProjeGorevlileriPage() {
         setSiteError("");
 
         const data = await getDataAsync(
-          `projeYonetimKurulu/site/personel/${encodeURIComponent(personelKodu)}`
+          `ProjeYoneticileri/site/personel/${encodeURIComponent(personelKodu)}`
         );
 
         const arr = Array.isArray(data) ? data : [];
         setSiteList(arr);
 
-        if (arr.length === 1) {
-          setSelectedSiteId(arr[0]?.SiteId ?? arr[0]?.siteId ?? null);
+        if (!arr.length) {
+          setSelectedSiteId("");
+          return;
         }
 
-        if (arr.length > 1 && !selectedSiteId) {
-          const firstId = arr[0]?.SiteId ?? arr[0]?.siteId ?? null;
-          if (firstId) setSelectedSiteId(firstId);
+        // cookie/site içinden gelen mevcut site varsa onu öncelikli seç
+        const directSiteId =
+          personel?.siteId ||
+          personel?.SiteId ||
+          personel?.siteID ||
+          personel?.SiteID ||
+          null;
+
+        if (directSiteId) {
+          const matched = arr.find(
+            (x) => Number(x?.SiteId ?? x?.siteId) === Number(directSiteId)
+          );
+
+          if (matched) {
+            setSelectedSiteId(String(matched?.SiteId ?? matched?.siteId));
+            return;
+          }
         }
+
+        // daha önce seçim yapılmışsa koru
+        if (selectedSiteId) {
+          const stillExists = arr.some(
+            (x) => Number(x?.SiteId ?? x?.siteId) === Number(selectedSiteId)
+          );
+          if (stillExists) return;
+        }
+
+        // yoksa ilk site seçilsin
+        const firstId = arr[0]?.SiteId ?? arr[0]?.siteId ?? "";
+        setSelectedSiteId(firstId ? String(firstId) : "");
       } catch (err) {
         console.error("Site listesi alınırken hata:", err);
         setSiteError(
@@ -123,6 +135,8 @@ export default function ProjeGorevlileriPage() {
             err?.message ||
             "Site bilgisi alınırken bir hata oluştu."
         );
+        setSiteList([]);
+        setSelectedSiteId("");
       } finally {
         setSiteLoading(false);
       }
@@ -131,6 +145,32 @@ export default function ProjeGorevlileriPage() {
     loadSites();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personelKodu]);
+
+  const selectedSite = useMemo(() => {
+    if (!selectedSiteId) return null;
+
+    return (
+      siteList.find(
+        (s) => Number(s?.SiteId ?? s?.siteId) === Number(selectedSiteId)
+      ) || null
+    );
+  }, [siteList, selectedSiteId]);
+
+  const selectedSiteName = useMemo(() => {
+    if (!selectedSite) return null;
+
+    return (
+      selectedSite?.SiteAdi ||
+      selectedSite?.siteAdi ||
+      selectedSite?.Ad ||
+      selectedSite?.ad ||
+      selectedSite?.Site?.Ad ||
+      selectedSite?.Site?.ad ||
+      "Site adı yok"
+    );
+  }, [selectedSite]);
+
+  const hasMultipleSites = siteList.length > 1;
 
   // Çıkış
   const handleLogout = async () => {
@@ -148,8 +188,7 @@ export default function ProjeGorevlileriPage() {
 
   const handleYeniIsEmri = () =>
     router.push("/projeGorevlileri/projeSorumlusuISemriOlustur");
-  const handleYeniHavuzPeyzajIsEmri = () =>
-    router.push("/peyzajIsEmriEkle");
+  const handleYeniHavuzPeyzajIsEmri = () => router.push("/peyzajIsEmriEkle");
 
   const handleYeniKararTalebi = () =>
     router.push("/projeGorevlileri/ProjeSorumlusuYeniKarar");
@@ -163,14 +202,14 @@ export default function ProjeGorevlileriPage() {
 
   const handleTaleplerim = () => router.push("/projeGorevlileri/taleplerim");
 
-  const handleProjemTalepler = () => router.push("/projeGorevlileri/projeminTalepleri");
+  const handleProjemTalepler = () =>
+    router.push("/projeGorevlileri/projeminTalepleri");
 
   // Sadece yeni duyuru aktif
   const handleYeniDuyuru = () => router.push("/iletisimGorevli/YeniDuyuru");
-  // Projemin duyuruları
-  const handleProjemDuyurular = () => router.push("/projeGorevlileri/projeGorevlileriDuyurular");
+  const handleProjemDuyurular = () =>
+    router.push("/projeGorevlileri/projeGorevlileriDuyurular");
 
-  // ✅ yeni sayfalar
   const handleProjemKararlar = () =>
     router.push("/projeGorevlileri/projeGorevlileriKararlar");
 
@@ -183,8 +222,7 @@ export default function ProjeGorevlileriPage() {
     router.push("/projeGorevlileri/DestekTalepler");
   const handleProjemAnketler = () =>
     router.push("/projeGorevlileri/yoneticiAnketListesi");
-  const handleProjemRapor = () =>
-    router.push("/gunlukRapor/yeni");
+  const handleProjemRapor = () => router.push("/gunlukRapor/yeni");
 
   const handlePilotFeatureClick = (featureName) => {
     setPilotInfo(
@@ -224,7 +262,9 @@ export default function ProjeGorevlileriPage() {
 
     return (
       <div
-        className={`rounded-xl border p-3 text-xs shadow-sm transition-all ${accentMap[accent] || accentMap.zinc}`}
+        className={`rounded-xl border p-3 text-xs shadow-sm transition-all ${
+          accentMap[accent] || accentMap.zinc
+        }`}
       >
         <button
           type="button"
@@ -251,7 +291,9 @@ export default function ProjeGorevlileriPage() {
 
         <div
           className={`grid transition-all duration-300 ease-in-out ${
-            isOpen ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0 mt-0"
+            isOpen
+              ? "grid-rows-[1fr] opacity-100 mt-3"
+              : "grid-rows-[0fr] opacity-0 mt-0"
           }`}
         >
           <div className="overflow-hidden">
@@ -268,70 +310,125 @@ export default function ProjeGorevlileriPage() {
       <div className="mx-auto min-h-screen w-full max-w-[1800px] px-3 py-4 md:px-5 xl:px-6 flex flex-col gap-4">
         {/* ÜST PANEL */}
         <section className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            {/* LOGO + BAŞLIK */}
-            <div className="flex min-w-0 items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/eos_management_logo.png"
-                alt="EOS Management"
-                className="h-11 w-auto object-contain rounded-md"
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              {/* LOGO + BAŞLIK */}
+              <div className="flex min-w-0 items-center gap-3">
+                <img
+                  src="/eos_management_logo.png"
+                  alt="EOS Management"
+                  className="h-11 w-auto object-contain rounded-md"
+                />
 
-              <div className="flex min-w-0 flex-col gap-1">
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                  Proje Görevlileri Paneli
-                </p>
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Proje Görevlileri Paneli
+                  </p>
 
-                {personel && (
-                  <>
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                      Merhaba{" "}
-                      <span className="font-bold">
-                        {personel.ad} {personel.soyad}
+                  {personel && (
+                    <>
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                        Merhaba{" "}
+                        <span className="font-bold">
+                          {personel.ad} {personel.soyad}
+                        </span>
+                      </p>
+                      <p className="text-xs font-extralight text-zinc-900 dark:text-zinc-50">
+                        Bu site bir Demo sürümüdür. Bazı modüller henüz aktif
+                        değildir.
+                      </p>
+                    </>
+                  )}
+
+                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                    {siteLoading ? (
+                      <span>Site bilgileri yükleniyor…</span>
+                    ) : siteError ? (
+                      <span className="text-rose-600 dark:text-rose-300">
+                        {siteError}
                       </span>
-                    </p>
-                    <p className="text-xs font-extralight text-zinc-900 dark:text-zinc-50">
-                      Bu site bir Demo sürümüdür. Bazı modüller henüz aktif
-                      değildir.
-                    </p>
-                  </>
+                    ) : selectedSiteName ? (
+                      <span>
+                        Aktif Site:{" "}
+                        <span className="font-semibold text-zinc-700 dark:text-zinc-200">
+                          {selectedSiteName}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-amber-700 dark:text-amber-200">
+                        Size tanımlı aktif site bulunamadı.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between xl:items-center xl:gap-4">
+                {personel?.id && (
+                  <div className="w-full xl:w-auto">
+                    <ProjeGorevlileriSonYorumOzetCard personelId={personel.id} />
+                  </div>
                 )}
 
-                {/* küçük durum satırı */}
-                <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                  {siteLoading ? (
-                    <span>Site bilgisi yükleniyor…</span>
-                  ) : siteError ? (
-                    <span className="text-rose-600 dark:text-rose-300">
-                      {siteError}
-                    </span>
-                  ) : selectedSiteId ? (
-                    <span />
-                  ) : (
-                    <span className="text-amber-700 dark:text-amber-200">
-                      SiteId bulunamadı.
-                    </span>
-                  )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleLogout}
+                    className="rounded-md cursor-pointer bg-red-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-red-700"
+                  >
+                    Çıkış
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between xl:items-center xl:gap-4">
-              {personel?.id && (
-                <div className="w-full xl:w-auto">
-                  <ProjeGorevlileriSonYorumOzetCard personelId={personel.id} />
-                </div>
-              )}
+            {/* ✅ EN ÜSTTE SİTE SEÇİMİ */}
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr] md:items-end">
+                <div>
+                  
 
-              {/* ÇIKIŞ BUTONU */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleLogout}
-                  className="rounded-md cursor-pointer bg-red-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-red-700"
-                >
-                  Çıkış
-                </button>
+                  <select
+                    value={selectedSiteId}
+                    onChange={(e) => setSelectedSiteId(e.target.value)}
+                    disabled={siteLoading || !siteList.length}
+                    className="h-10 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-800 shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                  >
+                    {!siteList.length ? (
+                      <option value="">
+                        {siteLoading ? "Yükleniyor..." : "Site bulunamadı"}
+                      </option>
+                    ) : (
+                      siteList.map((s) => {
+                        const id = s?.SiteId ?? s?.siteId;
+                        const ad =
+                          s?.SiteAdi ||
+                          s?.siteAdi ||
+                          s?.Ad ||
+                          s?.ad ||
+                          s?.Site?.Ad ||
+                          s?.Site?.ad ||
+                          "Site adı yok";
+
+                        return (
+                          <option key={id} value={String(id)}>
+                            {ad}
+                          </option>
+                        );
+                      })
+                    )}
+                  </select>
+                </div>
+
+                <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-[12px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                  {selectedSiteName ? (
+                    <>
+                      Şu anda işlemler bu site üzerinden yürütülür:{" "}
+                      <span className="font-semibold">{selectedSiteName}</span>
+                    </>
+                  ) : (
+                    <>İşlem yapmak için önce site seçiniz.</>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -349,7 +446,6 @@ export default function ProjeGorevlileriPage() {
             </p>
           </div>
 
-          {/* Mevcut iki buton */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={handleYeniTalep}
@@ -400,18 +496,15 @@ export default function ProjeGorevlileriPage() {
             </button>
           </div>
 
-          {/* Pilot modüller */}
           <section className="space-y-4 w-full">
             <div className="text-center">
               <p className="text-[12px] text-zinc-600 dark:text-zinc-300">
                 Aşağıdaki modüller profesyonel site yönetimi için planlanmaktadır.
-                Şu an pilot deneme sürecinde olduğundan sadece bilgilendirme
-                amaçlı gösterilmektedir.
+                Şu an pilot deneme sürecindedir.
               </p>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
-              {/* İş Emirleri */}
               <SectionCard
                 sectionKey="isEmirleri"
                 accent="emerald"
@@ -421,6 +514,7 @@ export default function ProjeGorevlileriPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                   <button
                     onClick={handleYeniIsEmri}
+                    disabled={!selectedSiteId}
                     className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-emerald-300 bg-emerald-50 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:bg-emerald-900/50"
                   >
                     ➕ İş Emri Oluştur
@@ -428,6 +522,7 @@ export default function ProjeGorevlileriPage() {
 
                   <button
                     onClick={handleYeniHavuzPeyzajIsEmri}
+                    disabled={!selectedSiteId}
                     className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-sky-300 bg-sky-50 text-xs font-semibold text-sky-800 hover:bg-sky-100 disabled:opacity-60 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100 dark:hover:bg-sky-900/50"
                   >
                     🌿🌊 Havuz / Peyzaj İş Emri Oluştur
@@ -435,6 +530,7 @@ export default function ProjeGorevlileriPage() {
 
                   <button
                     onClick={handleProjemIsEmirleri}
+                    disabled={!selectedSiteId}
                     className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📋 Projemin İş Emirleri
@@ -442,6 +538,7 @@ export default function ProjeGorevlileriPage() {
 
                   <button
                     onClick={handleProjemPeyzajIsEmirleri}
+                    disabled={!selectedSiteId}
                     className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-lime-300 bg-lime-50 text-xs font-semibold text-lime-800 hover:bg-lime-100 disabled:opacity-60 dark:border-lime-800 dark:bg-lime-950/40 dark:text-lime-100 dark:hover:bg-lime-900/50"
                   >
                     🌿 Projemin Peyzaj Emirleri
@@ -449,6 +546,7 @@ export default function ProjeGorevlileriPage() {
 
                   <button
                     onClick={handleProjemHavuzIsEmirleri}
+                    disabled={!selectedSiteId}
                     className="flex h-10 items-center justify-center cursor-pointer gap-1 rounded-md border border-cyan-300 bg-cyan-50 text-xs font-semibold text-cyan-800 hover:bg-cyan-100 disabled:opacity-60 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-100 dark:hover:bg-cyan-900/50"
                   >
                     🌊 Projemin Havuz Emirleri
@@ -456,7 +554,6 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* Dokümanlar */}
               <SectionCard
                 sectionKey="dokumanlar"
                 accent="sky"
@@ -482,7 +579,6 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* Kararlar */}
               <SectionCard
                 sectionKey="kararlar"
                 accent="amber"
@@ -517,22 +613,30 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* Duyuru */}
               <SectionCard
                 sectionKey="duyurular"
                 accent="indigo"
                 title="📢 Duyuru Yönetimi"
                 description="Yeni duyuru oluşturma ve mevcut duyuruları görüntüleme ekranlarına buradan geçebilirsiniz."
+                warning={
+                  !selectedSiteId && (
+                    <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
+                      Site seçilmeden duyuru işlemi yapılamaz.
+                    </div>
+                  )
+                }
               >
                 <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
                   <button
                     onClick={handleYeniDuyuru}
+                    disabled={!selectedSiteId}
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     ➕ Yeni Duyuru
                   </button>
                   <button
                     onClick={handleProjemDuyurular}
+                    disabled={!selectedSiteId}
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     📄 Projemin Duyuruları
@@ -540,7 +644,6 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* İletiler */}
               <SectionCard
                 sectionKey="iletiler"
                 title="📋 İletiler"
@@ -574,7 +677,6 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* Destek Talepler */}
               <SectionCard
                 sectionKey="destekTalepler"
                 title="📣 Destek Talepler"
@@ -599,7 +701,6 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* Anketler */}
               <SectionCard
                 sectionKey="anketler"
                 title="📊 Anketler"
@@ -607,7 +708,7 @@ export default function ProjeGorevlileriPage() {
                 warning={
                   !selectedSiteId && (
                     <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
-                      Site seçilmeden destek talebi işlemi yapılamaz.
+                      Site seçilmeden anket işlemi yapılamaz.
                     </div>
                   )
                 }
@@ -624,7 +725,6 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* Günlük Rapor */}
               <SectionCard
                 sectionKey="gunlukRapor"
                 title="🕒 Günlük Rapor"
@@ -632,7 +732,7 @@ export default function ProjeGorevlileriPage() {
                 warning={
                   !selectedSiteId && (
                     <div className="mt-2 text-[10px] text-amber-700 dark:text-amber-200 text-center">
-                      Site seçilmeden destek talebi işlemi yapılamaz.
+                      Site seçilmeden günlük rapor işlemi yapılamaz.
                     </div>
                   )
                 }
@@ -649,7 +749,6 @@ export default function ProjeGorevlileriPage() {
                 </div>
               </SectionCard>
 
-              {/* Ziyaretçi & Güvenlik */}
               <SectionCard
                 sectionKey="ziyaretci"
                 title="Ziyaretçi & Güvenlik Kayıtları"
@@ -669,7 +768,6 @@ export default function ProjeGorevlileriPage() {
               </SectionCard>
             </div>
 
-            {/* Pilot bilgi mesajı */}
             {pilotInfo && (
               <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-100">
                 {pilotInfo}
@@ -684,7 +782,6 @@ export default function ProjeGorevlileriPage() {
         </main>
       </div>
 
-      {/* ✅ MODAL */}
       <ProjeDosyaModals
         isOpen={isDosyaModalOpen}
         onClose={() => setIsDosyaModalOpen(false)}
