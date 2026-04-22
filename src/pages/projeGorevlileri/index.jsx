@@ -786,8 +786,10 @@ export default function ProjeGorevlileriPage() {
         isOpen={isDosyaModalOpen}
         onClose={() => setIsDosyaModalOpen(false)}
         siteId={selectedSiteId}
-        baslik="Dokümanlar"
+        baslik={selectedSiteName}
       />
     </div>
   );
 }
+
+
