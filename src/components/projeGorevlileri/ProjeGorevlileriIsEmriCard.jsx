@@ -57,23 +57,18 @@ function surecChipClass(text) {
   const t = (text ?? "").toString().trim().toLowerCase();
   if (!t) return "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-200";
 
-  // İncelemede
   if (t.includes("inceleme") || t.includes("incelemede"))
     return "bg-amber-100 text-amber-700 dark:bg-amber-900/35 dark:text-amber-200";
 
-  // Kontrol Ediliyor
   if (t.includes("kontrol ediliyor") || t.includes("kontrol"))
     return "bg-sky-100 text-sky-700 dark:bg-sky-900/35 dark:text-sky-200";
 
-  // Görüldü
   if (t.includes("görüld") || t.includes("goruld"))
     return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/35 dark:text-indigo-200";
 
-  // İncelendi
   if (t.includes("incelend"))
     return "bg-violet-100 text-violet-700 dark:bg-violet-900/35 dark:text-violet-200";
 
-  // Tamamlandı / Tamam / Bitti / Kapandı / Onay
   if (
     t.includes("tamamlandı") ||
     t.includes("tamam") ||
@@ -83,7 +78,6 @@ function surecChipClass(text) {
   )
     return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200";
 
-  // Red / İptal
   if (t.includes("red") || t.includes("iptal"))
     return "bg-rose-100 text-rose-700 dark:bg-rose-900/35 dark:text-rose-200";
 
@@ -115,7 +109,6 @@ export default function ProjeGorevlileriIsEmriCard({ data = [] }) {
       "Proje Sor. Süreç",
       "Op.Tek Süreç",
       "Op.Gen Süreç",
-      
     ],
     []
   );
@@ -167,8 +160,11 @@ export default function ProjeGorevlileriIsEmriCard({ data = [] }) {
                   </div>
                 </td>
 
-                <td className="px-2 py-[2px] whitespace-nowrap">
-                  {safeText(r?.kisaBaslik)}
+                {/* 🔥 BURASI DÜZELTİLDİ */}
+                <td className="px-2 py-[2px] w-[220px] max-w-[220px]">
+                  <div className="whitespace-normal break-words leading-tight line-clamp-2">
+                    {safeText(r?.kisaBaslik)}
+                  </div>
                 </td>
 
                 <td className="px-2 py-[2px] whitespace-nowrap">
@@ -202,8 +198,6 @@ export default function ProjeGorevlileriIsEmriCard({ data = [] }) {
                 <td className="px-2 py-[2px] whitespace-nowrap">
                   <SurecCell value={r?.operasyonGenelMudurSurecDurumu} />
                 </td>
-
-               
               </tr>
             );
           })}
