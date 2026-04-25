@@ -122,6 +122,9 @@ export default function TeknikMudurPage() {
   const handleNewAnket = () => {
     router.push("/anket/yeni");
   };
+  const handleNewRapor = () => {
+    router.push("/gunlukRapor/yeni");
+  };
 
   // Yeni iş emri ekle Peyzaj
   const handleNewIsEmriPeyzaj = () => {
@@ -550,6 +553,13 @@ export default function TeknikMudurPage() {
                       />
                     </svg>
                     Anket Oluştur
+                  </button>
+                  <button
+                    onClick={handleNewRapor}
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-orange-200 bg-orange-400 text-white hover:bg-orange-500 hover:border-orange-200 shadow-sm`}
+                  >
+                   
+                    Günlük Rapor Gir
                   </button>
 
                   <button
