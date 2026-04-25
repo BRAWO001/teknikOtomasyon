@@ -349,6 +349,10 @@ export default function TeknikMudurPage() {
               {/* ===== YÖNETİM GRUBU ===== */}
               <div className={ui.softPanel}>
                 <div className="flex flex-wrap items-center gap-1.5">
+
+
+
+
                   {(personel?.id === 4 || personel?.id === 20) && (
                     <div className="flex flex-wrap justify-evenly items-center gap-1.5">
                       <button
@@ -384,6 +388,31 @@ export default function TeknikMudurPage() {
                         </svg>
                         YK.İletiler
                       </button>
+
+                      <button
+                    onClick={handleGünlükRaporlar}
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                  >
+                    <svg
+                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                    </svg>
+                    Günlük Raporlar
+                  </button>
+
+
+
+
+
+
+
+
+                      
                     </div>
                   )}
 
@@ -466,23 +495,17 @@ export default function TeknikMudurPage() {
                     </svg>
                     Destek (Ticket)
                   </button>
-                  <button
-                    onClick={handleGünlükRaporlar}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
-                  >
-                    <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
-                    </svg>
-                    Günlük Raporlar
-                  </button>
+
+
+                  
 
                   {(personel?.id === 4 || personel?.id === 20) && (
+
+                      
+
+
+
+
                     <button
                       onClick={handleDuyurular}
                       className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-fuchsia-200 hover:bg-fuchsia-50 hover:text-fuchsia-900 dark:hover:border-fuchsia-700/50 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-300`}
