@@ -326,6 +326,12 @@ export default function PersonelPage() {
   const handleGunlukRapor = async () => {
     router.push("/gunlukRapor/yeni");
   };
+  const handleTalep = async () => {
+    router.push("/satinalma/yeni");
+  };
+  const handleTalepListem = async () => {
+    router.push("/operasyonPersonelTalepListem");
+  };
 
   // ✅ Quick ranges (listeyi değiştirir) — KPI sabit kalır
   const applyQuickRange = async (key) => {
@@ -428,6 +434,18 @@ export default function PersonelPage() {
                 className="bg-blue-600 text-white hover:bg-blue-700"
               >
                 📋 Günlük Rapor
+              </TopButton>
+              <TopButton
+                onClick={handleTalep}
+                className="bg-orange-400 text-black hover:bg-orange-500"
+              >
+                Talepde Bulun
+              </TopButton>
+              <TopButton
+                onClick={handleTalepListem}
+                className="bg-orange-200 text-black hover:bg-orange-300"
+              >
+                Taleplerim
               </TopButton>
               <TopButton
                 onClick={handleLogout}
