@@ -223,6 +223,7 @@ export default function ProjeGorevlileriPage() {
   const handleProjemAnketler = () =>
     router.push("/projeGorevlileri/yoneticiAnketListesi");
   const handleProjemRapor = () => router.push("/gunlukRapor/yeni");
+    const handleProjemRaporlarim = () => router.push("/gunlukRapor/gunlukRaporlarim");
 
   const handlePilotFeatureClick = (featureName) => {
     setPilotInfo(
@@ -744,7 +745,17 @@ export default function ProjeGorevlileriPage() {
                     disabled={!selectedSiteId}
                     className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
-                    🕒📋 Günlük Rapor Gir
+                    🕒 Günlük Rapor Gir
+                  </button>
+                </div>
+                <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleProjemRaporlarim}
+                    disabled={!selectedSiteId}
+                    className="flex items-center cursor-pointer gap-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  >
+                    📋 Günlük Raporlarım
                   </button>
                 </div>
               </SectionCard>

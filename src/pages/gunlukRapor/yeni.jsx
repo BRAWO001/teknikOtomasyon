@@ -268,13 +268,13 @@ export default function GunlukRaporYeniPage() {
 
   function toggleOnayci(id) {
     const numId = Number(id);
-    if (numId === 20) return;
+    if (numId === 20   ) return;
 
     setSelectedOnayciIds((prev) => {
       const exists = prev.some((x) => Number(x) === numId);
       if (exists) return prev.filter((x) => Number(x) !== numId);
       return [...prev, numId];
-    });
+    }); 
   }
 
   function toggleKonu(value) {
@@ -428,7 +428,11 @@ export default function GunlukRaporYeniPage() {
       bagliOlduguBirimProje: "",
       konular,
       talepOneriler,
-      secilenYoneticiIdler: selectedOnayciIds.map(Number).filter(Boolean),
+      secilenYoneticiIdler: Array.from(
+        new Set(
+          [...selectedOnayciIds, 4, 20, 90, 118].map(Number).filter(Boolean),
+        ),
+      ),
     };
 
     try {
@@ -507,14 +511,21 @@ export default function GunlukRaporYeniPage() {
               }
             >
               {onayciCandidates.length === 0 ? (
-                <div className="text-[11px] text-zinc-500">Onaycı bulunamadı.</div>
+                <div className="text-[11px] text-zinc-500">
+                  Onaycı bulunamadı.
+                </div>
               ) : (
                 <div className="grid grid-cols-2 gap-1">
                   {onayciCandidates.map((m) => {
-                    const checked = selectedOnayciIds.some(
-                      (x) => Number(x) === Number(m.personelId)
-                    );
-                    const isFixed20 = Number(m.personelId) === 20;
+                    const fixedIds = [4, 20, 90, 118];
+
+                    const isFixed = fixedIds.includes(Number(m.personelId));
+
+                    const checked =
+                      isFixed ||
+                      selectedOnayciIds.some(
+                        (x) => Number(x) === Number(m.personelId),
+                      );
 
                     return (
                       <label
@@ -528,7 +539,7 @@ export default function GunlukRaporYeniPage() {
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={isFixed20}
+                          disabled={isFixed}
                           onChange={() => toggleOnayci(m.personelId)}
                           className="h-4 w-4"
                         />
@@ -541,7 +552,6 @@ export default function GunlukRaporYeniPage() {
                 </div>
               )}
             </SectionCard>
-
             <SectionCard
               title="Hazır Konular"
               right={

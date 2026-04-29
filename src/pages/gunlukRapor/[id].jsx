@@ -275,10 +275,10 @@ export default function GunlukRaporDetayPage() {
 
         <button
           type="button"
-          onClick={() => router.push("/gunlukRapor")}
+          onClick={() => router.push("/")}
           className="mt-3 rounded-md bg-zinc-900 px-4 py-2 text-[12px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
         >
-          Listeye Dön
+          Ana Sayfaya Dön
         </button>
       </div>
     );
@@ -299,10 +299,10 @@ export default function GunlukRaporDetayPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => router.push("/gunlukRapor")}
+            onClick={() => router.push("/")}
             className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-[12px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
-            Listeye Dön
+            Ana Sayfaya Dön
           </button>
 
           <button
