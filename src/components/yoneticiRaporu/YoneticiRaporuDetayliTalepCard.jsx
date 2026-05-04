@@ -112,7 +112,7 @@ export default function YoneticiRaporuDetayliTalepCard({
       "Tarih",
       "Talep",
       "Site / Talep Eden",
-      "",
+      
       "Açıklama",
       "Teknik Açıklama",
       "Satın Alma",
@@ -210,14 +210,7 @@ export default function YoneticiRaporuDetayliTalepCard({
                   </div>
                 </td>
 
-                <td className="px-2 py-[2px] text-center">
-                  <span
-                    title={safeText(not3)}
-                    className={`inline-block h-[9px] w-[9px] rounded-full shadow-sm ${teknikTalepDotClass(
-                      not3
-                    )}`}
-                  />
-                </td>
+               
 
                 <td className="px-2 py-[2px]">
                   <div className="max-w-[360px] line-clamp-2">
