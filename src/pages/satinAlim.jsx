@@ -58,6 +58,21 @@ export default function SatinAlmaPersonelPage() {
   const [start, setStart] = useState(defaults.startDate);
   const [end, setEnd] = useState(defaults.endDate);
 
+
+   // Çıkış
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      router.push("/");
+    }
+  };
+
+
+
+
   const endpoint = useMemo(() => {
     const qs = new URLSearchParams();
 
@@ -178,15 +193,15 @@ export default function SatinAlmaPersonelPage() {
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
                 ← Geri
-              </button>
+              </button> */}
 
               <button
                 type="button"
-                onClick={() => router.push("/")}
+                onClick={handleLogout}
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
-                ⌂ Anasayfa
-              </button> */}
+                Çıkış
+              </button>
 
               <button
                 type="button"
