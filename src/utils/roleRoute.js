@@ -16,6 +16,8 @@ export function getRouteByRole(rol) {
       return "/havuzPersonel";
     case 40:
       return "/projeGorevlileri";
+    case 44:
+      return "/satinAlim";
     case 35:
       return "/idariPersonel";
     case 90:
