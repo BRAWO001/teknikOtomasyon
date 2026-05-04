@@ -104,8 +104,6 @@ export default function SatinAlmaPersonelTalepCard({
         const not1 = r?.not_1 ?? r?.Not_1;
         const dosyaVarMi = r?.dosyaVarMi ?? r?.DosyaVarMi ?? false;
         const yorumSayisi = r?.yorumSayisi ?? r?.YorumSayisi ?? 0;
-        const malzemeKalemSayisi =
-          r?.malzemeKalemSayisi ?? r?.MalzemeKalemSayisi ?? 0;
 
         const talepEden = r?.talepEden ?? r?.TalepEden;
         const talepEdenAd =
@@ -188,14 +186,7 @@ export default function SatinAlmaPersonelTalepCard({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
-                  Malzeme
-                </div>
-                <div className="mt-1 text-xs font-semibold text-zinc-700 dark:text-zinc-200">
-                  {malzemeKalemSayisi} kalem
-                </div>
-              </div>
+              
 
               <div className="rounded-xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
