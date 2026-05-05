@@ -157,9 +157,13 @@ export default function TeknikMudurPage() {
   const handleDestekTalepleriRaporu = () => {
     router.push("/YonetimKuruluYoneticiRaporu/DestekTalepler");
   };
-  // Günlük RAporlar
+  // Günlük Raporlar
   const handleGünlükRaporlar = () => {
     router.push("/gunlukRapor");
+  };
+  // Günlük Rapor Gonderim Listesi
+  const handleGünlükRaporGonderimListesi = () => {
+    router.push("/gunlukRapor/gunlukRaporGonderimListesi");
   };
 
   // Yönetim Kurulu Yönetici Raporu
@@ -584,6 +588,19 @@ export default function TeknikMudurPage() {
                    
                     Günlük Rapor Gir
                   </button>
+
+
+                  
+                  {(personel?.id === 118 ) && (
+
+                    <button
+                      onClick={handleGünlükRaporGonderimListesi}
+                      className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-orange-200 bg-orange-400 text-white hover:bg-orange-500 hover:border-orange-200 shadow-sm`}
+                    >
+                      
+                      Rapor Gönderim Listesi
+                    </button>
+                  )}
 
                   <button
                     onClick={handleSatinalma}
