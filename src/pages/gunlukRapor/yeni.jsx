@@ -430,7 +430,7 @@ export default function GunlukRaporYeniPage() {
       talepOneriler,
       secilenYoneticiIdler: Array.from(
         new Set(
-          [...selectedOnayciIds, 4, 20, 90, 118].map(Number).filter(Boolean),
+          [...selectedOnayciIds, 4, 20, 90].map(Number).filter(Boolean),
         ),
       ),
     };
@@ -517,7 +517,7 @@ export default function GunlukRaporYeniPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-1">
                   {onayciCandidates.map((m) => {
-                    const fixedIds = [4, 20, 90, 118];
+                    const fixedIds = [4, 20, 90];
 
                     const isFixed = fixedIds.includes(Number(m.personelId));
 
