@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getDataAsync } from "@/utils/apiService";
 import { useRouter } from "next/router";
 import SatinAlmaPersonelTalepCard from "@/components/satinalma/SatinAlmaPersonelTalepCard";
-import SonYorumOzetMiniPanel from "@/components/yoneticiRaporu/SonYorumOzetMiniPanel";
+import SatinAlmaPersonelSonYorumPanel from "@/components/satinalma/SatinAlmaPersonelSonYorumPanel";
 
 function toDateInputValue(d) {
   try {
@@ -28,6 +28,7 @@ function normalizePagedResponse(res) {
 
   const items = res.items ?? res.Items ?? [];
   const totalPages = Number(res.totalPages ?? res.TotalPages ?? 1) || 1;
+
   const totalCount =
     Number(
       res.totalCount ??
@@ -58,8 +59,6 @@ export default function SatinAlmaPersonelPage() {
   const [start, setStart] = useState(defaults.startDate);
   const [end, setEnd] = useState(defaults.endDate);
 
-
-   // Çıkış
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -69,9 +68,6 @@ export default function SatinAlmaPersonelPage() {
       router.push("/");
     }
   };
-
-
-
 
   const endpoint = useMemo(() => {
     const qs = new URLSearchParams();
@@ -151,11 +147,7 @@ export default function SatinAlmaPersonelPage() {
   return (
     <div className="min-h-screen bg-zinc-50 p-3 dark:bg-zinc-950">
       <div className="mx-auto max-w-5xl space-y-3">
-        <SonYorumOzetMiniPanel
-          endpoint="SatinAlmaPersonel/son-yorumlu-ozet"
-          take={10}
-          stickyTop={8}
-        />
+        <SatinAlmaPersonelSonYorumPanel take={10} stickyTop={8} />
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
@@ -186,14 +178,6 @@ export default function SatinAlmaPersonelPage() {
                   ? "✓ Tüm Onaylananlar"
                   : "Tüm Onaylananları Göster"}
               </button>
-
-              {/* <button
-                type="button"
-                onClick={() => router.back()}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                ← Geri
-              </button> */}
 
               <button
                 type="button"
