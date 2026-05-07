@@ -1,7 +1,3 @@
-
-
-
-
 // src/components/yoneticiRaporu/SonYorumOzetMiniPanel.jsx
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -68,17 +64,13 @@ function timeAgoTR(iso) {
 
   if (days > 0) parts.push(`${days} gün`);
 
-  if (hours > 0 && parts.length < 2)
-    parts.push(`${hours} saat`);
+  if (hours > 0 && parts.length < 2) parts.push(`${hours} saat`);
 
-  if (minutes > 0 && parts.length < 2)
-    parts.push(`${minutes} dk`);
+  if (minutes > 0 && parts.length < 2) parts.push(`${minutes} dk`);
 
   if (!parts.length) parts.push("az önce");
 
-  return future
-    ? `${parts.join(" ")} sonra`
-    : `${parts.join(" ")}`;
+  return future ? `${parts.join(" ")} sonra` : `${parts.join(" ")}`;
 }
 
 function chipClass(kind) {
@@ -92,6 +84,38 @@ function chipClass(kind) {
     return "bg-rose-100 text-rose-700 dark:bg-rose-900/35 dark:text-rose-200";
 
   return "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100";
+}
+
+function getSonYorumObj(x) {
+  return x?.sonYorum ?? x?.SonYorum ?? null;
+}
+
+function getYorumYazan(x) {
+  const son = getSonYorumObj(x);
+
+  return (
+    x?.sonYorumYazanAd ??
+    x?.SonYorumYazanAd ??
+    son?.yazanAd ??
+    son?.YazanAd ??
+    son?.yazan ??
+    son?.Yazan ??
+    "-"
+  );
+}
+
+function getYorumMetni(x) {
+  const son = getSonYorumObj(x);
+
+  return (
+    x?.sonYorumMetni ??
+    x?.SonYorumMetni ??
+    son?.yorumMetni ??
+    son?.YorumMetni ??
+    son?.yorum ??
+    son?.Yorum ??
+    "-"
+  );
 }
 
 export default function SonYorumOzetMiniPanel({
@@ -120,26 +144,13 @@ export default function SonYorumOzetMiniPanel({
     setErr("");
 
     try {
-      console.log(
-        "[SonYorumOzetMiniPanel] requestPath =",
-        requestPath
-      );
-
       const res = await getDataAsync(requestPath);
-
-      console.log(
-        "[SonYorumOzetMiniPanel] RESPONSE =",
-        res
-      );
 
       const arr = res?.items ?? res?.Items ?? [];
 
       setItems(Array.isArray(arr) ? arr : []);
     } catch (e) {
-      console.error(
-        "SON_YORUM_OZET_ERROR:",
-        e?.response?.data || e
-      );
+      console.error("SON_YORUM_OZET_ERROR:", e?.response?.data || e);
 
       setErr(
         e?.response?.data?.message ||
@@ -168,14 +179,12 @@ export default function SonYorumOzetMiniPanel({
 
       if (!el) return;
 
-      if (!el.contains(ev.target))
-        setOpenList(false);
+      if (!el.contains(ev.target)) setOpenList(false);
     };
 
     document.addEventListener("mousedown", onDown);
 
-    return () =>
-      document.removeEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, [openList]);
 
   // ESC
@@ -188,8 +197,7 @@ export default function SonYorumOzetMiniPanel({
 
     document.addEventListener("keydown", onKey);
 
-    return () =>
-      document.removeEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   const sorted = useMemo(() => {
@@ -197,16 +205,12 @@ export default function SonYorumOzetMiniPanel({
 
     return [...arr].sort((a, b) => {
       const da =
-        parseDateSafe(
-          a?.SonYorumTarihiUtc ??
-            a?.sonYorumTarihiUtc
-        )?.getTime() ?? 0;
+        parseDateSafe(a?.SonYorumTarihiUtc ?? a?.sonYorumTarihiUtc)?.getTime() ??
+        0;
 
       const db =
-        parseDateSafe(
-          b?.SonYorumTarihiUtc ??
-            b?.sonYorumTarihiUtc
-        )?.getTime() ?? 0;
+        parseDateSafe(b?.SonYorumTarihiUtc ?? b?.sonYorumTarihiUtc)?.getTime() ??
+        0;
 
       return db - da;
     });
@@ -223,9 +227,7 @@ export default function SonYorumOzetMiniPanel({
       };
 
     const dt =
-      sorted[0]?.SonYorumTarihiUtc ??
-      sorted[0]?.sonYorumTarihiUtc ??
-      null;
+      sorted[0]?.SonYorumTarihiUtc ?? sorted[0]?.sonYorumTarihiUtc ?? null;
 
     return {
       total,
@@ -257,9 +259,7 @@ export default function SonYorumOzetMiniPanel({
               <>
                 {" "}
                 • Son: {formatTR(headerInfo.lastDt)}{" "}
-                <span className="font-bold">
-                  ({headerInfo.lastAgo})
-                </span>
+                <span className="font-bold">({headerInfo.lastAgo})</span>
               </>
             ) : null}
           </div>
@@ -287,12 +287,10 @@ export default function SonYorumOzetMiniPanel({
       <div className="relative">
         <div
           className={`absolute left-0 right-0 top-0 z-50 overflow-hidden rounded-b-md border-t border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950 transition-all duration-200 ${
-            openList
-              ? "max-h-[520px] opacity-100"
-              : "max-h-0 opacity-0"
+            openList ? "max-h-[560px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="max-h-[520px] overflow-auto px-3 py-2">
+          <div className="max-h-[560px] overflow-auto px-3 py-2">
             {loading ? (
               <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 p-2 text-[11px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-300">
                 Yükleniyor...
@@ -307,57 +305,20 @@ export default function SonYorumOzetMiniPanel({
               </div>
             ) : (
               <div className="space-y-2">
-                {sorted.map((x) => {
+                {sorted.map((x, index) => {
                   const id =
                     x?.TalepId ??
                     x?.talepId ??
                     x?.SatinAlmaId ??
                     x?.satinAlmaId ??
-                    `${Math.random()}`;
+                    index;
 
-                  const cins =
-                    x?.TalepCinsi ??
-                    x?.talepCinsi ??
-                    "-";
+                  const cins = x?.TalepCinsi ?? x?.talepCinsi ?? "-";
 
-                  const yorumSay =
-                    x?.YorumSayisi ??
-                    x?.yorumSayisi ??
-                    0;
+                  const yorumSay = x?.YorumSayisi ?? x?.yorumSayisi ?? 0;
 
                   const dt =
-                    x?.SonYorumTarihiUtc ??
-                    x?.sonYorumTarihiUtc ??
-                    null;
-
-                  const href =
-                    id &&
-                    (x?.SatinAlmaId ||
-                      x?.satinAlmaId ||
-                      x?.TalepId ||
-                      x?.talepId)
-                      ? `/satinalma/teklifler/${id}`
-                      : "#";
-
-                  // ✅ KRİTİK DÜZELTME
-                  const sonYorum =
-                    x?.sonYorum ??
-                    x?.SonYorum ??
-                    null;
-
-                  const yorumYazan =
-                    sonYorum?.yazanAd ??
-                    sonYorum?.YazanAd ??
-                    sonYorum?.yazan ??
-                    sonYorum?.Yazan ??
-                    "-";
-
-                  const yorumMetni =
-                    sonYorum?.yorumMetni ??
-                    sonYorum?.YorumMetni ??
-                    sonYorum?.yorum ??
-                    sonYorum?.Yorum ??
-                    "-";
+                    x?.SonYorumTarihiUtc ?? x?.sonYorumTarihiUtc ?? null;
 
                   const siteAdi =
                     x?.siteAdi ??
@@ -366,15 +327,21 @@ export default function SonYorumOzetMiniPanel({
                     x?.ProjeAdi ??
                     "-";
 
+                  const yorumYazan = getYorumYazan(x);
+                  const yorumMetni = getYorumMetni(x);
+
+                  const href =
+                    id && id !== index ? `/satinalma/teklifler/${id}` : "#";
+
                   return (
                     <Link
-                      key={id}
+                      key={`${id}-${index}`}
                       href={href}
                       className="block w-full rounded-md border border-zinc-200 bg-white px-2 py-2 text-left transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/30 dark:hover:bg-zinc-950/60 dark:hover:border-zinc-700"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={`inline-flex rounded-full px-2 py-[1px] text-[10px] font-semibold ${chipClass(
                                 cins
@@ -388,10 +355,8 @@ export default function SonYorumOzetMiniPanel({
                             </span>
                           </div>
 
-                          {/* detay alanı */}
-                          <div className="mt-1 flex flex-col gap-[2px] text-[10.5px] text-zinc-500 dark:text-zinc-400">
-                            {/* tarih + süre */}
-                            <div className="flex items-center gap-2 flex-wrap">
+                          <div className="mt-1 flex flex-col gap-[3px] text-[10.5px] text-zinc-500 dark:text-zinc-400">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="shrink-0 whitespace-nowrap">
                                 {formatTR(dt)}
                               </span>
@@ -401,30 +366,23 @@ export default function SonYorumOzetMiniPanel({
                               </span>
                             </div>
 
-                            {/* site */}
                             <div className="font-semibold text-zinc-700 dark:text-zinc-200">
                               {safeText(siteAdi)}
                             </div>
 
-                            {/* yorumu bırakan */}
                             <div className="text-zinc-600 dark:text-zinc-300">
-                              <span className="font-bold">
-                                Yorumu bırakan:
-                              </span>{" "}
+                              <span className="font-bold">Yorumu bırakan:</span>{" "}
                               {safeText(yorumYazan)}
                             </div>
 
-                            {/* yorum */}
                             <div
-                              className="line-clamp-2 text-zinc-500 dark:text-zinc-400"
+                              className="line-clamp-3 text-zinc-500 dark:text-zinc-400"
                               style={{
                                 wordBreak: "break-word",
                                 overflowWrap: "break-word",
                               }}
                             >
-                              <span className="font-bold">
-                                Yorum:
-                              </span>{" "}
+                              <span className="font-bold">Yorum:</span>{" "}
                               {safeText(yorumMetni)}
                             </div>
                           </div>
