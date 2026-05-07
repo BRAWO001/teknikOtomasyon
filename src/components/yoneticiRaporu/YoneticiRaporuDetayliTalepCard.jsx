@@ -23,12 +23,23 @@ function formatDateTR(iso) {
   }
 }
 
-function teknikTalepDotClass(not3) {
-  if (!not3) return "bg-zinc-400";
-  const v = String(not3).toLowerCase();
-  if (v.includes("evet")) return "bg-emerald-500";
-  if (v.includes("hayır") || v.includes("hayir")) return "bg-orange-500";
-  return "bg-zinc-400";
+function formatMoneyTR(value, currency) {
+  if (value === null || value === undefined || value === "") return "-";
+
+  const n = Number(value);
+  if (!Number.isFinite(n)) return safeText(value);
+
+  const cur = currency || "TRY";
+
+  try {
+    return new Intl.NumberFormat("tr-TR", {
+      style: "currency",
+      currency: cur === "TL" ? "TRY" : cur,
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${n.toLocaleString("tr-TR")} ${cur}`;
+  }
 }
 
 function onayDurumClass(durum) {
@@ -112,9 +123,9 @@ export default function YoneticiRaporuDetayliTalepCard({
       "Tarih",
       "Talep",
       "Site / Talep Eden",
-      
       "Açıklama",
       "Teknik Açıklama",
+      "Teklif",
       "Satın Alma",
       "Onaycılar",
       "Dosya",
@@ -130,7 +141,7 @@ export default function YoneticiRaporuDetayliTalepCard({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <table className="min-w-[1150px] w-full border-collapse text-[10px]">
+      <table className="min-w-[1250px] w-full border-collapse text-[10px]">
         <thead className="sticky top-0 z-10 bg-zinc-100 dark:bg-zinc-800">
           <tr>
             {headers.map((h, index) => (
@@ -151,7 +162,6 @@ export default function YoneticiRaporuDetayliTalepCard({
             const globalIndex = (page - 1) * pageSize + i + 1;
 
             const not1 = r?.not_1 ?? r?.Not_1;
-            const not3 = r?.not_3 ?? r?.Not_3;
             const not4 = r?.not_4 ?? r?.Not_4;
             const not5 = r?.not_5 ?? r?.Not_5;
 
@@ -171,10 +181,20 @@ export default function YoneticiRaporuDetayliTalepCard({
                   }`.trim()
                 : "-";
 
-            const onaycilar =
-              r?.onaycilarIlk4 ?? r?.OnaycilarIlk4 ?? [];
-
+            const onaycilar = r?.onaycilarIlk4 ?? r?.OnaycilarIlk4 ?? [];
             const dosyaVarMi = r?.dosyaVarMi ?? r?.DosyaVarMi ?? false;
+
+            const teklif =
+              r?.enDusukToplamTeklif ?? r?.EnDusukToplamTeklif ?? null;
+
+            const teklifTedarikci =
+              teklif?.tedarikciAdi ?? teklif?.TedarikciAdi;
+
+            const teklifTutar =
+              teklif?.toplamTutar ?? teklif?.ToplamTutar;
+
+            const teklifParaBirimi =
+              teklif?.paraBirimi ?? teklif?.ParaBirimi ?? "TRY";
 
             return (
               <tr
@@ -210,8 +230,6 @@ export default function YoneticiRaporuDetayliTalepCard({
                   </div>
                 </td>
 
-               
-
                 <td className="px-2 py-[2px]">
                   <div className="max-w-[360px] line-clamp-2">
                     {safeText(aciklama)}
@@ -222,6 +240,27 @@ export default function YoneticiRaporuDetayliTalepCard({
                   <div className="max-w-[260px] line-clamp-2 text-[10px] text-zinc-600 dark:text-zinc-300">
                     {not4 ? safeText(not4) : "—"}
                   </div>
+                </td>
+
+                <td className="px-2 py-[2px] min-w-[145px]">
+                  {teklif ? (
+                    <div
+                      title={`${safeText(teklifTedarikci)} - ${formatMoneyTR(
+                        teklifTutar,
+                        teklifParaBirimi
+                      )}`}
+                      className="leading-tight"
+                    >
+                      <div className="max-w-[135px] truncate font-semibold text-zinc-800 dark:text-zinc-100">
+                        {safeText(teklifTedarikci)}
+                      </div>
+                      <div className="mt-[1px] font-bold text-emerald-700 dark:text-emerald-300">
+                        {formatMoneyTR(teklifTutar, teklifParaBirimi)}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-zinc-400">-</span>
+                  )}
                 </td>
 
                 <td className="px-2 py-[2px] whitespace-nowrap">

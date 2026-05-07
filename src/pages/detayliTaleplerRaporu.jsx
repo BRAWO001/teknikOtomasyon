@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import YoneticiRaporuDetayliTalepCard from "@/components/yoneticiRaporu/YoneticiRaporuDetayliTalepCard";
 import SonYorumOzetMiniPanel from "@/components/yoneticiRaporu/SonYorumOzetMiniPanel";
 
-
 const TALEP_CINSI_OPTIONS = [
   { value: "Satın Alma", label: "Satın Alma" },
   { value: "Teknik Talep", label: "Teknik Talep" },
@@ -38,13 +37,13 @@ function getDefaultRange() {
   return { startDate: toDateInputValue(start), endDate: toDateInputValue(today) };
 }
 
-/* ✅ Kritik: response normalize */
 function normalizePagedResponse(res) {
   if (!res) return { items: [], totalPages: 1, totalCount: 0 };
 
   const items = res.items ?? res.Items ?? [];
   const totalPages = Number(res.totalPages ?? res.TotalPages ?? 1) || 1;
-  const totalCount = Number(res.totalCount ?? res.TotalCount ?? (Array.isArray(items) ? items.length : 0)) || 0;
+  const totalCount =
+    Number(res.totalCount ?? res.TotalCount ?? (Array.isArray(items) ? items.length : 0)) || 0;
 
   return { items, totalPages, totalCount };
 }
@@ -65,6 +64,7 @@ export default function DetayliTaleplerRaporuPage() {
   const [siteId, setSiteId] = useState("");
   const [talepCinsi, setTalepCinsi] = useState("");
   const [teknikTalep, setTeknikTalep] = useState("");
+  const [notArama, setNotArama] = useState("");
 
   const defaults = getDefaultRange();
   const [start, setStart] = useState(defaults.startDate);
@@ -78,6 +78,7 @@ export default function DetayliTaleplerRaporuPage() {
     if (siteId) qs.set("siteId", String(siteId));
     if (talepCinsi) qs.set("talepCinsi", String(talepCinsi));
     if (teknikTalep) qs.set("teknikTalep", String(teknikTalep));
+    if (notArama?.trim()) qs.set("notArama", String(notArama.trim()));
 
     if (start && end) {
       qs.set("startDate", start);
@@ -85,7 +86,7 @@ export default function DetayliTaleplerRaporuPage() {
     }
 
     return `DetayliFilterTalep?${qs.toString()}`;
-  }, [page, pageSize, siteId, talepCinsi, teknikTalep, start, end]);
+  }, [page, pageSize, siteId, talepCinsi, teknikTalep, notArama, start, end]);
 
   async function loadData() {
     setLoading(true);
@@ -108,6 +109,7 @@ export default function DetayliTaleplerRaporuPage() {
 
   useEffect(() => {
     let cancelled = false;
+
     const loadLists = async () => {
       try {
         const siteRes = await getDataAsync("SiteAptEvControllerSet/sites");
@@ -117,7 +119,9 @@ export default function DetayliTaleplerRaporuPage() {
         console.error("SITES FETCH ERROR:", err);
       }
     };
+
     loadLists();
+
     return () => {
       cancelled = true;
     };
@@ -132,6 +136,7 @@ export default function DetayliTaleplerRaporuPage() {
     setSiteId("");
     setTalepCinsi("");
     setTeknikTalep("");
+    setNotArama("");
     setStart("");
     setEnd("");
     setPage(1);
@@ -155,7 +160,6 @@ export default function DetayliTaleplerRaporuPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap justify-end">
-
             <button
               type="button"
               onClick={() => router.push("/satinalma/onayBekleyen")}
@@ -164,11 +168,7 @@ export default function DetayliTaleplerRaporuPage() {
               Onayımı Bekleyen Talepler
             </button>
 
-
             <SonYorumOzetMiniPanel take={30} stickyTop={8} />
-
-
-
 
             <button
               type="button"
@@ -185,9 +185,6 @@ export default function DetayliTaleplerRaporuPage() {
             >
               ⌂ Anasayfa
             </button>
-
-
-            
 
             <button
               type="button"
@@ -207,11 +204,7 @@ export default function DetayliTaleplerRaporuPage() {
           </div>
         </div>
 
-
-        
-       
-
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-7">
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Site</label>
             <select
@@ -268,6 +261,22 @@ export default function DetayliTaleplerRaporuPage() {
             </select>
           </div>
 
+          <div className="flex flex-col gap-1 md:col-span-2">
+            <label className="text-[11px] text-zinc-500">
+              Not / Yorum Ara
+            </label>
+            <input
+              type="text"
+              value={notArama}
+              onChange={(e) => {
+                setNotArama(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Notlar, açıklama ve yorumlarda ara..."
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Start</label>
             <input
@@ -292,16 +301,6 @@ export default function DetayliTaleplerRaporuPage() {
               }}
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
-          </div>
-
-          <div className="flex items-end gap-2 md:col-span-1">
-            <button
-              type="button"
-              onClick={loadData}
-              className="h-8 rounded-md border border-sky-200 bg-sky-50 px-3 text-[12px] font-semibold text-sky-700 hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200 dark:hover:bg-sky-900/45"
-            >
-              Yenile
-            </button>
           </div>
         </div>
       </div>

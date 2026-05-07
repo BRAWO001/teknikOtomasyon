@@ -158,7 +158,7 @@ export default function SatinAlmaPersonelPage() {
         />
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="text-base font-bold text-zinc-900 dark:text-zinc-100">
                 Satın Alma Talepleri
@@ -221,7 +221,7 @@ export default function SatinAlmaPersonelPage() {
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="mt-0.5 grid grid-cols-1 gap-0.5 sm:grid-cols-3">
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-medium text-zinc-500">
                 Site

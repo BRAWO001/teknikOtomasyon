@@ -1,3 +1,8 @@
+
+
+
+
+
 // src/pages/satinalma/fiyatlandir/[token].jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
@@ -26,7 +31,9 @@ export default function SatinAlmaFiyatlandirPage() {
 
   const [showTotals, setShowTotals] = useState(false);
 
-  // Satın alma detayını token ile çek
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
   useEffect(() => {
     if (!token) return;
 
@@ -60,11 +67,10 @@ export default function SatinAlmaFiyatlandirPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  // Modal açıkken body scroll kilidi
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    if (successModal) {
+    if (successModal || imageModalOpen) {
       document.body.style.overflow = "hidden";
       document.body.style.touchAction = "none";
     } else {
@@ -76,7 +82,7 @@ export default function SatinAlmaFiyatlandirPage() {
       document.body.style.overflow = "";
       document.body.style.touchAction = "";
     };
-  }, [successModal]);
+  }, [successModal, imageModalOpen]);
 
   const handleInputChange = (malzemeId, field, value) => {
     setTeklifForm((prev) => ({
@@ -88,7 +94,6 @@ export default function SatinAlmaFiyatlandirPage() {
     }));
   };
 
-  // Toplamlar (kartlarda girilen değerlere göre)
   const { netTotal, toplamKdv, genelToplam } = useMemo(() => {
     const malzemeler =
       data?.malzemeler ?? data?.Malzeme ?? data?.Malzemeler ?? [];
@@ -126,6 +131,62 @@ export default function SatinAlmaFiyatlandirPage() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+
+  const dosyalar = data?.dosyalar ?? data?.Dosyalar ?? [];
+
+  const imageFiles = useMemo(() => {
+    return (dosyalar || []).filter((d) => {
+      const url = String(d?.url ?? d?.Url ?? "").toLowerCase();
+      const ad = String(d?.dosyaAdi ?? d?.DosyaAdi ?? "").toLowerCase();
+      const turKod = d?.turKod ?? d?.TurKod;
+
+      return (
+        turKod === 10 ||
+        url.endsWith(".jpg") ||
+        url.endsWith(".jpeg") ||
+        url.endsWith(".png") ||
+        url.endsWith(".webp") ||
+        url.endsWith(".gif") ||
+        url.endsWith(".heic") ||
+        url.endsWith(".heif") ||
+        url.endsWith(".avif") ||
+        ad.endsWith(".jpg") ||
+        ad.endsWith(".jpeg") ||
+        ad.endsWith(".png") ||
+        ad.endsWith(".webp") ||
+        ad.endsWith(".gif") ||
+        ad.endsWith(".heic") ||
+        ad.endsWith(".heif") ||
+        ad.endsWith(".avif")
+      );
+    });
+  }, [dosyalar]);
+
+  const openImageModal = (index = 0) => {
+    setActiveImageIndex(index);
+    setImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+  };
+
+  const nextImage = () => {
+    setActiveImageIndex((prev) =>
+      imageFiles.length ? (prev + 1) % imageFiles.length : 0
+    );
+  };
+
+  const prevImage = () => {
+    setActiveImageIndex((prev) =>
+      imageFiles.length ? (prev - 1 + imageFiles.length) % imageFiles.length : 0
+    );
+  };
+
+  const activeImage = imageFiles[activeImageIndex] || null;
+  const activeImageUrl = activeImage?.url ?? activeImage?.Url;
+  const activeImageName =
+    activeImage?.dosyaAdi ?? activeImage?.DosyaAdi ?? "Görsel";
 
   const handleSubmit = async () => {
     if (!data) return;
@@ -248,7 +309,6 @@ export default function SatinAlmaFiyatlandirPage() {
         overscrollBehaviorY: "none",
       }}
     >
-      {/* Profesyonel giriş metni */}
       <div
         style={{
           marginBottom: "0.75rem",
@@ -258,20 +318,34 @@ export default function SatinAlmaFiyatlandirPage() {
           background: "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)",
         }}
       >
-        <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 6, color: "#0f172a" }}>
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 900,
+            marginBottom: 6,
+            color: "#0f172a",
+          }}
+        >
           EOS MANAGEMENT
         </div>
         <div style={{ fontSize: 13, color: "#111827", lineHeight: 1.5 }}>
-          EOS MANAGEMENT, aşağıda listelenen ürünler için sizden fiyat teklifi talep etmektedir.
-          Lütfen birim fiyatlarınızı, para birimini ve KDV oranını eksiksiz doldurarak teklifinizi gönderiniz.
+          EOS MANAGEMENT, aşağıda listelenen ürünler için sizden fiyat teklifi
+          talep etmektedir. Lütfen birim fiyatlarınızı, para birimini ve KDV
+          oranını eksiksiz doldurarak teklifinizi gönderiniz.
         </div>
       </div>
 
-      <h1 style={{ marginBottom: "0.75rem", fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
+      <h1
+        style={{
+          marginBottom: "0.75rem",
+          fontSize: 20,
+          fontWeight: 800,
+          color: "#0f172a",
+        }}
+      >
         Satın Alma Fiyatlandırma
       </h1>
 
-      {/* Üst bilgi kartı */}
       <div
         style={{
           border: "1px solid #e5e7eb",
@@ -282,12 +356,20 @@ export default function SatinAlmaFiyatlandirPage() {
         }}
       >
         <div style={{ display: "grid", gap: 6, color: "#0f172a" }}>
-          <div><strong>Seri No:</strong> {seriNo}</div>
-          <div><strong>Tarih:</strong> {tarih ? new Date(tarih).toLocaleString("tr-TR") : "-"}</div>
-          <div><strong>Talep Cinsi:</strong> {talepCinsi}</div>
-          <div><strong>Açıklama:</strong> {aciklama || "-"}</div>
+          <div>
+            <strong>Seri No:</strong> {seriNo}
+          </div>
+          <div>
+            <strong>Tarih:</strong>{" "}
+            {tarih ? new Date(tarih).toLocaleString("tr-TR") : "-"}
+          </div>
+          <div>
+            <strong>Talep Cinsi:</strong> {talepCinsi}
+          </div>
+          <div>
+            <strong>Açıklama:</strong> {aciklama || "-"}
+          </div>
 
-          {/* ✅ NOT EKLENDİ (üst bilgi kartı içinde, açıklamanın hemen altı) */}
           <div>
             <strong>Not:</strong>{" "}
             {(data.not ?? data.Not ?? data.notu ?? data.Notu) || "-"}
@@ -295,7 +377,244 @@ export default function SatinAlmaFiyatlandirPage() {
         </div>
       </div>
 
-      {/* Tedarikçi adı */}
+{imageFiles.length > 0 && (
+  <div
+    style={{
+      border: "1px solid #e5e7eb",
+      borderRadius: 12,
+      padding: "0.9rem 1rem",
+      marginBottom: "1rem",
+      backgroundColor: "#f8fafc",
+    }}
+  >
+    <div
+      style={{
+        fontSize: 14,
+        fontWeight: 900,
+        color: "#0f172a",
+        marginBottom: 10,
+      }}
+    >
+      Görseller
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        gap: 10,
+        overflowX: "auto",
+        overflowY: "hidden",
+        paddingBottom: 6,
+        WebkitOverflowScrolling: "touch",
+        scrollbarWidth: "thin",
+      }}
+    >
+      {imageFiles.map((img, index) => {
+        const imgUrl = img?.url ?? img?.Url;
+
+        const imgName =
+          img?.dosyaAdi ??
+          img?.DosyaAdi ??
+          `Görsel ${index + 1}`;
+
+        return (
+          <button
+            key={img?.id ?? img?.Id ?? index}
+            type="button"
+            onClick={() => openImageModal(index)}
+            title={imgName}
+            style={{
+              border: "1px solid #d1d5db",
+              borderRadius: 14,
+              overflow: "hidden",
+              backgroundColor: "#ffffff",
+              padding: 0,
+              cursor: "pointer",
+              width: 140,
+              minWidth: 140,
+              height: 130,
+              flexShrink: 0,
+              position: "relative",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+            }}
+          >
+            <img
+              src={imgUrl}
+              alt={imgName}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                userSelect: "none",
+                WebkitUserDrag: "none",
+              }}
+            />
+
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                padding: "0.35rem 0.5rem",
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.75), transparent)",
+                color: "#ffffff",
+                fontSize: 11,
+                fontWeight: 700,
+                textAlign: "left",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {imgName}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+{imageModalOpen && activeImage && (
+  <div
+    onClick={closeImageModal}
+    style={{
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(0,0,0,0.96)",
+      zIndex: 10000,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "1rem",
+      touchAction: "pan-y",
+    }}
+  >
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        closeImageModal();
+      }}
+      style={{
+        position: "fixed",
+        top: 16,
+        right: 16,
+        width: 44,
+        height: 44,
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.35)",
+        backgroundColor: "rgba(255,255,255,0.12)",
+        color: "#ffffff",
+        fontSize: 24,
+        fontWeight: 900,
+        cursor: "pointer",
+        zIndex: 10002,
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      ×
+    </button>
+
+    {imageFiles.length > 1 && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          prevImage();
+        }}
+        style={{
+          position: "fixed",
+          left: 14,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: 48,
+          height: 48,
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,0.35)",
+          backgroundColor: "rgba(255,255,255,0.12)",
+          color: "#ffffff",
+          fontSize: 30,
+          fontWeight: 900,
+          cursor: "pointer",
+          zIndex: 10002,
+          backdropFilter: "blur(4px)",
+        }}
+      >
+        ‹
+      </button>
+    )}
+
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        maxWidth: "96vw",
+        maxHeight: "90vh",
+        textAlign: "center",
+        userSelect: "none",
+      }}
+    >
+      <img
+        src={activeImageUrl}
+        alt={activeImageName}
+        style={{
+          maxWidth: "96vw",
+          maxHeight: "84vh",
+          objectFit: "contain",
+          borderRadius: 14,
+          display: "block",
+          margin: "0 auto",
+          userSelect: "none",
+          WebkitUserDrag: "none",
+        }}
+      />
+
+      <div
+        style={{
+          marginTop: 12,
+          color: "#ffffff",
+          fontSize: 13,
+          fontWeight: 700,
+          opacity: 0.92,
+        }}
+      >
+        {activeImageIndex + 1} / {imageFiles.length} — {activeImageName}
+      </div>
+    </div>
+
+    {imageFiles.length > 1 && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          nextImage();
+        }}
+        style={{
+          position: "fixed",
+          right: 14,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: 48,
+          height: 48,
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,0.35)",
+          backgroundColor: "rgba(255,255,255,0.12)",
+          color: "#ffffff",
+          fontSize: 30,
+          fontWeight: 900,
+          cursor: "pointer",
+          zIndex: 10002,
+          backdropFilter: "blur(4px)",
+        }}
+      >
+        ›
+      </button>
+    )}
+  </div>
+)}
       <div
         style={{
           border: "1px solid #e5e7eb",
@@ -305,14 +624,25 @@ export default function SatinAlmaFiyatlandirPage() {
           backgroundColor: "#f8fafc",
         }}
       >
-        <label className="text-center" style={{ display: "block", fontWeight: 900, marginBottom: "0.35rem", color: "#0f172a" }}>
-          Tedarikçi Adı / Firma Adı <span style={{ color: "#b91c1c" }}>*</span>
+        <label
+          className="text-center"
+          style={{
+            display: "block",
+            fontWeight: 900,
+            marginBottom: "0.35rem",
+            color: "#0f172a",
+          }}
+        >
+          Tedarikçi Adı / Firma Adı{" "}
+          <span style={{ color: "#b91c1c" }}>*</span>
         </label>
 
         <input
           type="text"
           value={globalTedarikciAdi}
-          onChange={(e) => setGlobalTedarikciAdi(e.target.value.toUpperCase("tr-TR"))}
+          onChange={(e) =>
+            setGlobalTedarikciAdi(e.target.value.toUpperCase("tr-TR"))
+          }
           placeholder="Örn: ABC ELEKTRİK A.Ş."
           style={{
             width: "100%",
@@ -326,9 +656,16 @@ export default function SatinAlmaFiyatlandirPage() {
         />
       </div>
 
-      {/* Ürün kartları */}
       <div style={{ marginTop: 6, marginBottom: 25 }}>
-        <div className="text-center" style={{ fontSize: 16, fontWeight: 900, color: "#0f172a", marginBottom: 10 }}>
+        <div
+          className="text-center"
+          style={{
+            fontSize: 16,
+            fontWeight: 900,
+            color: "#0f172a",
+            marginBottom: 10,
+          }}
+        >
           MALZEMELER
         </div>
 
@@ -359,7 +696,6 @@ export default function SatinAlmaFiyatlandirPage() {
         )}
       </div>
 
-      {/* Toplam + Gönder */}
       <div
         style={{
           marginTop: 14,
@@ -386,12 +722,15 @@ export default function SatinAlmaFiyatlandirPage() {
               fontSize: 13,
             }}
           >
-            {showTotals ? "Toplamı Gizle (KDV Dahil)" : "Toplamı Göster (KDV Dahil)"}
+            {showTotals
+              ? "Toplamı Gizle (KDV Dahil)"
+              : "Toplamı Göster (KDV Dahil)"}
           </button>
 
           {netTotal <= 0 && (
             <div style={{ marginTop: 6, fontSize: 11, color: "#6b7280" }}>
-              Toplamı görebilmek için en az bir ürün için geçerli birim fiyat giriniz.
+              Toplamı görebilmek için en az bir ürün için geçerli birim fiyat
+              giriniz.
             </div>
           )}
         </div>
@@ -408,7 +747,13 @@ export default function SatinAlmaFiyatlandirPage() {
               color: "#0f172a",
             }}
           >
-            <div style={{ fontWeight: 900, marginBottom: 8, color: "#0f172a" }}>
+            <div
+              style={{
+                fontWeight: 900,
+                marginBottom: 8,
+                color: "#0f172a",
+              }}
+            >
               Toplam Özet (Satır bazlı KDV)
             </div>
 
@@ -456,7 +801,6 @@ export default function SatinAlmaFiyatlandirPage() {
         </div>
       </div>
 
-      {/* Başarılı modal */}
       {successModal && (
         <div
           style={{
@@ -482,10 +826,22 @@ export default function SatinAlmaFiyatlandirPage() {
               color: "#0f172a",
             }}
           >
-            <h2 style={{ marginBottom: "0.5rem", fontSize: 18, fontWeight: 900 }}>
+            <h2
+              style={{
+                marginBottom: "0.5rem",
+                fontSize: 18,
+                fontWeight: 900,
+              }}
+            >
               Teşekkürler
             </h2>
-            <p style={{ marginTop: 0, marginBottom: "1rem", color: "#111827" }}>
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: "1rem",
+                color: "#111827",
+              }}
+            >
               Teklifiniz başarıyla gönderildi.
             </p>
             <button
@@ -504,6 +860,136 @@ export default function SatinAlmaFiyatlandirPage() {
               Kapat
             </button>
           </div>
+        </div>
+      )}
+
+      {imageModalOpen && activeImage && (
+        <div
+          onClick={closeImageModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.95)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeImageModal();
+            }}
+            style={{
+              position: "fixed",
+              top: 16,
+              right: 16,
+              width: 42,
+              height: 42,
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.35)",
+              backgroundColor: "rgba(255,255,255,0.12)",
+              color: "#ffffff",
+              fontSize: 24,
+              fontWeight: 900,
+              cursor: "pointer",
+              zIndex: 10002,
+            }}
+          >
+            ×
+          </button>
+
+          {imageFiles.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
+              style={{
+                position: "fixed",
+                left: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 44,
+                height: 44,
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.35)",
+                backgroundColor: "rgba(255,255,255,0.12)",
+                color: "#ffffff",
+                fontSize: 28,
+                fontWeight: 900,
+                cursor: "pointer",
+                zIndex: 10002,
+              }}
+            >
+              ‹
+            </button>
+          )}
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "94vw",
+              maxHeight: "88vh",
+              textAlign: "center",
+            }}
+          >
+            <img
+              src={activeImageUrl}
+              alt={activeImageName}
+              style={{
+                maxWidth: "94vw",
+                maxHeight: "82vh",
+                objectFit: "contain",
+                borderRadius: 12,
+                display: "block",
+                margin: "0 auto",
+              }}
+            />
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#ffffff",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              {activeImageIndex + 1} / {imageFiles.length} — {activeImageName}
+            </div>
+          </div>
+
+          {imageFiles.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
+              style={{
+                position: "fixed",
+                right: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 44,
+                height: 44,
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.35)",
+                backgroundColor: "rgba(255,255,255,0.12)",
+                color: "#ffffff",
+                fontSize: 28,
+                fontWeight: 900,
+                cursor: "pointer",
+                zIndex: 10002,
+              }}
+            >
+              ›
+            </button>
+          )}
         </div>
       )}
     </div>

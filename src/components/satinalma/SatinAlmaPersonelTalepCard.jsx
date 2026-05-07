@@ -1,3 +1,7 @@
+
+
+
+
 import React from "react";
 
 function safeText(v) {
@@ -21,6 +25,25 @@ function formatDateTR(iso) {
     });
   } catch {
     return "-";
+  }
+}
+
+function formatMoneyTR(value, currency) {
+  if (value === null || value === undefined || value === "") return "-";
+
+  const n = Number(value);
+  if (!Number.isFinite(n)) return safeText(value);
+
+  const cur = currency || "TRY";
+
+  try {
+    return new Intl.NumberFormat("tr-TR", {
+      style: "currency",
+      currency: cur === "TL" ? "TRY" : cur,
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${n.toLocaleString("tr-TR")} ${cur}`;
   }
 }
 
@@ -83,7 +106,7 @@ export default function SatinAlmaPersonelTalepCard({
 
   if (!data.length) {
     return (
-      <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+      <div className="rounded-2xl border-2 border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
         Kayıt bulunamadı
       </div>
     );
@@ -104,6 +127,22 @@ export default function SatinAlmaPersonelTalepCard({
         const not1 = r?.not_1 ?? r?.Not_1;
         const dosyaVarMi = r?.dosyaVarMi ?? r?.DosyaVarMi ?? false;
         const yorumSayisi = r?.yorumSayisi ?? r?.YorumSayisi ?? 0;
+
+        const teklifSayisi = r?.teklifSayisi ?? r?.TeklifSayisi ?? 0;
+        const teklifVarMi = r?.teklifVarMi ?? r?.TeklifVarMi ?? false;
+        const enIyiTeklif = r?.enIyiTeklif ?? r?.EnIyiTeklif ?? null;
+
+        const teklifTedarikci =
+          enIyiTeklif?.tedarikciAdi ?? enIyiTeklif?.TedarikciAdi;
+
+        const teklifTutar =
+          enIyiTeklif?.toplamTutar ?? enIyiTeklif?.ToplamTutar;
+
+        const teklifParaBirimi =
+          enIyiTeklif?.paraBirimi ?? enIyiTeklif?.ParaBirimi ?? "TRY";
+
+        const teklifKalemSayisi =
+          enIyiTeklif?.kalemSayisi ?? enIyiTeklif?.KalemSayisi ?? 0;
 
         const talepEden = r?.talepEden ?? r?.TalepEden;
         const talepEdenAd =
@@ -128,14 +167,16 @@ export default function SatinAlmaPersonelTalepCard({
                 openNewTab(detayHref);
               }
             }}
-            className="cursor-pointer rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/40 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-sky-900 dark:hover:bg-sky-950/20"
+            className={`cursor-pointer rounded-2xl border-2 bg-white p-3 shadow-sm transition hover:bg-sky-50/40 dark:bg-zinc-900 dark:hover:bg-sky-950/20 ${
+              teklifVarMi
+                ? "border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/70 dark:hover:border-emerald-700"
+                : "border-zinc-200 hover:border-sky-200 dark:border-zinc-800 dark:hover:border-sky-900"
+            }`}
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-zinc-100 px-2 py-1 text-[11px] font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                    #{globalIndex}
-                  </span>
+                  
 
                   <span className="rounded-full bg-sky-100 px-2 py-1 text-[11px] font-bold text-sky-700 dark:bg-sky-900/35 dark:text-sky-200">
                     TL-{safeText(id)}
@@ -144,6 +185,16 @@ export default function SatinAlmaPersonelTalepCard({
                   <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-100">
                     {safeText(siteAdi)}
                   </span>
+
+                  {teklifVarMi ? (
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200">
+                      Teklif girildi
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                      Teklif yok
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -171,9 +222,7 @@ export default function SatinAlmaPersonelTalepCard({
                 Açıklama
               </div>
 
-              <div className="line-clamp-3">
-                {safeText(aciklama)}
-              </div>
+              <div className="line-clamp-3">{safeText(aciklama)}</div>
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -186,16 +235,37 @@ export default function SatinAlmaPersonelTalepCard({
                 </div>
               </div>
 
-              
-
-              <div className="rounded-xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
+              <div
+                className={`rounded-xl border p-2 ${
+                  teklifVarMi
+                    ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-900/20"
+                    : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+                }`}
+              >
                 <div className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
-                  Yorum
+                  En İyi Teklif
                 </div>
-                <div className="mt-1 text-xs font-semibold text-zinc-700 dark:text-zinc-200">
-                  {yorumSayisi} yorum
-                </div>
+
+                {teklifVarMi && enIyiTeklif ? (
+                  <div className="mt-1">
+                    <div className="truncate text-xs font-bold text-zinc-800 dark:text-zinc-100">
+                      {safeText(teklifTedarikci)}
+                    </div>
+                    <div className="mt-0.5 text-sm font-extrabold text-emerald-700 dark:text-emerald-300">
+                      {formatMoneyTR(teklifTutar, teklifParaBirimi)}
+                    </div>
+                    <div className="mt-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+                      {teklifSayisi} teklif kaydı • {teklifKalemSayisi} kalem
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1 text-xs font-semibold text-zinc-400">
+                    -
+                  </div>
+                )}
               </div>
+
+              
             </div>
 
             <div className="mt-3">
