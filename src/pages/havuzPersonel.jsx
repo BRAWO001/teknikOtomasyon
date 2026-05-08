@@ -496,7 +496,10 @@ export default function PeyzajPersonelPage() {
 
 
 
-    const handleTalep = async () => {
+
+
+    
+  const handleTalep = async () => {
     router.push("/satinalma/yeni");
   };
   const handleTalepListem = async () => {
