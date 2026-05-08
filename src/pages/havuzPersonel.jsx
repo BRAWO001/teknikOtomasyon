@@ -495,6 +495,16 @@ export default function PeyzajPersonelPage() {
   };
 
 
+
+    const handleTalep = async () => {
+    router.push("/satinalma/yeni");
+  };
+  const handleTalepListem = async () => {
+    router.push("/operasyonPersonelTalepListem");
+  };
+
+
+
       // Yeni iş emri ekle Peyzaj
   const handleNewIsEmriPeyzaj = () => {
     router.push("/peyzajIsEmriEkle");
@@ -607,6 +617,18 @@ export default function PeyzajPersonelPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <TopButton
+                onClick={handleTalep}
+                className="bg-orange-400 text-black hover:bg-orange-500"
+              >
+                Talepde Bulun
+              </TopButton>
+              <TopButton
+                onClick={handleTalepListem}
+                className="bg-orange-200 text-black hover:bg-orange-300"
+              >
+                Taleplerim
+              </TopButton>
 
               <TopButton
                 onClick={handleGunlukRapor}
@@ -670,13 +692,22 @@ export default function PeyzajPersonelPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <TabButton active={tab === "ALL"} onClick={() => handleSelectTab("ALL")}>
+                <TabButton
+                  active={tab === "ALL"}
+                  onClick={() => handleSelectTab("ALL")}
+                >
                   Tümü
                 </TabButton>
-                <TabButton active={tab === "DEVAM"} onClick={() => handleSelectTab("DEVAM")}>
+                <TabButton
+                  active={tab === "DEVAM"}
+                  onClick={() => handleSelectTab("DEVAM")}
+                >
                   Devam
                 </TabButton>
-                <TabButton active={tab === "BITEN"} onClick={() => handleSelectTab("BITEN")}>
+                <TabButton
+                  active={tab === "BITEN"}
+                  onClick={() => handleSelectTab("BITEN")}
+                >
                   Biten
                 </TabButton>
               </div>
