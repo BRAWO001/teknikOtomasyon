@@ -6,7 +6,7 @@ import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { roleGuard } from "@/utils/roleGuard";
 
 export const getServerSideProps = (ctx) =>
-  roleGuard(ctx, { allow: [40,90,30], redirectTo: "/" });
+  roleGuard(ctx, { allow: [40,90,30,33,34], redirectTo: "/" });
 
 /* ========================
    Upload endpoints
