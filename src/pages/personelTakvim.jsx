@@ -470,7 +470,7 @@ export default function PersonelTakvimPage() {
                                       work?.peyzajIsEmriId ?? work?.PeyzajIsEmriId;
 
                                     if (kaynak.includes("PEYZAJ") && peyzajId) {
-                                      window.open(`/peyzaj-is-emri-formu/${peyzajId}`, "_blank");
+                                      window.open(`peyzaj/isEmriDetay/${peyzajId}`, "_blank");
                                       return;
                                     }
 
