@@ -7,6 +7,8 @@ const TUR_OPTIONS = [
   { value: "KararDefteri", label: "Karar Defteri" },
   { value: "Sozlesme", label: "Sözleşme" },
   { value: "Ihtarname", label: "İhtarname" },
+  { value: "Tedarikçi / Dış İşlem", label: "Tedarikçi / Dış İşlem" },
+
 ];
 
 function extOf(nameOrUrl = "") {

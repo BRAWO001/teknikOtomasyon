@@ -147,6 +147,9 @@ export default function TeknikMudurPage() {
   const handleYoneticiRaporuPeyzaj = () => {
     router.push("/peyzajYoneticiRaporu");
   };
+  const handlePersonelTakvim = () => {
+    router.push("/personelTakvim");
+  };
 
   // Talep raporu
   const handleTalepRaporu = () => {
@@ -466,6 +469,21 @@ export default function TeknikMudurPage() {
                       <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                     </svg>
                     Peyzaj İşleri
+                  </button>
+                  <button
+                    onClick={handlePersonelTakvim}
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                  >
+                    <svg
+                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                    </svg>
+                    Personel Takvimi
                   </button>
 
                   <button

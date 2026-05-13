@@ -114,6 +114,12 @@ export default function SatinAlmaTekliflerPage() {
     }
   }, []);
 
+  useEffect(() => {
+  document.title = `Talep #${id}`;
+  }, [id]);
+
+
+
   // Detay verisini yükle
   const fetchData = async (targetId) => {
     if (!targetId) return;
@@ -457,6 +463,9 @@ const DosyaTile = ({ d, mode }) => {
 
 
   return (
+    
+    
+
     <div className="mx-auto w-full max-w-6xl px-4 py-4 text-sm text-zinc-900 dark:text-zinc-100">
       {/* ✅ DOSYA MODAL */}
       <TalepFotoModals
@@ -679,5 +688,6 @@ const DosyaTile = ({ d, mode }) => {
         />
       </div>
     </div>
+
   );
 }

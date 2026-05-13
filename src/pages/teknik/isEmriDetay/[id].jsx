@@ -57,6 +57,8 @@ export default function IsEmriDetayPage() {
   // ✅ Durum güncelle modal
   const [isDurumModalOpen, setIsDurumModalOpen] = useState(false);
 
+  
+
   // ✅ Cookie’den currentPersonelId çek
   useEffect(() => {
     try {
@@ -87,6 +89,8 @@ export default function IsEmriDetayPage() {
 
   // ✅ rol 30 ise kapat, rol yoksa açık
   const canEditPersonel = currentRol !== 30;
+
+
 
   useEffect(() => {
     if (!id) return;
@@ -119,6 +123,8 @@ export default function IsEmriDetayPage() {
     load();
   }, [id]);
 
+  
+
   // ✅ progress (0-100)
   const progress = useMemo(() => {
     return Math.max(0, Math.min(100, Number(localDurumKod) || 0));
@@ -143,6 +149,8 @@ export default function IsEmriDetayPage() {
   const handlePrint = () => {
   window.open(`/teknik/isEmriDetay/print/${id}`, "_blank", "noopener,noreferrer");
 };
+
+
 
   if (loading) {
     return (
@@ -188,6 +196,11 @@ export default function IsEmriDetayPage() {
     malzemeler = [],
     notlar = [],
   } = record;
+
+
+ 
+
+    
 
   return (
     <div
