@@ -249,6 +249,13 @@ export default function AnketCevapPage() {
 
   const validateForm = () => {
     if (!adSoyad.trim()) return "Ad Soyad zorunludur.";
+    const temizTelefon = telefon.replace(/\D/g, "");
+
+    if (!temizTelefon)
+      return "Telefon zorunludur.";
+
+    if (temizTelefon.length !== 10)
+      return "Telefon numarası 10 haneli olmalıdır.";
 
     for (const soru of sorular) {
       const soruId = soru?.id;
@@ -343,11 +350,20 @@ export default function AnketCevapPage() {
       setMsg("");
 
       const payload = buildPayload();
-      await postDataAsync(`anket/public/${guidLink}/cevapla`, payload);
 
-      setSuccess(true);
+const res = await postDataAsync(`anket/public/${guidLink}/cevapla`, payload);
+
+if (res?.ok === false) {
+  setMsg(res?.message || "Bilgilerinizi kontrol ediniz.");
+  setSuccess(false);
+  return;
+}
+
+setSuccess(true);
     } catch (e) {
       console.error("ANKET SUBMIT ERROR:", e);
+      console.log("BACKEND DATA", e?.response?.data);
+
       const status = e?.response?.status;
       const backendMsg = extractBackendMsg(e);
 
@@ -355,6 +371,12 @@ export default function AnketCevapPage() {
         setMsg("Yetkisiz işlem (401).");
       } else if (status === 403) {
         setMsg("Erişim reddedildi (403).");
+      } else if (status === 400) {
+        setMsg(
+          backendMsg
+            ? backendMsg
+            : "Cevaplar gönderilemedi. Bilgilerinizi kontrol ediniz."
+        );
       } else {
         setMsg(
           backendMsg
@@ -589,7 +611,7 @@ export default function AnketCevapPage() {
           <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
             <div className="text-sm font-semibold">Katılımcı Bilgileri</div>
             <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Ad Soyad zorunludur. Telefon ve eposta isteğe bağlıdır.
+              Ad Soyad ve telefon zorunludur. Eposta isteğe bağlıdır.
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -608,13 +630,27 @@ export default function AnketCevapPage() {
 
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                  Telefon
+                  Telefon *
                 </label>
                 <input
                   value={telefon}
-                  onChange={(e) => setTelefon(e.target.value)}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, "");
+
+                    // Baştaki 0 varsa kaldır
+                    if (value.startsWith("0")) {
+                      value = value.substring(1);
+                    }
+
+                    // Max 10 hane
+                    if (value.length > 10) {
+                      value = value.slice(0, 10);
+                    }
+
+                    setTelefon(value);
+                  }}
                   maxLength={50}
-                  placeholder="Telefon"
+                  placeholder="(5xx) xxx xx xx"
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950"
                 />
               </div>
@@ -692,7 +728,7 @@ export default function AnketCevapPage() {
                           type="radio"
                           name={`soru_${soru.id}`}
                           checked={prevSafeArray(cevap?.secenekIdler).includes(
-                            secenek.id
+                            secenek.id,
                           )}
                           onChange={() => updateTekSecim(soru.id, secenek.id)}
                           className="mt-1 h-4 w-4"
@@ -709,7 +745,7 @@ export default function AnketCevapPage() {
                   <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {secenekler.map((secenek, secenekIndex) => {
                       const selected = prevSafeArray(
-                        cevap?.secenekIdler
+                        cevap?.secenekIdler,
                       ).includes(secenek.id);
 
                       return (
@@ -805,13 +841,13 @@ export default function AnketCevapPage() {
                           <input
                             type="checkbox"
                             checked={prevSafeArray(
-                              cevap?.secenekIdler
+                              cevap?.secenekIdler,
                             ).includes(secenek.id)}
                             onChange={(e) =>
                               updateCokluSecim(
                                 soru,
                                 secenek.id,
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                             className="mt-1 h-4 w-4"
@@ -844,7 +880,7 @@ export default function AnketCevapPage() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {secenekler.map((secenek, secenekIndex) => {
                         const selected = prevSafeArray(
-                          cevap?.secenekIdler
+                          cevap?.secenekIdler,
                         ).includes(secenek.id);
 
                         return (
@@ -863,7 +899,7 @@ export default function AnketCevapPage() {
                                 updateCokluSecim(
                                   soru,
                                   secenek.id,
-                                  e.target.checked
+                                  e.target.checked,
                                 )
                               }
                               className="sr-only"
@@ -982,6 +1018,12 @@ export default function AnketCevapPage() {
             );
           })}
         </div>
+
+        {msg && (
+          <div className="mt-7 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] font-medium text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
+            {msg}
+          </div>
+        )}
 
         <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
