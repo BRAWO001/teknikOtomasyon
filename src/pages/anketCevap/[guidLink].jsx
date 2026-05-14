@@ -1,3 +1,8 @@
+
+
+
+
+
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
@@ -42,6 +47,20 @@ function isNumberType(soruTipi) {
 
 function isDateType(soruTipi) {
   return Number(soruTipi) === 6;
+}
+
+function isImageUrl(value = "") {
+  return /\.(jpg|jpeg|png|webp|gif|avif)(\?.*)?$/i.test(String(value || ""));
+}
+
+function soruGorselSecimMi(soru) {
+  const tip = Number(soru?.soruTipi);
+  const secenekler = Array.isArray(soru?.secenekler) ? soru.secenekler : [];
+
+  if (tip !== 1 && tip !== 2) return false;
+  if (secenekler.length === 0) return false;
+
+  return secenekler.every((x) => isImageUrl(x?.secenekMetni));
 }
 
 export default function AnketCevapPage() {
@@ -364,7 +383,9 @@ export default function AnketCevapPage() {
               />
             </div>
             <div>
-              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
               <div className="text-xs text-zinc-600 dark:text-zinc-400">
                 Anket Cevaplama
               </div>
@@ -402,7 +423,9 @@ export default function AnketCevapPage() {
               />
             </div>
             <div>
-              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
               <div className="text-xs text-zinc-600 dark:text-zinc-400">
                 Anket Cevaplama
               </div>
@@ -450,7 +473,9 @@ export default function AnketCevapPage() {
               />
             </div>
             <div>
-              <div className="text-sm font-bold tracking-wide">EOS MANAGEMENT</div>
+              <div className="text-sm font-bold tracking-wide">
+                EOS MANAGEMENT
+              </div>
               <div className="text-xs text-zinc-600 dark:text-zinc-400">
                 Anket Cevaplama
               </div>
@@ -469,7 +494,9 @@ export default function AnketCevapPage() {
               </div>
 
               <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40">
-                <div className="text-sm font-semibold">{anket?.baslik ?? "-"}</div>
+                <div className="text-sm font-semibold">
+                  {anket?.baslik ?? "-"}
+                </div>
                 {anket?.aciklama ? (
                   <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                     {anket.aciklama}
@@ -612,7 +639,10 @@ export default function AnketCevapPage() {
           {sorular.map((soru, index) => {
             const tip = Number(soru?.soruTipi);
             const cevap = cevaplar?.[soru.id] || {};
-            const secenekler = Array.isArray(soru?.secenekler) ? soru.secenekler : [];
+            const secenekler = Array.isArray(soru?.secenekler)
+              ? soru.secenekler
+              : [];
+            const gorselSecim = soruGorselSecimMi(soru);
 
             return (
               <div
@@ -633,6 +663,12 @@ export default function AnketCevapPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {gorselSecim ? (
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-300">
+                        Görsel Seçim
+                      </span>
+                    ) : null}
+
                     {soru?.zorunluMu ? (
                       <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-medium text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">
                         Zorunlu
@@ -645,7 +681,7 @@ export default function AnketCevapPage() {
                   </div>
                 </div>
 
-                {tip === 1 && (
+                {tip === 1 && !gorselSecim && (
                   <div className="mt-4 space-y-2">
                     {secenekler.map((secenek) => (
                       <label
@@ -655,7 +691,9 @@ export default function AnketCevapPage() {
                         <input
                           type="radio"
                           name={`soru_${soru.id}`}
-                          checked={prevSafeArray(cevap?.secenekIdler).includes(secenek.id)}
+                          checked={prevSafeArray(cevap?.secenekIdler).includes(
+                            secenek.id
+                          )}
                           onChange={() => updateTekSecim(soru.id, secenek.id)}
                           className="mt-1 h-4 w-4"
                         />
@@ -667,13 +705,94 @@ export default function AnketCevapPage() {
                   </div>
                 )}
 
-                {tip === 2 && (
+                {tip === 1 && gorselSecim && (
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {secenekler.map((secenek, secenekIndex) => {
+                      const selected = prevSafeArray(
+                        cevap?.secenekIdler
+                      ).includes(secenek.id);
+
+                      return (
+                        <label
+                          key={secenek.id}
+                          className={`group cursor-pointer overflow-hidden rounded-2xl border bg-white shadow-sm transition dark:bg-zinc-950 ${
+                            selected
+                              ? "border-emerald-500 ring-2 ring-emerald-300 dark:ring-emerald-800"
+                              : "border-zinc-200 hover:border-emerald-300 dark:border-zinc-800"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`soru_${soru.id}`}
+                            checked={selected}
+                            onChange={() => updateTekSecim(soru.id, secenek.id)}
+                            className="sr-only"
+                          />
+
+                          <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-900">
+                            <img
+                              src={secenek?.secenekMetni}
+                              alt={`Görsel seçenek ${secenekIndex + 1}`}
+                              className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                              loading="lazy"
+                            />
+
+                            <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-[11px] font-semibold text-white">
+                              Seçenek {secenekIndex + 1}
+                            </div>
+
+                            {selected && (
+                              <div className="absolute right-3 top-3 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white">
+                                Seçildi
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="p-3">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`grid h-5 w-5 place-items-center rounded-full border text-[10px] ${
+                                  selected
+                                    ? "border-emerald-600 bg-emerald-600 text-white"
+                                    : "border-zinc-300 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
+                                }`}
+                              >
+                                {selected ? "✓" : ""}
+                              </span>
+                              <span className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-200">
+                                Bu görseli seç
+                              </span>
+                            </div>
+
+                            <a
+                              href={secenek?.secenekMetni}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-2 block break-all text-[10px] text-zinc-500 hover:text-emerald-700 dark:text-zinc-400 dark:hover:text-emerald-300"
+                            >
+                              Görseli yeni sekmede aç
+                            </a>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {tip === 2 && !gorselSecim && (
                   <div className="mt-4">
                     {(soru?.minSecimSayisi || soru?.maxSecimSayisi) && (
                       <div className="mb-3 text-[11px] text-zinc-500 dark:text-zinc-400">
-                        {soru?.minSecimSayisi ? `Min: ${soru.minSecimSayisi}` : null}
-                        {soru?.minSecimSayisi && soru?.maxSecimSayisi ? " • " : null}
-                        {soru?.maxSecimSayisi ? `Max: ${soru.maxSecimSayisi}` : null}
+                        {soru?.minSecimSayisi
+                          ? `Min: ${soru.minSecimSayisi}`
+                          : null}
+                        {soru?.minSecimSayisi && soru?.maxSecimSayisi
+                          ? " • "
+                          : null}
+                        {soru?.maxSecimSayisi
+                          ? `Max: ${soru.maxSecimSayisi}`
+                          : null}
                       </div>
                     )}
 
@@ -685,9 +804,15 @@ export default function AnketCevapPage() {
                         >
                           <input
                             type="checkbox"
-                            checked={prevSafeArray(cevap?.secenekIdler).includes(secenek.id)}
+                            checked={prevSafeArray(
+                              cevap?.secenekIdler
+                            ).includes(secenek.id)}
                             onChange={(e) =>
-                              updateCokluSecim(soru, secenek.id, e.target.checked)
+                              updateCokluSecim(
+                                soru,
+                                secenek.id,
+                                e.target.checked
+                              )
                             }
                             className="mt-1 h-4 w-4"
                           />
@@ -696,6 +821,102 @@ export default function AnketCevapPage() {
                           </span>
                         </label>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {tip === 2 && gorselSecim && (
+                  <div className="mt-4">
+                    {(soru?.minSecimSayisi || soru?.maxSecimSayisi) && (
+                      <div className="mb-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+                        {soru?.minSecimSayisi
+                          ? `Min: ${soru.minSecimSayisi}`
+                          : null}
+                        {soru?.minSecimSayisi && soru?.maxSecimSayisi
+                          ? " • "
+                          : null}
+                        {soru?.maxSecimSayisi
+                          ? `Max: ${soru.maxSecimSayisi}`
+                          : null}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {secenekler.map((secenek, secenekIndex) => {
+                        const selected = prevSafeArray(
+                          cevap?.secenekIdler
+                        ).includes(secenek.id);
+
+                        return (
+                          <label
+                            key={secenek.id}
+                            className={`group cursor-pointer overflow-hidden rounded-2xl border bg-white shadow-sm transition dark:bg-zinc-950 ${
+                              selected
+                                ? "border-emerald-500 ring-2 ring-emerald-300 dark:ring-emerald-800"
+                                : "border-zinc-200 hover:border-emerald-300 dark:border-zinc-800"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={(e) =>
+                                updateCokluSecim(
+                                  soru,
+                                  secenek.id,
+                                  e.target.checked
+                                )
+                              }
+                              className="sr-only"
+                            />
+
+                            <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-900">
+                              <img
+                                src={secenek?.secenekMetni}
+                                alt={`Görsel seçenek ${secenekIndex + 1}`}
+                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                                loading="lazy"
+                              />
+
+                              <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-[11px] font-semibold text-white">
+                                Seçenek {secenekIndex + 1}
+                              </div>
+
+                              {selected && (
+                                <div className="absolute right-3 top-3 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white">
+                                  Seçildi
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="p-3">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`grid h-5 w-5 place-items-center rounded-md border text-[10px] ${
+                                    selected
+                                      ? "border-emerald-600 bg-emerald-600 text-white"
+                                      : "border-zinc-300 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950"
+                                  }`}
+                                >
+                                  {selected ? "✓" : ""}
+                                </span>
+                                <span className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-200">
+                                  Bu görseli seç
+                                </span>
+                              </div>
+
+                              <a
+                                href={secenek?.secenekMetni}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-2 block break-all text-[10px] text-zinc-500 hover:text-emerald-700 dark:text-zinc-400 dark:hover:text-emerald-300"
+                              >
+                                Görseli yeni sekmede aç
+                              </a>
+                            </div>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

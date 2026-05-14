@@ -1,7 +1,15 @@
+
+
+
+
+
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
+
+const UPLOAD_URL = "HttpUpload/upload-ftp";
+const ANKET_DOSYA_URL_POST = "anket/secenek-dosya-url";
 
 const SORU_TIPLERI = [
   { value: 1, label: "Tek Seçim (Radio)" },
@@ -10,6 +18,7 @@ const SORU_TIPLERI = [
   { value: 4, label: "Uzun Metin" },
   { value: 5, label: "Sayı" },
   { value: 6, label: "Tarih" },
+  { value: 7, label: "Görsel Seçim" },
 ];
 
 function extractBackendMsg(err) {
@@ -35,6 +44,18 @@ function extractBackendMsg(err) {
   } catch {
     return null;
   }
+}
+
+function isImageFile(file) {
+  if (!file) return false;
+  return (
+    file.type?.startsWith("image/") ||
+    /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name || "")
+  );
+}
+
+function isImageUrl(value = "") {
+  return /\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(String(value));
 }
 
 function createEmptyOption(order = 0) {
@@ -63,7 +84,15 @@ function createEmptyQuestion(order = 0) {
 }
 
 function isSelectionType(soruTipi) {
-  return Number(soruTipi) === 1 || Number(soruTipi) === 2;
+  return (
+    Number(soruTipi) === 1 ||
+    Number(soruTipi) === 2 ||
+    Number(soruTipi) === 7
+  );
+}
+
+function isGorselSecimType(soruTipi) {
+  return Number(soruTipi) === 7;
 }
 
 function isTextType(soruTipi) {
@@ -96,6 +125,7 @@ export default function YeniAnketPage() {
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [uploadingQuestionId, setUploadingQuestionId] = useState(null);
 
   const [createdAnketId, setCreatedAnketId] = useState(null);
   const [createdGuid, setCreatedGuid] = useState(null);
@@ -197,10 +227,16 @@ export default function YeniAnketPage() {
             if (!Array.isArray(next.secenekler) || next.secenekler.length < 2) {
               next.secenekler = [createEmptyOption(0), createEmptyOption(1)];
             }
+          } else if (tip === 7) {
+            next.minSecimSayisi = 1;
+            next.maxSecimSayisi = 1;
+            next.maxMetinUzunlugu = null;
+            next.secenekler = [];
           } else if (tip === 3 || tip === 4) {
             next.minSecimSayisi = null;
             next.maxSecimSayisi = null;
-            next.maxMetinUzunlugu = next.maxMetinUzunlugu || (tip === 3 ? 250 : 2000);
+            next.maxMetinUzunlugu =
+              next.maxMetinUzunlugu || (tip === 3 ? 250 : 2000);
             next.secenekler = [];
           } else if (tip === 5 || tip === 6) {
             next.minSecimSayisi = null;
@@ -257,6 +293,79 @@ export default function YeniAnketPage() {
     );
   };
 
+  const handleUploadGorselSecenek = async (questionLocalId, file) => {
+    if (!file) return;
+
+    if (!isImageFile(file)) {
+      setMsg("Lütfen sadece görsel seçin. jpg, jpeg, png, webp veya gif olmalı.");
+      return;
+    }
+
+    try {
+      setMsg("");
+      setUploadingQuestionId(questionLocalId);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await postDataAsync(UPLOAD_URL, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const url = uploadRes?.Url || uploadRes?.url;
+
+      if (!url) {
+        setMsg("Upload cevabında Url alanı bulunamadı.");
+        return;
+      }
+
+      const saveRes = await postDataAsync(
+        ANKET_DOSYA_URL_POST,
+        {
+          url,
+          dosyaAdi: file.name,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      const finalUrl = saveRes?.secenekMetni || saveRes?.url || url;
+
+      setSorular((prev) =>
+        prev.map((q) => {
+          if (q.localId !== questionLocalId) return q;
+
+          const current = Array.isArray(q.secenekler) ? q.secenekler : [];
+
+          return {
+            ...q,
+            secenekler: [
+              ...current,
+              {
+                localId: `opt_${Date.now()}_${Math.random()
+                  .toString(36)
+                  .slice(2, 8)}`,
+                secenekMetni: finalUrl,
+                siraNo: current.length,
+                aktifMi: true,
+              },
+            ],
+          };
+        })
+      );
+    } catch (err) {
+      console.error("GÖRSEL SEÇENEK UPLOAD ERROR:", err);
+      setMsg(
+        extractBackendMsg(err) ||
+          err?.message ||
+          "Görsel seçenek yüklenirken hata oluştu."
+      );
+    } finally {
+      setUploadingQuestionId(null);
+    }
+  };
+
   const validate = () => {
     if (!siteId) return "Site seçmelisiniz.";
     if (!baslik.trim()) return "Anket başlığı zorunlu.";
@@ -271,25 +380,43 @@ export default function YeniAnketPage() {
       }
 
       if (isSelectionType(q.soruTipi)) {
-        const secenekler = (q.secenekler || []).filter((x) => x.secenekMetni?.trim());
+        const secenekler = (q.secenekler || []).filter((x) =>
+          x.secenekMetni?.trim()
+        );
 
         if (secenekler.length < 2) {
           return `${no}. soru için en az 2 seçenek girilmelidir.`;
         }
 
-        if (Number(q.soruTipi) === 1) {
+        if (Number(q.soruTipi) === 1 || Number(q.soruTipi) === 7) {
           if (Number(q.maxSecimSayisi || 1) !== 1) {
             return `${no}. soru tek seçim ise maksimum seçim 1 olmalıdır.`;
           }
         }
 
+        if (Number(q.soruTipi) === 7) {
+          const bosGorsel = secenekler.some(
+            (x) => !isImageUrl(x.secenekMetni?.trim())
+          );
+
+          if (bosGorsel) {
+            return `${no}. görsel seçim sorusunda seçenekler görsel URL olmalıdır.`;
+          }
+        }
+
         if (Number(q.soruTipi) === 2) {
           const min = q.minSecimSayisi == null ? 1 : Number(q.minSecimSayisi);
-          const max = q.maxSecimSayisi == null ? secenekler.length : Number(q.maxSecimSayisi);
+          const max =
+            q.maxSecimSayisi == null
+              ? secenekler.length
+              : Number(q.maxSecimSayisi);
 
-          if (min <= 0) return `${no}. soru için minimum seçim 1 veya daha büyük olmalıdır.`;
-          if (max <= 0) return `${no}. soru için maksimum seçim 1 veya daha büyük olmalıdır.`;
-          if (min > max) return `${no}. soru için minimum seçim, maksimum seçimden büyük olamaz.`;
+          if (min <= 0)
+            return `${no}. soru için minimum seçim 1 veya daha büyük olmalıdır.`;
+          if (max <= 0)
+            return `${no}. soru için maksimum seçim 1 veya daha büyük olmalıdır.`;
+          if (min > max)
+            return `${no}. soru için minimum seçim, maksimum seçimden büyük olamaz.`;
           if (max > secenekler.length) {
             return `${no}. soru için maksimum seçim, seçenek sayısından büyük olamaz.`;
           }
@@ -316,10 +443,12 @@ export default function YeniAnketPage() {
       tekrarCevaplanabilirMi,
       sorular: sorular.map((q, idx) => {
         const soruTipi = Number(q.soruTipi);
+        const backendSoruTipi = soruTipi === 7 ? 1 : soruTipi;
+
         const base = {
           baslik: q.baslik.trim(),
           aciklama: q.aciklama?.trim() || null,
-          soruTipi,
+          soruTipi: backendSoruTipi,
           zorunluMu: !!q.zorunluMu,
           siraNo: idx,
           aktifMi: !!q.aktifMi,
@@ -351,7 +480,7 @@ export default function YeniAnketPage() {
             }));
         }
 
-        if (soruTipi === 1) {
+        if (soruTipi === 1 || soruTipi === 7) {
           base.minSecimSayisi = 1;
           base.maxSecimSayisi = 1;
         }
@@ -436,7 +565,8 @@ export default function YeniAnketPage() {
                 Anket başarıyla oluşturuldu
               </div>
               <div className="mt-1 text-[12px] text-emerald-700 dark:text-emerald-300">
-                Aşağıdan detay sayfasına geçebilir veya cevaplama linkini kopyalayabilirsiniz.
+                Aşağıdan detay sayfasına geçebilir veya cevaplama linkini
+                kopyalayabilirsiniz.
               </div>
             </div>
 
@@ -542,7 +672,6 @@ export default function YeniAnketPage() {
               <div className="text-base font-semibold tracking-tight">
                 Yeni Anket Oluştur
               </div>
-              
             </div>
 
             <div className="flex flex-wrap items-center gap-2 justify-end">
@@ -681,6 +810,7 @@ export default function YeniAnketPage() {
           {sorular.map((q, index) => {
             const selectionType = isSelectionType(q.soruTipi);
             const textType = isTextType(q.soruTipi);
+            const gorselSecimType = isGorselSecimType(q.soruTipi);
 
             return (
               <div
@@ -703,7 +833,9 @@ export default function YeniAnketPage() {
                         type="checkbox"
                         checked={q.zorunluMu}
                         onChange={(e) =>
-                          updateQuestion(q.localId, { zorunluMu: e.target.checked })
+                          updateQuestion(q.localId, {
+                            zorunluMu: e.target.checked,
+                          })
                         }
                         disabled={showSuccessModal}
                         className="h-4 w-4"
@@ -746,7 +878,9 @@ export default function YeniAnketPage() {
                     <select
                       value={q.soruTipi}
                       onChange={(e) =>
-                        updateQuestion(q.localId, { soruTipi: Number(e.target.value) })
+                        updateQuestion(q.localId, {
+                          soruTipi: Number(e.target.value),
+                        })
                       }
                       disabled={showSuccessModal}
                       className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950"
@@ -769,7 +903,8 @@ export default function YeniAnketPage() {
                       value={q.siraNo}
                       onChange={(e) =>
                         updateQuestion(q.localId, {
-                          siraNo: e.target.value === "" ? 0 : Number(e.target.value),
+                          siraNo:
+                            e.target.value === "" ? 0 : Number(e.target.value),
                         })
                       }
                       disabled={showSuccessModal}
@@ -799,21 +934,68 @@ export default function YeniAnketPage() {
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
                         <div className="text-sm font-semibold">
-                          Soru Seçenekleri
+                          {gorselSecimType
+                            ? "Görsel Seçenekleri"
+                            : "Soru Seçenekleri"}
                         </div>
                         <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                          En az 2 seçenek girin. Çoklu seçimde min/max belirleyebilirsiniz.
+                          {gorselSecimType
+                            ? "Görsel yükleyin. Yüklenen görsel URL olarak seçenek metnine kaydedilir."
+                            : "En az 2 seçenek girin. Çoklu seçimde min/max belirleyebilirsiniz."}
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleAddOption(q.localId)}
-                        disabled={showSuccessModal}
-                        className="rounded-md bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                      >
-                        + Seçenek Ekle
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {!gorselSecimType && (
+                          <button
+                            type="button"
+                            onClick={() => handleAddOption(q.localId)}
+                            disabled={showSuccessModal}
+                            className="rounded-md bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                          >
+                            + Seçenek Ekle
+                          </button>
+                        )}
+
+                        {gorselSecimType && (
+                          <>
+                            <label
+                              className={`cursor-pointer rounded-md px-3 py-2 text-xs font-semibold text-white ${
+                                uploadingQuestionId === q.localId
+                                  ? "bg-emerald-400 opacity-70"
+                                  : "bg-emerald-600 hover:bg-emerald-700"
+                              }`}
+                            >
+                              {uploadingQuestionId === q.localId
+                                ? "Yükleniyor..."
+                                : "+ Görsel Yükle"}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={
+                                  showSuccessModal ||
+                                  uploadingQuestionId === q.localId
+                                }
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  e.target.value = "";
+                                  handleUploadGorselSecenek(q.localId, file);
+                                }}
+                              />
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => handleAddOption(q.localId)}
+                              disabled={showSuccessModal}
+                              className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                            >
+                              + Manuel URL
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
@@ -828,10 +1010,16 @@ export default function YeniAnketPage() {
                           onChange={(e) =>
                             updateQuestion(q.localId, {
                               minSecimSayisi:
-                                e.target.value === "" ? null : Number(e.target.value),
+                                e.target.value === ""
+                                  ? null
+                                  : Number(e.target.value),
                             })
                           }
-                          disabled={Number(q.soruTipi) === 1 || showSuccessModal}
+                          disabled={
+                            Number(q.soruTipi) === 1 ||
+                            Number(q.soruTipi) === 7 ||
+                            showSuccessModal
+                          }
                           className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950"
                         />
                       </div>
@@ -847,10 +1035,16 @@ export default function YeniAnketPage() {
                           onChange={(e) =>
                             updateQuestion(q.localId, {
                               maxSecimSayisi:
-                                e.target.value === "" ? null : Number(e.target.value),
+                                e.target.value === ""
+                                  ? null
+                                  : Number(e.target.value),
                             })
                           }
-                          disabled={Number(q.soruTipi) === 1 || showSuccessModal}
+                          disabled={
+                            Number(q.soruTipi) === 1 ||
+                            Number(q.soruTipi) === 7 ||
+                            showSuccessModal
+                          }
                           className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950"
                         />
                       </div>
@@ -874,19 +1068,45 @@ export default function YeniAnketPage() {
                                   secenekMetni: e.target.value,
                                 })
                               }
-                              placeholder={`Seçenek ${optIndex + 1}`}
-                              maxLength={500}
+                              placeholder={
+                                gorselSecimType
+                                  ? `Görsel URL ${optIndex + 1}`
+                                  : `Seçenek ${optIndex + 1}`
+                              }
+                              maxLength={1000}
                               disabled={showSuccessModal}
                               className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950"
                             />
+
+                            {gorselSecimType && isImageUrl(opt.secenekMetni) && (
+                              <div className="mt-2 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-2 dark:border-emerald-900 dark:bg-emerald-950/20">
+                                <img
+                                  src={opt.secenekMetni}
+                                  alt={`Seçenek ${optIndex + 1}`}
+                                  className="h-24 w-24 rounded-lg border border-zinc-200 object-cover dark:border-zinc-800"
+                                />
+                                <div className="min-w-0">
+                                  <div className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-200">
+                                    Görsel seçenek hazır
+                                  </div>
+                                  <div className="mt-1 break-all text-[10px] text-zinc-600 dark:text-zinc-400">
+                                    {opt.secenekMetni}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div className="xl:col-span-2">
                             <button
                               type="button"
-                              onClick={() => handleRemoveOption(q.localId, opt.localId)}
+                              onClick={() =>
+                                handleRemoveOption(q.localId, opt.localId)
+                              }
                               disabled={
-                                (q.secenekler || []).length <= 2 || showSuccessModal
+                                (!gorselSecimType &&
+                                  (q.secenekler || []).length <= 2) ||
+                                showSuccessModal
                               }
                               className="h-10 w-full rounded-md border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
                             >
@@ -918,7 +1138,9 @@ export default function YeniAnketPage() {
                           onChange={(e) =>
                             updateQuestion(q.localId, {
                               maxMetinUzunlugu:
-                                e.target.value === "" ? null : Number(e.target.value),
+                                e.target.value === ""
+                                  ? null
+                                  : Number(e.target.value),
                             })
                           }
                           disabled={showSuccessModal}
@@ -931,13 +1153,15 @@ export default function YeniAnketPage() {
 
                 {isNumberType(q.soruTipi) && (
                   <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-[12px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-300">
-                    Bu soru cevaplama ekranında sayısal giriş olarak gösterilecektir.
+                    Bu soru cevaplama ekranında sayısal giriş olarak
+                    gösterilecektir.
                   </div>
                 )}
 
                 {isDateType(q.soruTipi) && (
                   <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-[12px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-300">
-                    Bu soru cevaplama ekranında tarih seçimi olarak gösterilecektir.
+                    Bu soru cevaplama ekranında tarih seçimi olarak
+                    gösterilecektir.
                   </div>
                 )}
               </div>
@@ -968,7 +1192,12 @@ export default function YeniAnketPage() {
 
             <button
               onClick={handleSubmit}
-              disabled={saving || sitesLoading || showSuccessModal}
+              disabled={
+                saving ||
+                sitesLoading ||
+                showSuccessModal ||
+                !!uploadingQuestionId
+              }
               className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               {saving ? "Kaydediliyor..." : "Anketi Oluştur"}
