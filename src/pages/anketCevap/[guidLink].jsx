@@ -769,7 +769,7 @@ setSuccess(true);
                             <img
                               src={secenek?.secenekMetni}
                               alt={`Görsel seçenek ${secenekIndex + 1}`}
-                              className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                              className="h-full w-full object-contain transition group-hover:scale-[1.02]"
                               loading="lazy"
                             />
 
@@ -909,7 +909,7 @@ setSuccess(true);
                               <img
                                 src={secenek?.secenekMetni}
                                 alt={`Görsel seçenek ${secenekIndex + 1}`}
-                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                                className="h-full w-full object-contain transition group-hover:scale-[1.02]"
                                 loading="lazy"
                               />
 
