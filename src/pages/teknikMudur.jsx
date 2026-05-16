@@ -122,6 +122,11 @@ export default function TeknikMudurPage() {
   const handleNewAnket = () => {
     router.push("/anket/yeni");
   };
+  const handleAnketListesi = () => {
+    router.push("/anket");
+  };
+
+
   const handleNewRapor = () => {
     router.push("/gunlukRapor/yeni");
   };
@@ -470,6 +475,8 @@ export default function TeknikMudurPage() {
                     </svg>
                     Peyzaj İşleri
                   </button>
+
+
                   <button
                     onClick={handlePersonelTakvim}
                     className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
@@ -599,6 +606,28 @@ export default function TeknikMudurPage() {
                     </svg>
                     Anket Oluştur
                   </button>
+                  <button
+                    onClick={handleAnketListesi}
+                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-blue-200 bg-blue-400 text-white hover:bg-blue-500 hover:border-blue-200 shadow-sm`}
+                  >
+                    <svg
+                      className={`${ui.icon} text-white/90`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-9 0h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm5 4v6m-3-3h6"
+                      />
+                    </svg>
+                    Anket Listesi
+                  </button>
+
+
+
                   <button
                     onClick={handleNewRapor}
                     className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-orange-200 bg-orange-400 text-white hover:bg-orange-500 hover:border-orange-200 shadow-sm`}
