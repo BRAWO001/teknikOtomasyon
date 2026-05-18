@@ -455,7 +455,7 @@ function PrintIsEmriMalzemeler({ malzemeler = [], kdvIncluded = true }) {
     <section className="mt-1 rounded border border-zinc-300 bg-white p-1">
       <div className="mb-[2px] flex items-end justify-between gap-2">
         <div>
-          <div className="text-[10px] font-extrabold text-zinc-900">Malzeme / İşçilik</div>
+          <div className="text-[10px] font-extrabold text-zinc-900">Malzeme</div>
           <div className="text-[8px] text-zinc-600">
             Genel Tutar:{" "}
             <span className="font-bold">
