@@ -379,6 +379,8 @@ export default function SatinAlmaTekliflerPage() {
         not: (onayNot || "").trim() || null,
       });
 
+      
+
       const apiMessage =
         res?.Message ??
         (onaylandiMi === true
