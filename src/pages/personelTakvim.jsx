@@ -1,8 +1,3 @@
-
-
-
-
-
 import { useEffect, useMemo, useState } from "react";
 import { getDataAsync } from "@/utils/apiService";
 import { useRouter } from "next/router";
@@ -117,7 +112,6 @@ function getWorkType(item) {
 function getWorkStyle(item) {
   const type = getWorkType(item);
 
-  // TADILAT = TURUNCU
   if (type === "TADILAT") {
     return {
       wrapper:
@@ -127,7 +121,6 @@ function getWorkStyle(item) {
     };
   }
 
-  // HAVUZ = MOR
   if (type === "HAVUZ") {
     return {
       wrapper:
@@ -137,7 +130,6 @@ function getWorkStyle(item) {
     };
   }
 
-  // PEYZAJ = YEŞİL
   if (type === "PEYZAJ") {
     return {
       wrapper:
@@ -147,7 +139,6 @@ function getWorkStyle(item) {
     };
   }
 
-  // TEKNIK = MAVİ
   return {
     wrapper:
       "border-blue-200 bg-blue-50 text-blue-950 hover:bg-blue-100 dark:border-blue-900/70 dark:bg-blue-950/35 dark:text-blue-100",
@@ -155,6 +146,7 @@ function getWorkStyle(item) {
     label: "Teknik",
   };
 }
+
 export default function PersonelTakvimPage() {
   const router = useRouter();
 
@@ -220,10 +212,24 @@ export default function PersonelTakvimPage() {
       }
 
       const row = map.get(key);
-      const tarihKey = getDateKey(group?.tarih ?? group?.Tarih);
+      const groupTarihKey = getDateKey(group?.tarih ?? group?.Tarih);
       const isler = group?.isler ?? group?.Isler ?? [];
 
-      row.days[tarihKey] = [...(row.days[tarihKey] || []), ...isler];
+      for (const work of isler) {
+        const workTarihKey = getDateKey(
+          work?.tarih ??
+            work?.Tarih ??
+            work?.olusturmaTarihiUtc ??
+            work?.OlusturmaTarihiUtc ??
+            group?.tarih ??
+            group?.Tarih
+        );
+
+        const finalTarihKey = workTarihKey || groupTarihKey;
+
+        row.days[finalTarihKey] = [...(row.days[finalTarihKey] || []), work];
+      }
+
       row.total += Number(group?.toplamIsSayisi ?? group?.ToplamIsSayisi ?? isler.length ?? 0);
     }
 
@@ -357,25 +363,25 @@ export default function PersonelTakvimPage() {
           </div>
 
           <div className="flex items-end gap-2 flex-wrap">
-           <div className="flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
-  <span className="h-2 w-2 rounded-full bg-blue-500" />
-  Teknik
-</div>
+            <div className="flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              Teknik
+            </div>
 
-<div className="flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-[10px] font-semibold text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-100">
-  <span className="h-2 w-2 rounded-full bg-green-500" />
-  Peyzaj
-</div>
+            <div className="flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-[10px] font-semibold text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-100">
+              <span className="h-2 w-2 rounded-full bg-green-500" />
+              Peyzaj
+            </div>
 
-<div className="flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-semibold text-orange-700 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-100">
-  <span className="h-2 w-2 rounded-full bg-orange-500" />
-  Tadilat
-</div>
+            <div className="flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-semibold text-orange-700 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-100">
+              <span className="h-2 w-2 rounded-full bg-orange-500" />
+              Tadilat
+            </div>
 
-<div className="flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-1 text-[10px] font-semibold text-purple-700 dark:border-purple-900 dark:bg-purple-950/40 dark:text-purple-100">
-  <span className="h-2 w-2 rounded-full bg-purple-500" />
-  Havuz
-</div>
+            <div className="flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-1 text-[10px] font-semibold text-purple-700 dark:border-purple-900 dark:bg-purple-950/40 dark:text-purple-100">
+              <span className="h-2 w-2 rounded-full bg-purple-500" />
+              Havuz
+            </div>
           </div>
         </div>
       </div>
@@ -470,7 +476,7 @@ export default function PersonelTakvimPage() {
                                       work?.peyzajIsEmriId ?? work?.PeyzajIsEmriId;
 
                                     if (kaynak.includes("PEYZAJ") && peyzajId) {
-                                      window.open(`peyzaj/isEmriDetay/${peyzajId}`, "_blank");
+                                      window.open(`/peyzaj/isEmriDetay/${peyzajId}`, "_blank");
                                       return;
                                     }
 

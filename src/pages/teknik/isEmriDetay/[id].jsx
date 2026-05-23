@@ -6,6 +6,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { getDataAsync } from "../../../utils/apiService";
+import Head from "next/head";
 
 import BelgeFotoModals from "../../../components/BelgeFotoModals";
 import PersonelDuzenleModals from "../../../components/PersonelDuzenleModals";
@@ -203,221 +204,227 @@ export default function IsEmriDetayPage() {
     
 
   return (
-    <div
-      className="
+    <>
+      <Head>
+        <title>{`İş Emri: ${kod}`}</title>
+      </Head>
+
+      <div
+        className="
         min-h-screen bg-zinc-50 text-xs text-zinc-800
         dark:bg-zinc-950 dark:text-zinc-100
         print:bg-white
       "
-    >
-      {/* ✅ ÜST BAR (MOBİL FULL WIDTH, SADECE PROGRESS + BUTON) */}
-      <div className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-50/95 px-3 py-2 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/85 print:hidden">
-        <div className="mx-auto w-full max-w-6xl">
-          {/* Progress satırı */}
-          <div className="flex w-full flex-col gap-2">
-            <div className="flex w-full items-center justify-between">
-              <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
-                %{progress}
-              </div>
+      >
+        {/* ✅ ÜST BAR (MOBİL FULL WIDTH, SADECE PROGRESS + BUTON) */}
+        <div className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-50/95 px-3 py-2 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/85 print:hidden">
+          <div className="mx-auto w-full max-w-6xl">
+            {/* Progress satırı */}
+            <div className="flex w-full flex-col gap-2">
+              <div className="flex w-full items-center justify-between">
+                <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                  %{progress}
+                </div>
 
-              {currentPersonelId ? (
-                <button
-                  type="button"
-                  onClick={() => setIsDurumModalOpen(true)}
-                  className="
+                {currentPersonelId ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsDurumModalOpen(true)}
+                    className="
                     rounded-full border border-zinc-300 bg-white px-3 py-1 text-[11px] font-semibold text-zinc-700
                     hover:bg-zinc-100
                     dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800
                   "
+                  >
+                    İş Durumunu Güncelle
+                  </button>
+                ) : (
+                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400" />
+                )}
+              </div>
+
+              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                <div
+                  className={`h-full rounded-full ${progressClass}`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              {/* İstersen butonların durduğu mini satır (mobilde taşma olmaz) */}
+              <div className="flex w-full items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.history.length > 1) {
+                      router.back();
+                    } else {
+                      router.push("/");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
+               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
                 >
-                  İş Durumunu Güncelle
+                  {/* Sol Ok İkon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  Geri
                 </button>
-              ) : (
-                <div className="text-[10px] text-zinc-500 dark:text-zinc-400" />
-              )}
-            </div>
 
-            <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-              <div
-                className={`h-full rounded-full ${progressClass}`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-
-            {/* İstersen butonların durduğu mini satır (mobilde taşma olmaz) */}
-            <div className="flex w-full items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.history.length > 1) {
-                    router.back();
-                  } else {
-                    router.push("/");
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
+                {/* Ana Sayfa Butonu */}
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
                dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
-              >
-                {/* Sol Ok İkon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-                Geri
-              </button>
+                  {/* Home İkon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 10l9-7 9 7"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 21V12h6v9"
+                    />
+                  </svg>
+                  Ana Sayfa
+                </button>
 
-              {/* Ana Sayfa Butonu */}
-              <button
-                type="button"
-                onClick={() => router.push("/")}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
                dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
-              >
-                {/* Home İkon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3.5 w-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 10l9-7 9 7"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 21V12h6v9"
-                  />
-                </svg>
-                Ana Sayfa
-              </button>
-
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
-               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
-              >
-                Yazdır
-              </button>
+                  Yazdır
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ✅ Sayfa içerik padding: mobilde taşma/zoom hissi olmasın */}
-      <div className="px-3 py-3">
-        {/* ANA KART */}
-        <div className="mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 print:shadow-none print:border-0 print:rounded-none print:p-0">
-          <IsEmriDetayHeader
-            kod={kod}
-            kod_2={kod_2}
-            kod_3={kod_3}
-            kisaBaslik={kisaBaslik}
-            durumAd={durumAd}
-            durumKod={durumKod}
-            olusturmaTarihiUtc={olusturmaTarihiUtc}
-            onayTarihiUtc={onayTarihiUtc}
-            baslamaTarihiUtc={baslamaTarihiUtc}
-            bitisTarihiUtc={bitisTarihiUtc}
-          />
-
-          <IsEmriDetayTopGrid
-            site={site}
-            apt={apt}
-            ev={ev}
-            konum={konum}
-            evSahibi={evSahibi}
-            kiraci={kiraci}
-            aciklama={aciklama}
-            aciklama_2={aciklama_2}
-          />
-          <IsEmriDetaySurecDurumlari record={record} />
-
-          {/* ALT GRID */}
-          <section className="mt-3 grid gap-3 lg:grid-cols-[1.7fr,1.3fr]">
-            <IsEmriDetayNotlar
-              notlar={notlar}
-              onAddNote={() => setIsNotModalOpen(true)}
+        {/* ✅ Sayfa içerik padding: mobilde taşma/zoom hissi olmasın */}
+        <div className="px-3 py-3">
+          {/* ANA KART */}
+          <div className="mx-auto w-full max-w-6xl rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 print:shadow-none print:border-0 print:rounded-none print:p-0">
+            <IsEmriDetayHeader
+              kod={kod}
+              kod_2={kod_2}
+              kod_3={kod_3}
+              kisaBaslik={kisaBaslik}
+              durumAd={durumAd}
+              durumKod={durumKod}
+              olusturmaTarihiUtc={olusturmaTarihiUtc}
+              onayTarihiUtc={onayTarihiUtc}
+              baslamaTarihiUtc={baslamaTarihiUtc}
+              bitisTarihiUtc={bitisTarihiUtc}
             />
 
-            <div className="space-y-3">
-              <IsEmriDetayDosyalar
-                dosyalar={dosyalar}
-                onAddFile={() => setIsBelgeModalOpen(true)}
+            <IsEmriDetayTopGrid
+              site={site}
+              apt={apt}
+              ev={ev}
+              konum={konum}
+              evSahibi={evSahibi}
+              kiraci={kiraci}
+              aciklama={aciklama}
+              aciklama_2={aciklama_2}
+            />
+            <IsEmriDetaySurecDurumlari record={record} />
+
+            {/* ALT GRID */}
+            <section className="mt-3 grid gap-3 lg:grid-cols-[1.7fr,1.3fr]">
+              <IsEmriDetayNotlar
+                notlar={notlar}
+                onAddNote={() => setIsNotModalOpen(true)}
               />
-              <IsEmriDetayPersoneller
-                personeller={personeller}
-                onEdit={
-                  canEditPersonel
-                    ? () => setIsPersonelModalOpen(true)
-                    : undefined
-                }
-              />
-              <IsEmriDetayMalzemeler
-                malzemeler={malzemeler}
-                kdvIncluded={kdvIncluded}
-                onToggleKdv={() => setKdvIncluded((v) => !v)}
-                onAddMalzeme={() => setIsMalzemeModalOpen(true)}
-              />
-            </div>
-          </section>
+
+              <div className="space-y-3">
+                <IsEmriDetayDosyalar
+                  dosyalar={dosyalar}
+                  onAddFile={() => setIsBelgeModalOpen(true)}
+                />
+                <IsEmriDetayPersoneller
+                  personeller={personeller}
+                  onEdit={
+                    canEditPersonel
+                      ? () => setIsPersonelModalOpen(true)
+                      : undefined
+                  }
+                />
+                <IsEmriDetayMalzemeler
+                  malzemeler={malzemeler}
+                  kdvIncluded={kdvIncluded}
+                  onToggleKdv={() => setKdvIncluded((v) => !v)}
+                  onAddMalzeme={() => setIsMalzemeModalOpen(true)}
+                />
+              </div>
+            </section>
+          </div>
         </div>
+
+        {/* MODALLAR */}
+        <BelgeFotoModals
+          isOpen={isBelgeModalOpen}
+          onClose={() => setIsBelgeModalOpen(false)}
+          isEmriId={isEmriId}
+          isEmriKod={kod}
+        />
+
+        <PersonelDuzenleModals
+          isOpen={isPersonelModalOpen}
+          onClose={() => setIsPersonelModalOpen(false)}
+          isEmriId={isEmriId}
+          isEmriKod={kod}
+        />
+
+        <NotEkleModals
+          isOpen={isNotModalOpen}
+          onClose={() => setIsNotModalOpen(false)}
+          isEmriId={isEmriId}
+          isEmriKod={kod}
+        />
+
+        <MalzemeEkleModals
+          isOpen={isMalzemeModalOpen}
+          onClose={() => setIsMalzemeModalOpen(false)}
+          isEmriId={isEmriId}
+          isEmriKod={kod}
+        />
+
+        {/* ✅ DURUM GÜNCELLE MODALI */}
+        <IsEmriDurumGuncelleModals
+          isOpen={isDurumModalOpen}
+          onClose={() => setIsDurumModalOpen(false)}
+          isEmriId={isEmriId}
+          isEmriKod={kod}
+          currentDurumKod={localDurumKod}
+          personelId={currentPersonelId}
+          onUpdated={handleDurumUpdated}
+        />
       </div>
-
-      {/* MODALLAR */}
-      <BelgeFotoModals
-        isOpen={isBelgeModalOpen}
-        onClose={() => setIsBelgeModalOpen(false)}
-        isEmriId={isEmriId}
-        isEmriKod={kod}
-      />
-
-      <PersonelDuzenleModals
-        isOpen={isPersonelModalOpen}
-        onClose={() => setIsPersonelModalOpen(false)}
-        isEmriId={isEmriId}
-        isEmriKod={kod}
-      />
-
-      <NotEkleModals
-        isOpen={isNotModalOpen}
-        onClose={() => setIsNotModalOpen(false)}
-        isEmriId={isEmriId}
-        isEmriKod={kod}
-      />
-
-      <MalzemeEkleModals
-        isOpen={isMalzemeModalOpen}
-        onClose={() => setIsMalzemeModalOpen(false)}
-        isEmriId={isEmriId}
-        isEmriKod={kod}
-      />
-
-      {/* ✅ DURUM GÜNCELLE MODALI */}
-      <IsEmriDurumGuncelleModals
-        isOpen={isDurumModalOpen}
-        onClose={() => setIsDurumModalOpen(false)}
-        isEmriId={isEmriId}
-        isEmriKod={kod}
-        currentDurumKod={localDurumKod}
-        personelId={currentPersonelId}
-        onUpdated={handleDurumUpdated}
-      />
-    </div>
+    </>
   );
 }

@@ -321,58 +321,48 @@ export default function TeknikMudurPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
       <div className={ui.pageWrap}>
         {/* ÜSTTE TEKNİK MÜDÜR PANELİ */}
-        <section className={ui.panel}>
-          <div className="flex flex-col gap-2.5">
+        <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-blue-50/60 to-cyan-50/60 p-2 shadow-sm dark:border-slate-800 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+          <div className="flex flex-col gap-2">
             {/* Üst bilgi satırı */}
-            <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white/85 p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 xl:flex-row xl:items-center xl:justify-between">
               {/* SOL: Kimlik + Bilgi */}
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 text-[10px] font-semibold tracking-wide text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    TEKNİK MÜDÜR PANELİ
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[10px] font-extrabold tracking-wide text-cyan-800 shadow-sm dark:border-cyan-900/60 dark:bg-cyan-950/35 dark:text-cyan-200">
+                    <span className="h-2 w-2 rounded-full bg-cyan-500 shadow-sm" />
+                    {personel?.kullaniciAdi ??
+                      personel?.KullaniciAdi ??
+                      "TEKNİK MÜDÜR PANELİ"}
                   </span>
 
                   {personel ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-                      <span className="font-semibold text-zinc-900 dark:text-white">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                      <span className="font-extrabold text-slate-900 dark:text-white">
                         {personel.ad} {personel.soyad}
-                      </span>
-                      <span className="text-zinc-400">•</span>
-                      <span className="text-zinc-600 dark:text-zinc-300">
-                        Rol: {personel.rol}
                       </span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
+                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-800 shadow-sm dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
                       PersonelUserInfo bulunamadı
                     </span>
                   )}
                 </div>
               </div>
-
-              <div className={ui.helper}>
-                Teknik müdür işlemleri ve iş emri yönetimi
-              </div>
             </div>
 
             {/* SAĞ: Aksiyonlar */}
-            <div className="flex  flex-col gap-2 2xl:grid 2xl:grid-cols-[1.5fr_1fr_auto]">
+            <div className="flex w-full flex-col gap-2">
               {/* ===== YÖNETİM GRUBU ===== */}
-              <div className={ui.softPanel}>
-                <div className="flex flex-wrap items-center gap-1.5">
-
-
-
-
+              <div className="rounded-xl border border-slate-200 bg-white/90 p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
+                <div className="grid w-full grid-cols-2 gap-1.5 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-7">
                   {(personel?.id === 4 || personel?.id === 20) && (
-                    <div className="flex flex-wrap justify-evenly items-center gap-1.5">
+                    <>
                       <button
                         onClick={handleYonetimKuruluKararlar}
-                        className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 dark:hover:border-emerald-700/50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300`}
+                        className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 shadow-sm hover:from-emerald-100 hover:to-teal-100 dark:border-emerald-900/60 dark:from-emerald-950/35 dark:to-teal-950/35 dark:text-emerald-200`}
                       >
                         <svg
-                          className={`${ui.icon} text-zinc-500 group-hover:text-emerald-600`}
+                          className={`${ui.icon} text-emerald-600 dark:text-emerald-300`}
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -386,10 +376,10 @@ export default function TeknikMudurPage() {
 
                       <button
                         onClick={handleYonetimKuruluIletiler}
-                        className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                        className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-cyan-200 bg-gradient-to-r from-cyan-50 to-sky-50 text-cyan-800 shadow-sm hover:from-cyan-100 hover:to-sky-100 dark:border-cyan-900/60 dark:from-cyan-950/35 dark:to-sky-950/35 dark:text-cyan-200`}
                       >
                         <svg
-                          className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                          className={`${ui.icon} text-cyan-600 dark:text-cyan-300`}
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -402,38 +392,29 @@ export default function TeknikMudurPage() {
                       </button>
 
                       <button
-                    onClick={handleGünlükRaporlar}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
-                  >
-                    <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
-                    </svg>
-                    Günlük Raporlar
-                  </button>
-
-
-
-
-
-
-
-
-                      
-                    </div>
+                        onClick={handleGünlükRaporlar}
+                        className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-800 shadow-sm hover:from-indigo-100 hover:to-blue-100 dark:border-indigo-900/60 dark:from-indigo-950/35 dark:to-blue-950/35 dark:text-indigo-200`}
+                      >
+                        <svg
+                          className={`${ui.icon} text-indigo-600 dark:text-indigo-300`}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                        </svg>
+                        Günlük Raporlar
+                      </button>
+                    </>
                   )}
 
                   <button
                     onClick={handleYoneticiRaporu}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 text-blue-800 shadow-sm hover:from-blue-100 hover:to-sky-100 dark:border-blue-900/60 dark:from-blue-950/35 dark:to-sky-950/35 dark:text-blue-200`}
                   >
                     <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      className={`${ui.icon} text-blue-600 dark:text-blue-300`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -446,101 +427,91 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleYoneticiRaporuHavuz}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 text-violet-800 shadow-sm hover:from-violet-100 hover:to-purple-100 dark:border-violet-900/60 dark:from-violet-950/35 dark:to-purple-950/35 dark:text-violet-200`}
                   >
                     <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      className={`${ui.icon} text-violet-600 dark:text-violet-300`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                      <path d="M12 3C8 8 6 11 6 14a6 6 0 0 0 12 0c0-3-2-6-6-11Z" />
                     </svg>
                     Havuz İşleri
                   </button>
 
                   <button
                     onClick={handleYoneticiRaporuPeyzaj}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-800 shadow-sm hover:from-emerald-100 hover:to-green-100 dark:border-emerald-900/60 dark:from-emerald-950/35 dark:to-green-950/35 dark:text-emerald-200`}
                   >
                     <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      className={`${ui.icon} text-emerald-600 dark:text-emerald-300`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                      <path d="M12 21C7 18 5 14 5 10a7 7 0 1 1 14 0c0 4-2 8-7 11Z" />
                     </svg>
                     Peyzaj İşleri
                   </button>
 
-
                   <button
                     onClick={handlePersonelTakvim}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-800 shadow-sm hover:from-cyan-100 hover:to-blue-100 dark:border-cyan-900/60 dark:from-cyan-950/35 dark:to-blue-950/35 dark:text-cyan-200`}
                   >
                     <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      className={`${ui.icon} text-cyan-600 dark:text-cyan-300`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                      <path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
                     </svg>
                     Personel Takvimi
                   </button>
 
                   <button
                     onClick={handleTalepRaporu}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 shadow-sm hover:from-amber-100 hover:to-orange-100 dark:border-amber-900/60 dark:from-amber-950/35 dark:to-orange-950/35 dark:text-amber-200`}
                   >
                     <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      className={`${ui.icon} text-amber-600 dark:text-amber-300`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                      <path d="M9 12h6M9 16h6M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
                     </svg>
                     Talepler
                   </button>
 
                   <button
                     onClick={handleDestekTalepleriRaporu}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-sky-200 hover:bg-sky-50 hover:text-sky-900 dark:hover:border-sky-700/50 dark:hover:bg-sky-900/20 dark:hover:text-sky-300`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-rose-200 bg-gradient-to-r from-rose-50 to-red-50 text-rose-800 shadow-sm hover:from-rose-100 hover:to-red-100 dark:border-rose-900/60 dark:from-rose-950/35 dark:to-red-950/35 dark:text-rose-200`}
                   >
                     <svg
-                      className={`${ui.icon} text-zinc-500 group-hover:text-sky-600`}
+                      className={`${ui.icon} text-rose-600 dark:text-rose-300`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
+                      <path d="M8 10h8M8 14h5M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 3V6a2 2 0 0 1 2-2Z" />
                     </svg>
                     Destek (Ticket)
                   </button>
 
-
-                  
-
                   {(personel?.id === 4 || personel?.id === 20) && (
-
-                      
-
-
-
-
                     <button
                       onClick={handleDuyurular}
-                      className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnGhost} hover:border-fuchsia-200 hover:bg-fuchsia-50 hover:text-fuchsia-900 dark:hover:border-fuchsia-700/50 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-300`}
+                      className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-pink-50 text-fuchsia-800 shadow-sm hover:from-fuchsia-100 hover:to-pink-100 dark:border-fuchsia-900/60 dark:from-fuchsia-950/35 dark:to-pink-950/35 dark:text-fuchsia-200`}
                     >
                       <svg
-                        className={`${ui.icon} text-zinc-500 group-hover:text-fuchsia-600`}
+                        className={`${ui.icon} text-fuchsia-600 dark:text-fuchsia-300`}
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
@@ -556,10 +527,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleNewIsEmri}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnPrimary}`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-blue-300 bg-gradient-to-r from-blue-100 to-sky-100 text-blue-900 shadow-sm hover:from-blue-200 hover:to-sky-200 dark:border-blue-800 dark:from-blue-900/40 dark:to-sky-900/40 dark:text-blue-100`}
                   >
                     <svg
-                      className={`${ui.icon} text-white/90`}
+                      className={`${ui.icon} text-blue-700 dark:text-blue-200`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -572,10 +543,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleNewIsEmriPeyzaj}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnPrimary}`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-emerald-300 bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-900 shadow-sm hover:from-emerald-200 hover:to-green-200 dark:border-emerald-800 dark:from-emerald-900/40 dark:to-green-900/40 dark:text-emerald-100`}
                   >
                     <svg
-                      className={`${ui.icon} text-white/90 transition group-hover:rotate-90`}
+                      className={`${ui.icon} text-emerald-700 transition group-hover:rotate-90 dark:text-emerald-200`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -583,16 +554,15 @@ export default function TeknikMudurPage() {
                     >
                       <path d="M12 5v14M5 12h14" />
                     </svg>
-
                     <span className="tracking-tight">Peyzaj / Havuz Görev</span>
                   </button>
 
                   <button
                     onClick={handleNewAnket}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-blue-200 bg-blue-400 text-white hover:bg-blue-500 hover:border-blue-200 shadow-sm`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-sky-300 bg-gradient-to-r from-sky-100 to-cyan-100 text-sky-900 shadow-sm hover:from-sky-200 hover:to-cyan-200 dark:border-sky-800 dark:from-sky-900/40 dark:to-cyan-900/40 dark:text-sky-100`}
                   >
                     <svg
-                      className={`${ui.icon} text-white/90`}
+                      className={`${ui.icon} text-sky-700 dark:text-sky-200`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -606,12 +576,13 @@ export default function TeknikMudurPage() {
                     </svg>
                     Anket Oluştur
                   </button>
+
                   <button
                     onClick={handleAnketListesi}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-blue-200 bg-blue-400 text-white hover:bg-blue-500 hover:border-blue-200 shadow-sm`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-cyan-300 bg-gradient-to-r from-cyan-100 to-teal-100 text-cyan-900 shadow-sm hover:from-cyan-200 hover:to-teal-200 dark:border-cyan-800 dark:from-cyan-900/40 dark:to-teal-900/40 dark:text-cyan-100`}
                   >
                     <svg
-                      className={`${ui.icon} text-white/90`}
+                      className={`${ui.icon} text-cyan-700 dark:text-cyan-200`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -626,35 +597,28 @@ export default function TeknikMudurPage() {
                     Anket Listesi
                   </button>
 
-
-
                   <button
                     onClick={handleNewRapor}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-orange-200 bg-orange-400 text-white hover:bg-orange-500 hover:border-orange-200 shadow-sm`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-orange-300 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900 shadow-sm hover:from-orange-200 hover:to-amber-200 dark:border-orange-800 dark:from-orange-900/40 dark:to-amber-900/40 dark:text-orange-100`}
                   >
-                   
                     Günlük Rapor Gir
                   </button>
 
-
-                  
-                  {(personel?.id === 118 ) && (
-
+                  {personel?.id === 118 && (
                     <button
                       onClick={handleGünlükRaporGonderimListesi}
-                      className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-orange-200 bg-orange-400 text-white hover:bg-orange-500 hover:border-orange-200 shadow-sm`}
+                      className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-yellow-300 bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-900 shadow-sm hover:from-yellow-200 hover:to-amber-200 dark:border-yellow-800 dark:from-yellow-900/40 dark:to-amber-900/40 dark:text-yellow-100`}
                     >
-                      
                       Rapor Gönderim Listesi
                     </button>
                   )}
 
                   <button
                     onClick={handleSatinalma}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnWarning}`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-amber-300 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900 shadow-sm hover:from-amber-200 hover:to-yellow-200 dark:border-amber-800 dark:from-amber-900/40 dark:to-yellow-900/40 dark:text-amber-100`}
                   >
                     <svg
-                      className={`${ui.icon} text-white`}
+                      className={`${ui.icon} text-amber-700 dark:text-amber-200`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -667,10 +631,10 @@ export default function TeknikMudurPage() {
 
                   <button
                     onClick={handleLogout}
-                    className={`group cursor-pointer ${ui.btnBase} ${ui.btnSm} ${ui.btnDanger}`}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-rose-200 bg-gradient-to-r from-rose-50 to-red-50 text-rose-800 shadow-sm hover:from-rose-100 hover:to-red-100 dark:border-rose-900/60 dark:from-rose-950/35 dark:to-red-950/35 dark:text-rose-200`}
                   >
                     <svg
-                      className={`${ui.icon} text-red-500 group-hover:text-red-600`}
+                      className={`${ui.icon} text-rose-600 dark:text-rose-300`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
