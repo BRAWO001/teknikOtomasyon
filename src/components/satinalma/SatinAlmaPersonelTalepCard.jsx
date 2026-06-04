@@ -113,7 +113,7 @@ export default function SatinAlmaPersonelTalepCard({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {data.map((r, i) => {
         const id = r?.satinAlmaId ?? r?.SatinAlmaId;
         const detayHref = id ? `/satinalma/teklifler/${id}` : null;
@@ -167,7 +167,7 @@ export default function SatinAlmaPersonelTalepCard({
                 openNewTab(detayHref);
               }
             }}
-            className={`cursor-pointer rounded-2xl border-2 bg-white p-3 shadow-sm transition hover:bg-sky-50/40 dark:bg-zinc-900 dark:hover:bg-sky-950/20 ${
+            className={`cursor-pointer rounded-2xl border-2 bg-white p-1 shadow-sm transition hover:bg-sky-50/40 dark:bg-zinc-900 dark:hover:bg-sky-950/20 ${
               teklifVarMi
                 ? "border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/70 dark:hover:border-emerald-700"
                 : "border-zinc-200 hover:border-sky-200 dark:border-zinc-800 dark:hover:border-sky-900"
@@ -217,7 +217,7 @@ export default function SatinAlmaPersonelTalepCard({
               </div>
             </div>
 
-            <div className="mt-3 rounded-xl bg-zinc-50 p-3 text-sm leading-5 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-200">
+            <div className="mt-3 rounded-xl bg-zinc-50 p-1 text-sm leading-5 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-200">
               <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-zinc-400">
                 Açıklama
               </div>
@@ -225,7 +225,7 @@ export default function SatinAlmaPersonelTalepCard({
               <div className="line-clamp-3">{safeText(aciklama)}</div>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="rounded-xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">
                   Talep Eden
@@ -268,7 +268,7 @@ export default function SatinAlmaPersonelTalepCard({
               
             </div>
 
-            <div className="mt-3">
+            <div className="mt-1">
               <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-zinc-400">
                 Onaycılar
               </div>

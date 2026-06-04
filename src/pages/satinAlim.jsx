@@ -52,6 +52,10 @@ export default function SatinAlmaPersonelPage() {
   const [totalCount, setTotalCount] = useState(0);
 
   const [siteId, setSiteId] = useState("");
+  const [search, setSearch] = useState("");
+  const [talepNo, setTalepNo] = useState("");
+  const [satinAlmaDurumu, setSatinAlmaDurumu] = useState("tum");
+
   const [sadeceTumOnaydanGecenler, setSadeceTumOnaydanGecenler] =
     useState(false);
 
@@ -76,18 +80,30 @@ export default function SatinAlmaPersonelPage() {
     qs.set("pageSize", String(pageSize));
 
     if (siteId) qs.set("siteId", String(siteId));
+    if (search.trim()) qs.set("search", search.trim());
+    if (talepNo) qs.set("talepNo", String(talepNo));
 
-    if (start && end) {
-      qs.set("startDate", start);
-      qs.set("endDate", end);
-    }
+    if (start) qs.set("startDate", start);
+    if (end) qs.set("endDate", end);
+
+    qs.set("satinAlmaDurumu", satinAlmaDurumu);
 
     if (sadeceTumOnaydanGecenler) {
       qs.set("tumOnaylananlar", "true");
     }
 
     return `SatinAlmaPersonel?${qs.toString()}`;
-  }, [page, pageSize, siteId, start, end, sadeceTumOnaydanGecenler]);
+  }, [
+    page,
+    pageSize,
+    siteId,
+    search,
+    talepNo,
+    start,
+    end,
+    satinAlmaDurumu,
+    sadeceTumOnaydanGecenler,
+  ]);
 
   async function loadData() {
     setLoading(true);
@@ -115,8 +131,7 @@ export default function SatinAlmaPersonelPage() {
     const loadSites = async () => {
       try {
         const siteRes = await getDataAsync("SiteAptEvControllerSet/sites");
-        if (cancelled) return;
-        setSites(siteRes || []);
+        if (!cancelled) setSites(siteRes || []);
       } catch (err) {
         console.error("SITES FETCH ERROR:", err);
       }
@@ -130,7 +145,12 @@ export default function SatinAlmaPersonelPage() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => {
+      loadData();
+    }, 300);
+
+    return () => clearTimeout(timer);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint]);
 
@@ -138,76 +158,124 @@ export default function SatinAlmaPersonelPage() {
     const d = getDefaultRange();
 
     setSiteId("");
+    setSearch("");
+    setTalepNo("");
     setStart(d.startDate);
     setEnd(d.endDate);
+    setSatinAlmaDurumu("tum");
     setSadeceTumOnaydanGecenler(false);
     setPage(1);
   };
 
-  return (
-    <div className="min-h-screen bg-zinc-50 p-3 dark:bg-zinc-950">
-      <div className="mx-auto max-w-5xl space-y-3">
-        <SatinAlmaPersonelSonYorumPanel take={10} stickyTop={8} />
+  const inputClass =
+    "h-8 rounded-md border border-zinc-300 bg-white px-1.5 text-xs outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100";
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+  const btnClass =
+    "rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
+
+  return (
+    <div className="min-h-screen bg-zinc-50 p-1 dark:bg-zinc-950">
+      <div className="mx-auto max-w-5xl space-y-1.5">
+        <SatinAlmaPersonelSonYorumPanel take={30} stickyTop={8} />
+
+        <div className="rounded-lg border border-zinc-200 bg-white p-1.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <div className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+              <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Satın Alma Talepleri
               </div>
 
-              <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
                 {totalCount} kayıt • Sayfa {page}/{totalPages}
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1">
               <button
                 type="button"
                 onClick={() => {
                   setSadeceTumOnaydanGecenler((v) => !v);
                   setPage(1);
                 }}
-                className={`rounded-lg border px-3 py-2 text-xs font-semibold shadow-sm transition ${
+                className={`rounded-md border px-2 py-1 text-xs font-semibold shadow-sm transition ${
                   sadeceTumOnaydanGecenler
                     ? "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/35 dark:text-emerald-200"
                     : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 }`}
               >
-                {sadeceTumOnaydanGecenler
-                  ? "✓ Tüm Onaylananlar"
-                  : "Tüm Onaylananları Göster"}
+                {sadeceTumOnaydanGecenler ? "✓ Onaylanan" : "Onaylanan"}
               </button>
 
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                Çıkış
-              </button>
-
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
+              <button type="button" onClick={resetFilters} className={btnClass}>
                 Sıfırla
               </button>
 
-              <button
-                type="button"
-                onClick={loadData}
-                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 shadow-sm hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200"
-              >
+              <button type="button" onClick={loadData} className={btnClass}>
                 Yenile
+              </button>
+
+              <button type="button" onClick={handleLogout} className={btnClass}>
+                Çıkış
               </button>
             </div>
           </div>
 
-          <div className="mt-0.5 grid grid-cols-1 gap-0.5 sm:grid-cols-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-medium text-zinc-500">
+          <div className="mt-1.5 grid grid-cols-2 gap-1 sm:grid-cols-5">
+            <div className="flex flex-col gap-0.5 sm:col-span-2">
+              <label className="text-[10px] font-medium text-zinc-500">
+                Arama
+              </label>
+
+              <input
+                type="text"
+                value={search}
+                placeholder="Site, açıklama, kişi..."
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className={inputClass}
+              />
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-medium text-zinc-500">
+                Talep No
+              </label>
+
+              <input
+                type="number"
+                value={talepNo}
+                placeholder="No"
+                onChange={(e) => {
+                  setTalepNo(e.target.value);
+                  setPage(1);
+                }}
+                className={inputClass}
+              />
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-medium text-zinc-500">
+                Satın Alma
+              </label>
+
+              <select
+                value={satinAlmaDurumu}
+                onChange={(e) => {
+                  setSatinAlmaDurumu(e.target.value);
+                  setPage(1);
+                }}
+                className={inputClass}
+              >
+                <option value="tum">Tümü</option>
+                <option value="satinAlinanlar">Satın alınan</option>
+                <option value="satinAlinmayanlar">Alınmayan</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-medium text-zinc-500">
                 Site
               </label>
 
@@ -217,7 +285,7 @@ export default function SatinAlmaPersonelPage() {
                   setSiteId(e.target.value);
                   setPage(1);
                 }}
-                className="h-10 rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className={inputClass}
               >
                 <option value="">Tümü</option>
                 {sites.map((s) => (
@@ -228,8 +296,8 @@ export default function SatinAlmaPersonelPage() {
               </select>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-medium text-zinc-500">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-medium text-zinc-500">
                 Başlangıç
               </label>
 
@@ -240,12 +308,12 @@ export default function SatinAlmaPersonelPage() {
                   setStart(e.target.value);
                   setPage(1);
                 }}
-                className="h-10 rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className={inputClass}
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-medium text-zinc-500">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] font-medium text-zinc-500">
                 Bitiş
               </label>
 
@@ -256,28 +324,28 @@ export default function SatinAlmaPersonelPage() {
                   setEnd(e.target.value);
                   setPage(1);
                 }}
-                className="h-10 rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className={inputClass}
               />
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+        <div className="flex items-center justify-between gap-1">
+          <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-100">
             Talepler
             {loading && (
-              <span className="ml-2 text-xs font-normal text-zinc-500">
+              <span className="ml-1 text-[11px] font-normal text-zinc-500">
                 Yükleniyor…
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               disabled={page <= 1 || loading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className={btnClass}
             >
               ◀ Önceki
             </button>
@@ -286,7 +354,7 @@ export default function SatinAlmaPersonelPage() {
               type="button"
               disabled={page >= totalPages || loading}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className={btnClass}
             >
               Sonraki ▶
             </button>

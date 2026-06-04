@@ -34,7 +34,11 @@ function getDefaultRange() {
   const today = new Date();
   const start = new Date(today);
   start.setMonth(start.getMonth() - 3);
-  return { startDate: toDateInputValue(start), endDate: toDateInputValue(today) };
+
+  return {
+    startDate: toDateInputValue(start),
+    endDate: toDateInputValue(today),
+  };
 }
 
 function normalizePagedResponse(res) {
@@ -43,7 +47,11 @@ function normalizePagedResponse(res) {
   const items = res.items ?? res.Items ?? [];
   const totalPages = Number(res.totalPages ?? res.TotalPages ?? 1) || 1;
   const totalCount =
-    Number(res.totalCount ?? res.TotalCount ?? (Array.isArray(items) ? items.length : 0)) || 0;
+    Number(
+      res.totalCount ??
+        res.TotalCount ??
+        (Array.isArray(items) ? items.length : 0)
+    ) || 0;
 
   return { items, totalPages, totalCount };
 }
@@ -66,19 +74,26 @@ export default function DetayliTaleplerRaporuPage() {
   const [teknikTalep, setTeknikTalep] = useState("");
   const [notArama, setNotArama] = useState("");
 
+  const [onayciAdi, setOnayciAdi] = useState("");
+  const [talepEdenAdi, setTalepEdenAdi] = useState("");
+
   const defaults = getDefaultRange();
   const [start, setStart] = useState(defaults.startDate);
   const [end, setEnd] = useState(defaults.endDate);
 
   const endpoint = useMemo(() => {
     const qs = new URLSearchParams();
+
     qs.set("page", String(page));
     qs.set("pageSize", String(pageSize));
 
     if (siteId) qs.set("siteId", String(siteId));
     if (talepCinsi) qs.set("talepCinsi", String(talepCinsi));
     if (teknikTalep) qs.set("teknikTalep", String(teknikTalep));
-    if (notArama?.trim()) qs.set("notArama", String(notArama.trim()));
+
+    if (notArama?.trim()) qs.set("notArama", notArama.trim());
+    if (onayciAdi?.trim()) qs.set("onayciAdi", onayciAdi.trim());
+    if (talepEdenAdi?.trim()) qs.set("talepEdenAdi", talepEdenAdi.trim());
 
     if (start && end) {
       qs.set("startDate", start);
@@ -86,10 +101,22 @@ export default function DetayliTaleplerRaporuPage() {
     }
 
     return `DetayliFilterTalep?${qs.toString()}`;
-  }, [page, pageSize, siteId, talepCinsi, teknikTalep, notArama, start, end]);
+  }, [
+    page,
+    pageSize,
+    siteId,
+    talepCinsi,
+    teknikTalep,
+    notArama,
+    onayciAdi,
+    talepEdenAdi,
+    start,
+    end,
+  ]);
 
   async function loadData() {
     setLoading(true);
+
     try {
       const res = await getDataAsync(endpoint);
       const norm = normalizePagedResponse(res);
@@ -137,6 +164,8 @@ export default function DetayliTaleplerRaporuPage() {
     setTalepCinsi("");
     setTeknikTalep("");
     setNotArama("");
+    setOnayciAdi("");
+    setTalepEdenAdi("");
     setStart("");
     setEnd("");
     setPage(1);
@@ -154,6 +183,7 @@ export default function DetayliTaleplerRaporuPage() {
             <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
               Detaylı Talepler Raporu
             </div>
+
             <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
               {totalCount} kayıt • Sayfa: {page}/{totalPages}
             </div>
@@ -204,9 +234,10 @@ export default function DetayliTaleplerRaporuPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-7">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-9">
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Site</label>
+
             <select
               value={siteId}
               onChange={(e) => {
@@ -216,6 +247,7 @@ export default function DetayliTaleplerRaporuPage() {
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               <option value="">Tümü</option>
+
               {sites.map((s) => (
                 <option key={s.id ?? s.Id} value={s.id ?? s.Id}>
                   {s.ad ?? s.Ad ?? `Site #${s.id ?? s.Id}`}
@@ -226,6 +258,7 @@ export default function DetayliTaleplerRaporuPage() {
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Talep Cinsi</label>
+
             <select
               value={talepCinsi}
               onChange={(e) => {
@@ -235,6 +268,7 @@ export default function DetayliTaleplerRaporuPage() {
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               <option value="">Tümü</option>
+
               {TALEP_CINSI_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -245,6 +279,7 @@ export default function DetayliTaleplerRaporuPage() {
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Teknik Talep</label>
+
             <select
               value={teknikTalep}
               onChange={(e) => {
@@ -262,9 +297,8 @@ export default function DetayliTaleplerRaporuPage() {
           </div>
 
           <div className="flex flex-col gap-1 md:col-span-2">
-            <label className="text-[11px] text-zinc-500">
-              Not / Yorum Ara
-            </label>
+            <label className="text-[11px] text-zinc-500">Not / Yorum Ara</label>
+
             <input
               type="text"
               value={notArama}
@@ -278,7 +312,38 @@ export default function DetayliTaleplerRaporuPage() {
           </div>
 
           <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-zinc-500">Onaycı Ara</label>
+
+            <input
+              type="text"
+              value={onayciAdi}
+              onChange={(e) => {
+                setOnayciAdi(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Onaycı adı..."
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-zinc-500">Talebi Açan Ara</label>
+
+            <input
+              type="text"
+              value={talepEdenAdi}
+              onChange={(e) => {
+                setTalepEdenAdi(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Talebi açan kişi..."
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Start</label>
+
             <input
               type="date"
               value={start}
@@ -292,6 +357,7 @@ export default function DetayliTaleplerRaporuPage() {
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">End</label>
+
             <input
               type="date"
               value={end}
@@ -310,6 +376,7 @@ export default function DetayliTaleplerRaporuPage() {
           <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
             Talepler
           </div>
+
           {loading && (
             <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Yükleniyor…
@@ -346,4 +413,3 @@ export default function DetayliTaleplerRaporuPage() {
     </div>
   );
 }
-

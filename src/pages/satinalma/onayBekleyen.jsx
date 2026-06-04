@@ -8,7 +8,6 @@ import { getCookie as getClientCookie } from "@/utils/cookieService";
 import SatinAlmaOnayBekleyenItem from "@/components/SatinAlmaOnayBekleyenItem";
 
 function toDateInputValue(date) {
-  // YYYY-MM-DD
   return date.toISOString().slice(0, 10);
 }
 
@@ -22,26 +21,26 @@ export default function SatinAlmaOnayBekleyenPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Filtreler
   const [filterSiteId, setFilterSiteId] = useState("");
+  const [filterTalepNo, setFilterTalepNo] = useState("");
+
   const [filterStartDate, setFilterStartDate] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 14); // son 14 gün başlangıç
+    d.setDate(d.getDate() - 14);
     return toDateInputValue(d);
   });
+
   const [filterEndDate, setFilterEndDate] = useState(() => {
     const d = new Date();
     return toDateInputValue(d);
   });
 
-  // ------------------------------------------------------
-  // Personel cookie'sini oku
-  // ------------------------------------------------------
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
       const cookie = getClientCookie("PersonelUserInfo");
+
       if (!cookie) {
         setError("Personel bilgisi bulunamadı. Tekrar giriş yapın.");
         setLoading(false);
@@ -59,9 +58,6 @@ export default function SatinAlmaOnayBekleyenPage() {
 
   const currentPersonelId = personel ? personel.id ?? personel.Id : null;
 
-  // ------------------------------------------------------
-  // Siteleri yükle (select options için)
-  // ------------------------------------------------------
   useEffect(() => {
     const loadSites = async () => {
       try {
@@ -75,9 +71,6 @@ export default function SatinAlmaOnayBekleyenPage() {
     loadSites();
   }, []);
 
-  // ------------------------------------------------------
-  // Onay bekleyenleri yükle (filtre + personelId ile)
-  // ------------------------------------------------------
   const loadItems = async () => {
     if (!currentPersonelId) return;
 
@@ -86,22 +79,29 @@ export default function SatinAlmaOnayBekleyenPage() {
       setError(null);
 
       const params = new URLSearchParams();
+
       params.append("personelId", currentPersonelId);
 
       if (filterStartDate) {
         params.append("startDate", filterStartDate);
       }
+
       if (filterEndDate) {
         params.append("endDate", filterEndDate);
       }
+
       if (filterSiteId) {
         params.append("siteId", filterSiteId);
       }
 
-      // backend: GET /api/satinalma/onayBekleyenler?...
+      if (filterTalepNo && Number(filterTalepNo) > 0) {
+        params.append("talepNo", filterTalepNo);
+      }
+
       const data = await getDataAsync(
         `satinalma/onayBekleyenler?${params.toString()}`
       );
+
       setItems(data || []);
     } catch (err) {
       console.error("ONAY BEKLEYEN LIST ERROR:", err);
@@ -111,15 +111,33 @@ export default function SatinAlmaOnayBekleyenPage() {
     }
   };
 
-  // Personel hazır olduğunda ilk yükleme (son 14 gün + tüm siteler)
   useEffect(() => {
     if (!currentPersonelId) return;
+
     loadItems();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPersonelId]);
 
+  const resetFilters = async () => {
+    const start = new Date();
+    start.setDate(start.getDate() - 14);
+
+    const end = new Date();
+
+    setFilterSiteId("");
+    setFilterTalepNo("");
+    setFilterStartDate(toDateInputValue(start));
+    setFilterEndDate(toDateInputValue(end));
+
+    setTimeout(() => {
+      loadItems();
+    }, 0);
+  };
+
   const formatDate = (iso) => {
     if (!iso) return "-";
+
     try {
       return new Date(iso).toLocaleString("tr-TR");
     } catch {
@@ -130,20 +148,21 @@ export default function SatinAlmaOnayBekleyenPage() {
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* Üst başlık */}
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-zinc-900">
               Onay Bekleyen Satın Alma Taleplerim
             </h1>
+
             <p className="text-[12px] text-zinc-500">
               Sizin onayınızı bekleyen satın alma taleplerinin listesi
             </p>
+
             {personel && (
               <p className="mt-1 text-[11px] text-zinc-600">
                 Personel:{" "}
                 <span className="font-medium">
-                  {personel.ad} {personel.soyad}
+                  {personel.ad ?? personel.Ad} {personel.soyad ?? personel.Soyad}
                 </span>{" "}
                 (ID: {currentPersonelId})
               </p>
@@ -160,15 +179,29 @@ export default function SatinAlmaOnayBekleyenPage() {
           </div>
         </div>
 
-        {/* Filtre Alanı */}
         <div className="mb-4 rounded-md border border-zinc-200 bg-white p-3 text-[12px]">
           <div className="mb-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {/* Başlangıç Tarihi */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+              <div className="flex flex-col">
+                <label className="mb-1 text-[11px] font-medium text-zinc-600">
+                  Talep No
+                </label>
+
+                <input
+                  type="number"
+                  min="1"
+                  className="rounded-md border border-zinc-300 px-2 py-1 text-[12px]"
+                  value={filterTalepNo}
+                  onChange={(e) => setFilterTalepNo(e.target.value)}
+                  placeholder="Örn: 1254"
+                />
+              </div>
+
               <div className="flex flex-col">
                 <label className="mb-1 text-[11px] font-medium text-zinc-600">
                   Başlangıç Tarihi
                 </label>
+
                 <input
                   type="date"
                   className="rounded-md border border-zinc-300 px-2 py-1 text-[12px]"
@@ -177,11 +210,11 @@ export default function SatinAlmaOnayBekleyenPage() {
                 />
               </div>
 
-              {/* Bitiş Tarihi */}
               <div className="flex flex-col">
                 <label className="mb-1 text-[11px] font-medium text-zinc-600">
                   Bitiş Tarihi
                 </label>
+
                 <input
                   type="date"
                   className="rounded-md border border-zinc-300 px-2 py-1 text-[12px]"
@@ -190,20 +223,22 @@ export default function SatinAlmaOnayBekleyenPage() {
                 />
               </div>
 
-              {/* Site filtresi */}
               <div className="flex flex-col">
                 <label className="mb-1 text-[11px] font-medium text-zinc-600">
                   Site
                 </label>
+
                 <select
                   className="rounded-md border border-zinc-300 px-2 py-1 text-[12px]"
                   value={filterSiteId}
                   onChange={(e) => setFilterSiteId(e.target.value)}
                 >
                   <option value="">Tüm Siteler</option>
+
                   {sites.map((s) => {
                     const id = s.id ?? s.Id;
                     const ad = s.ad ?? s.Ad;
+
                     return (
                       <option key={id} value={id}>
                         {ad}
@@ -221,37 +256,40 @@ export default function SatinAlmaOnayBekleyenPage() {
               >
                 Filtrele
               </button>
+
+              <button
+                onClick={resetFilters}
+                className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-[12px] font-semibold text-zinc-700 hover:bg-zinc-50"
+              >
+                Sıfırla
+              </button>
             </div>
           </div>
 
           <div className="text-[11px] text-zinc-500">
-            Not: Tarih filtresi belge tarihine (Tarih alanı) göre uygulanır.
-            Eğer tarih seçmezseniz, varsayılan olarak son 14 gün gösterilir.
+            Not: Talep No alanı satın alma kaydının Id değerine göre arama yapar.
+            Tarih filtresi belge tarihine göre uygulanır.
           </div>
         </div>
 
-        {/* Hata */}
         {error && (
           <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Yükleniyor */}
         {loading && (
           <div className="rounded-md border border-zinc-200 bg-white px-3 py-3 text-sm text-zinc-600">
             Yükleniyor...
           </div>
         )}
 
-        {/* Liste boşsa */}
         {!loading && !error && items.length === 0 && (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
-            Seçilen tarih ve site filtresine göre onay bekleyen talep bulunmuyor.
+            Seçilen filtrelere göre onay bekleyen talep bulunmuyor.
           </div>
         )}
 
-        {/* SATIR LİSTE */}
         {!loading && !error && items.length > 0 && (
           <div className="mt-4 rounded-md border border-amber-200 bg-white">
             {items.map((x) => (
