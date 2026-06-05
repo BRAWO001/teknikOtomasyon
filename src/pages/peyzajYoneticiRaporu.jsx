@@ -60,9 +60,17 @@ export default function PeyzajYoneticiRaporuPage() {
 
         if (cancelled) return;
 
-        setSites(siteRes.status === "fulfilled" && Array.isArray(siteRes.value) ? siteRes.value : []);
+        setSites(
+          siteRes.status === "fulfilled" && Array.isArray(siteRes.value)
+            ? siteRes.value
+            : []
+        );
 
-        if (perRes.status === "fulfilled" && Array.isArray(perRes.value) && perRes.value.length > 0) {
+        if (
+          perRes.status === "fulfilled" &&
+          Array.isArray(perRes.value) &&
+          perRes.value.length > 0
+        ) {
           setPersoneller(perRes.value);
         } else {
           try {
@@ -104,6 +112,7 @@ export default function PeyzajYoneticiRaporuPage() {
 
     try {
       const res = await getDataAsync(endpoint);
+
       const data = Array.isArray(res?.items)
         ? res.items
         : Array.isArray(res?.Items)
@@ -131,10 +140,24 @@ export default function PeyzajYoneticiRaporuPage() {
   const totalCount = items.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   const pagedItems = useMemo(() => {
     const startIndex = (page - 1) * pageSize;
     return items.slice(startIndex, startIndex + pageSize);
   }, [items, page, pageSize]);
+
+  const pageNumbers = useMemo(() => {
+    const arr = [];
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, page + 2);
+
+    for (let i = start; i <= end; i++) arr.push(i);
+
+    return arr;
+  }, [page, totalPages]);
 
   const resetFilters = () => {
     setSiteId("");
@@ -219,6 +242,67 @@ export default function PeyzajYoneticiRaporuPage() {
 
     return "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300";
   };
+
+  const PaginationBar = () => (
+    <div className="flex flex-col gap-2 border-t border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+        Toplam {totalCount} kayıt • {pageSize} kayıt/sayfa • Sayfa {page}/{totalPages}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => setPage(1)}
+          className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+        >
+          İlk
+        </button>
+
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+        >
+          ◀ Önceki
+        </button>
+
+        {pageNumbers.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPage(p)}
+            className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${
+              page === p
+                ? "border-blue-500 bg-blue-600 text-white"
+                : "border-zinc-300 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+        >
+          Sonraki ▶
+        </button>
+
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => setPage(totalPages)}
+          className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+        >
+          Son
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-2.5 space-y-2.5">
@@ -355,6 +439,8 @@ export default function PeyzajYoneticiRaporuPage() {
       </div>
 
       <div className="rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
+        <PaginationBar />
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-[11px]">
             <thead className="bg-zinc-50 dark:bg-zinc-800/50">
@@ -364,7 +450,6 @@ export default function PeyzajYoneticiRaporuPage() {
                 <th className="px-3 py-2.5 text-left font-semibold">Kod</th>
                 <th className="px-3 py-2.5 text-left font-semibold">Başlık</th>
                 <th className="px-3 py-2.5 text-left font-semibold">Açıklama</th>
-
                 <th className="px-3 py-2.5 text-left font-semibold">Eklenen Notlar</th>
                 <th className="px-3 py-2.5 text-left font-semibold">Detay</th>
               </tr>
@@ -373,20 +458,18 @@ export default function PeyzajYoneticiRaporuPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-8 text-center text-zinc-500">
+                  <td colSpan={7} className="px-3 py-8 text-center text-zinc-500">
                     Yükleniyor...
                   </td>
                 </tr>
               ) : pagedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-8 text-center text-zinc-500">
+                  <td colSpan={7} className="px-3 py-8 text-center text-zinc-500">
                     Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : (
                 pagedItems.map((item) => {
-                  
-
                   return (
                     <tr
                       key={getId(item)}
@@ -394,7 +477,9 @@ export default function PeyzajYoneticiRaporuPage() {
                       className="cursor-pointer border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
                     >
                       <td className="px-3 py-2.5 whitespace-nowrap">
-                        {formatDate(pick(item, "OlusturmaTarihiUtc", "olusturmaTarihiUtc"))}
+                        {formatDate(
+                          pick(item, "OlusturmaTarihiUtc", "olusturmaTarihiUtc")
+                        )}
                       </td>
 
                       <td className="px-3 py-2.5">{getSiteText(item)}</td>
@@ -410,9 +495,6 @@ export default function PeyzajYoneticiRaporuPage() {
                       <td className="px-3 py-2.5 min-w-[220px]">
                         {getAciklamaText(item)}
                       </td>
-
-                      
-                     
 
                       <td className="px-3 py-2.5 min-w-[260px] whitespace-pre-wrap">
                         {getEklenenNotlar(item)}
@@ -437,6 +519,8 @@ export default function PeyzajYoneticiRaporuPage() {
             </tbody>
           </table>
         </div>
+
+        <PaginationBar />
       </div>
     </div>
   );
