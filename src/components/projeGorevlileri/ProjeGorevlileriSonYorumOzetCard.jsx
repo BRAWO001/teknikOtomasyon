@@ -63,7 +63,7 @@ function timeAgoTR(iso) {
 
 export default function ProjeGorevlileriSonYorumOzetCard({
   personelId,
-  take = 10,
+  take = 30,
 }) {
   const rootRef = useRef(null);
 

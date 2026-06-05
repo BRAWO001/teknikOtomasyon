@@ -35,6 +35,7 @@ function getDefaultRange() {
   const today = new Date();
   const start = new Date(today);
   start.setMonth(start.getMonth() - 3);
+
   return {
     startDate: toDateInputValue(start),
     endDate: toDateInputValue(today),
@@ -49,7 +50,9 @@ function normalizePagedResponse(res) {
   }
 
   const items = res.items ?? res.Items ?? [];
+
   const totalPages = Number(res.totalPages ?? res.TotalPages ?? 1) || 1;
+
   const totalCount =
     Number(
       res.totalCount ??
@@ -58,6 +61,20 @@ function normalizePagedResponse(res) {
     ) || 0;
 
   return { items, totalPages, totalCount };
+}
+
+function getDateValue(x) {
+  return (
+    x?.Tarih ||
+    x?.tarih ||
+    x?.OlusturmaTarihi ||
+    x?.olusturmaTarihi ||
+    x?.OlusturmaTarihiUtc ||
+    x?.olusturmaTarihiUtc ||
+    x?.CreatedAt ||
+    x?.createdAt ||
+    null
+  );
 }
 
 export default function ProjeGorevlileriDetayliTaleplerPage() {
@@ -98,6 +115,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
   }, [personel]);
 
   const getSiteId = (x) => x?.SiteId ?? x?.siteId ?? x?.id ?? x?.Id ?? null;
+
   const getSiteName = (x) =>
     x?.SiteAdi ||
     x?.siteAdi ||
@@ -107,12 +125,35 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     x?.ad ||
     null;
 
-  // cookie -> personel
+  const allowedSiteIds = useMemo(() => {
+    return (siteList || [])
+      .map((x) => getSiteId(x))
+      .filter((x) => x !== undefined && x !== null && String(x).trim() !== "")
+      .map((x) => String(x));
+  }, [siteList]);
+
+  const selectedSite = useMemo(() => {
+    if (!siteId) return null;
+
+    return (
+      siteList.find((x) => String(getSiteId(x)) === String(siteId)) || null
+    );
+  }, [siteList, siteId]);
+
+  const selectedSiteName = useMemo(() => {
+    if (siteLoading) return "Yükleniyor...";
+    if (allowedSiteIds.length > 1 && !siteId) return "Tümü";
+    if (selectedSite) return getSiteName(selectedSite) || "Site adı yok";
+    if (allowedSiteIds.length === 1) return getSiteName(siteList[0]) || "Site adı yok";
+    return "Seçili site yok";
+  }, [siteLoading, allowedSiteIds, siteId, selectedSite, siteList]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
       const c = getClientCookie("PersonelUserInfo");
+
       if (!c) {
         router.replace("/");
         return;
@@ -126,7 +167,6 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     }
   }, [router]);
 
-  // personelin erişebildiği siteleri çek
   useEffect(() => {
     let cancelled = false;
 
@@ -144,40 +184,38 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
         if (cancelled) return;
 
         const arr = Array.isArray(data) ? data : data ? [data] : [];
-        setSiteList(arr);
 
-        const allowedIds = arr
-          .map((x) => String(getSiteId(x) ?? ""))
-          .filter(Boolean);
+        const temizListe = arr.filter((x) => {
+          const id = getSiteId(x);
+          return id !== undefined && id !== null && String(id).trim() !== "";
+        });
 
-        const directSiteId =
-          personel?.siteId ||
-          personel?.SiteId ||
-          personel?.siteID ||
-          personel?.SiteID ||
-          null;
+        setSiteList(temizListe);
 
-        if (directSiteId && allowedIds.includes(String(directSiteId))) {
-          setSiteId(String(directSiteId));
-          return;
-        }
+        const ids = temizListe.map((x) => String(getSiteId(x)));
 
-        if (allowedIds.length === 0) {
+        if (ids.length === 0) {
           setSiteId("");
           setSiteError("Bu kullanıcı için aktif site bulunamadı.");
           return;
         }
 
+        if (ids.length === 1) {
+          setSiteId(ids[0]);
+          return;
+        }
+
         setSiteId((prev) => {
-          if (prev && allowedIds.includes(String(prev))) return String(prev);
-          return String(allowedIds[0]);
+          if (prev && ids.includes(String(prev))) return String(prev);
+          return "";
         });
       } catch (e) {
         if (cancelled) return;
+
         console.error("SITE LIST ERROR:", e);
         setSiteList([]);
         setSiteId("");
-        setSiteError("Site bilgisi alınamadı. (endpoint kontrol)");
+        setSiteError("Site bilgisi alınamadı. Endpoint kontrol edilmeli.");
       } finally {
         if (!cancelled) setSiteLoading(false);
       }
@@ -188,65 +226,113 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     return () => {
       cancelled = true;
     };
-  }, [personelKodu, personel]);
-
-  // siteId whitelist dışına çıkamasın
-  const safeSiteId = useMemo(() => {
-    const allowed = new Set(
-      (siteList || [])
-        .map((x) => String(getSiteId(x) ?? ""))
-        .filter(Boolean)
-    );
-
-    if (siteId && allowed.has(String(siteId))) return String(siteId);
-
-    const first = (siteList || [])
-      .map((x) => getSiteId(x))
-      .find((v) => v !== undefined && v !== null);
-
-    return first ? String(first) : "";
-  }, [siteId, siteList]);
+  }, [personelKodu]);
 
   useEffect(() => {
-    if (!safeSiteId) return;
-    if (siteId !== safeSiteId) setSiteId(safeSiteId);
-  }, [safeSiteId, siteId]);
+    if (!allowedSiteIds.length) return;
 
-  const endpoint = useMemo(() => {
-    if (!safeSiteId) return null;
-
-    const qs = new URLSearchParams();
-    qs.set("page", String(page));
-    qs.set("pageSize", String(pageSize));
-
-    qs.set("siteId", String(safeSiteId));
-
-    if (talepCinsi) qs.set("talepCinsi", String(talepCinsi));
-    if (teknikTalep) qs.set("teknikTalep", String(teknikTalep));
-
-    if (start && end) {
-      qs.set("startDate", start);
-      qs.set("endDate", end);
+    if (siteId && !allowedSiteIds.includes(String(siteId))) {
+      setSiteId(allowedSiteIds.length === 1 ? allowedSiteIds[0] : "");
+      setPage(1);
     }
+  }, [allowedSiteIds, siteId]);
 
-    return `DetayliFilterTalep?${qs.toString()}`;
-  }, [page, pageSize, safeSiteId, talepCinsi, teknikTalep, start, end]);
+  const buildEndpoint = useCallback(
+    ({ selectedSiteId, currentPage, currentPageSize }) => {
+      const qs = new URLSearchParams();
+
+      qs.set("page", String(currentPage));
+      qs.set("pageSize", String(currentPageSize));
+
+      if (selectedSiteId) {
+        qs.set("siteId", String(selectedSiteId));
+      }
+
+      if (talepCinsi) qs.set("talepCinsi", String(talepCinsi));
+      if (teknikTalep) qs.set("teknikTalep", String(teknikTalep));
+
+      if (start && end) {
+        qs.set("startDate", start);
+        qs.set("endDate", end);
+      }
+
+      return `DetayliFilterTalep?${qs.toString()}`;
+    },
+    [talepCinsi, teknikTalep, start, end]
+  );
 
   const loadData = useCallback(async () => {
-    if (!endpoint) return;
+    if (!allowedSiteIds.length) {
+      setItems([]);
+      setTotalPages(1);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setErr("");
 
     try {
-      const res = await getDataAsync(endpoint);
-      const norm = normalizePagedResponse(res);
+      // Tek site seçiliyse normal backend pagination çalışır.
+      if (siteId) {
+        const endpoint = buildEndpoint({
+          selectedSiteId: siteId,
+          currentPage: page,
+          currentPageSize: pageSize,
+        });
 
-      setItems(norm.items || []);
-      setTotalPages(norm.totalPages || 1);
-      setTotalCount(norm.totalCount || 0);
+        const res = await getDataAsync(endpoint);
+        const norm = normalizePagedResponse(res);
+
+        setItems(norm.items || []);
+        setTotalPages(norm.totalPages || 1);
+        setTotalCount(norm.totalCount || 0);
+        return;
+      }
+
+      // Çok site varsa ve Tümü seçiliyse SADECE tanımlı siteler için ayrı ayrı istek atılır.
+      const allResults = await Promise.all(
+        allowedSiteIds.map(async (sid) => {
+          const endpoint = buildEndpoint({
+            selectedSiteId: sid,
+            currentPage: 1,
+            currentPageSize: 1000,
+          });
+
+          try {
+            const res = await getDataAsync(endpoint);
+            const norm = normalizePagedResponse(res);
+            return norm.items || [];
+          } catch (e) {
+            console.error(`Site ${sid} liste alınamadı:`, e);
+            return [];
+          }
+        })
+      );
+
+      const merged = allResults
+        .flat()
+        .sort((a, b) => {
+          const da = getDateValue(a);
+          const db = getDateValue(b);
+
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+
+          return new Date(db).getTime() - new Date(da).getTime();
+        });
+
+      const startIndex = (page - 1) * pageSize;
+      const paged = merged.slice(startIndex, startIndex + pageSize);
+
+      setItems(paged);
+      setTotalCount(merged.length);
+      setTotalPages(Math.max(1, Math.ceil(merged.length / pageSize)));
     } catch (e) {
       console.error("Detayli talepler GET hata:", e);
+
       setItems([]);
       setTotalPages(1);
       setTotalCount(0);
@@ -256,7 +342,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
     } finally {
       setLoading(false);
     }
-  }, [endpoint]);
+  }, [allowedSiteIds, siteId, page, pageSize, buildEndpoint]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -266,25 +352,24 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
   const resetFilters = () => {
     setTalepCinsi("");
     setTeknikTalep("");
+
     const freshDefaults = getDefaultRange();
+
     setStart(freshDefaults.startDate);
     setEnd(freshDefaults.endDate);
+
+    if (allowedSiteIds.length === 1) {
+      setSiteId(allowedSiteIds[0]);
+    } else {
+      setSiteId("");
+    }
+
     setPage(1);
   };
 
   const refresh = async () => {
     await loadData();
   };
-
-  const selectedSite = useMemo(() => {
-    return (
-      siteList.find((x) => String(getSiteId(x)) === String(safeSiteId)) || null
-    );
-  }, [siteList, safeSiteId]);
-
-  const selectedSiteName = useMemo(() => {
-    return getSiteName(selectedSite) || "Seçili site yok";
-  }, [selectedSite]);
 
   return (
     <div className="p-3 space-y-3">
@@ -303,7 +388,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
               {loading ? <span>• Yükleniyor…</span> : null}
 
               <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-                Site: {siteLoading ? "Yükleniyor..." : selectedSiteName}
+                Site: {selectedSiteName}
               </span>
             </div>
 
@@ -356,7 +441,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
             <button
               type="button"
               onClick={refresh}
-              disabled={!safeSiteId}
+              disabled={!allowedSiteIds.length}
               className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200 dark:hover:bg-emerald-900/45"
             >
               Yenile
@@ -368,16 +453,18 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-zinc-500">Site</label>
 
-            {siteList.length > 1 ? (
+            {allowedSiteIds.length > 1 ? (
               <select
                 value={siteId}
                 onChange={(e) => {
                   setSiteId(e.target.value);
                   setPage(1);
                 }}
-                disabled={siteLoading || !siteList.length}
+                disabled={siteLoading || !allowedSiteIds.length}
                 className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
               >
+                <option value="">Tümü</option>
+
                 {siteList.map((s) => {
                   const id = getSiteId(s);
                   const ad = getSiteName(s) || "Site adı yok";
@@ -411,6 +498,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               <option value="">Tümü</option>
+
               {TALEP_CINSI_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -467,7 +555,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
             <button
               type="button"
               onClick={loadData}
-              disabled={!safeSiteId}
+              disabled={!allowedSiteIds.length}
               className="h-8 rounded-md border border-sky-200 bg-sky-50 px-3 text-[12px] font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-60 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200 dark:hover:bg-sky-900/45"
             >
               Yenile
@@ -481,11 +569,12 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
           <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
             Talepler
           </div>
-          {loading && (
+
+          {loading ? (
             <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
               Yükleniyor…
             </span>
-          )}
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
@@ -511,7 +600,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
 
       <YoneticiRaporuDetayliTalepCard
         data={items}
-        page={page}
+        page={1}
         pageSize={pageSize}
       />
     </div>

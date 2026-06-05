@@ -37,6 +37,7 @@ export default function PeyzajYoneticiRaporuPage() {
     const today = new Date();
     const start = new Date(today);
     start.setMonth(start.getMonth() - 6);
+
     return {
       startDate: toDateInputValue(start),
       endDate: toDateInputValue(today),
@@ -59,34 +60,15 @@ export default function PeyzajYoneticiRaporuPage() {
 
         if (cancelled) return;
 
-        if (siteRes.status === "fulfilled") setSites(siteRes.value || []);
-        else console.error("SITES FETCH ERROR:", siteRes.reason);
+        setSites(siteRes.status === "fulfilled" && Array.isArray(siteRes.value) ? siteRes.value : []);
 
-        if (perRes.status === "fulfilled") {
-          const firstList = Array.isArray(perRes.value) ? perRes.value : [];
-
-          if (firstList.length > 0) {
-            setPersoneller(firstList);
-          } else {
-            try {
-              const fallback = await getDataAsync("Personeller/ByDurum?aktifMi=true");
-              if (!cancelled) {
-                setPersoneller(Array.isArray(fallback) ? fallback : []);
-              }
-            } catch (fallbackErr) {
-              console.error("PERSONELLER FALLBACK ERROR:", fallbackErr);
-              if (!cancelled) setPersoneller([]);
-            }
-          }
+        if (perRes.status === "fulfilled" && Array.isArray(perRes.value) && perRes.value.length > 0) {
+          setPersoneller(perRes.value);
         } else {
-          console.error("PERSONELLER FETCH ERROR:", perRes.reason);
           try {
             const fallback = await getDataAsync("Personeller/ByDurum?aktifMi=true");
-            if (!cancelled) {
-              setPersoneller(Array.isArray(fallback) ? fallback : []);
-            }
-          } catch (fallbackErr) {
-            console.error("PERSONELLER FALLBACK ERROR:", fallbackErr);
+            if (!cancelled) setPersoneller(Array.isArray(fallback) ? fallback : []);
+          } catch {
             if (!cancelled) setPersoneller([]);
           }
         }
@@ -96,6 +78,7 @@ export default function PeyzajYoneticiRaporuPage() {
     };
 
     loadLists();
+
     return () => {
       cancelled = true;
     };
@@ -110,6 +93,7 @@ export default function PeyzajYoneticiRaporuPage() {
     if (arama.trim()) qs.set("arama", arama.trim());
     if (startDate) qs.set("startDate", startDate);
     if (endDate) qs.set("endDate", endDate);
+
     qs.set("limit", "500");
 
     return `peyzaj-is-emri-formu/peyzaj-yonetici-raporu?${qs.toString()}`;
@@ -117,9 +101,15 @@ export default function PeyzajYoneticiRaporuPage() {
 
   async function loadData() {
     setLoading(true);
+
     try {
       const res = await getDataAsync(endpoint);
-      const data = Array.isArray(res?.items || res?.Items) ? (res?.items || res?.Items) : [];
+      const data = Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res?.Items)
+        ? res.Items
+        : [];
+
       setItems(data);
     } catch (err) {
       console.error("Peyzaj yönetici raporu yükleme hatası:", err);
@@ -168,13 +158,66 @@ export default function PeyzajYoneticiRaporuPage() {
   const getBaslikText = (item) => pick(item, "KisaBaslik", "kisaBaslik") || "-";
   const getAciklamaText = (item) => pick(item, "Aciklama", "aciklama") || "-";
 
+  const getProjeSorDurum = (item) =>
+    pick(item, "ProjeSorSurecDurumu", "projeSorSurecDurumu") || "-";
+
+  const getProjeSorNot = (item) =>
+    pick(item, "ProjeSorSurNot", "projeSorSurNot") || "-";
+
+  const getPeyzajSorDurum = (item) =>
+    pick(item, "PeyzajSorSurecDurumu", "peyzajSorSurecDurumu") || "-";
+
+  const getPeyzajSorNot = (item) =>
+    pick(item, "PeyzajSorSurNot", "peyzajSorSurNot") || "-";
+
+  const getEklenenNotlar = (item) => {
+    const notlar = pick(item, "Notlar", "notlar");
+
+    if (!Array.isArray(notlar) || notlar.length === 0) return "-";
+
+    const result = notlar
+      .map((n) => {
+        const metin = pick(n, "Metin", "metin");
+        if (!metin) return null;
+
+        const personel = pick(n, "Personel", "personel");
+        const ad = pick(personel, "Ad", "ad") || "";
+        const soyad = pick(personel, "Soyad", "soyad") || "";
+        const adSoyad = `${ad} ${soyad}`.trim();
+
+        return adSoyad ? `${adSoyad}: ${metin}` : metin;
+      })
+      .filter(Boolean);
+
+    return result.length > 0 ? result.join(" | ") : "-";
+  };
+
   const formatDate = (value) => {
     if (!value) return "-";
+
     try {
       return new Date(value).toLocaleString("tr-TR");
     } catch {
       return String(value);
     }
+  };
+
+  const statusClass = (value) => {
+    const v = String(value || "").toLowerCase();
+
+    if (!value || value === "-") {
+      return "border-zinc-300 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400";
+    }
+
+    if (v.includes("tamam") || v.includes("bitti") || v.includes("bit")) {
+      return "border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300";
+    }
+
+    if (v.includes("devam") || v.includes("bekle")) {
+      return "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300";
+    }
+
+    return "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300";
   };
 
   return (
@@ -232,7 +275,8 @@ export default function PeyzajYoneticiRaporuPage() {
               <option value="">Tümü</option>
               {personeller.map((p) => (
                 <option key={pick(p, "id", "Id")} value={pick(p, "id", "Id")}>
-                  {pick(p, "ad", "Ad", "AdSoyad") || ""} {pick(p, "soyad", "Soyad") || ""}
+                  {pick(p, "ad", "Ad", "AdSoyad") || ""}{" "}
+                  {pick(p, "soyad", "Soyad") || ""}
                 </option>
               ))}
             </select>
@@ -303,7 +347,7 @@ export default function PeyzajYoneticiRaporuPage() {
               type="text"
               value={arama}
               onChange={(e) => setArama(e.target.value)}
-              placeholder="Kod / başlık / açıklama"
+              placeholder="Kod / başlık / açıklama / not"
               className="w-full rounded-md border border-zinc-300 bg-white px-2.5 py-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
@@ -320,6 +364,8 @@ export default function PeyzajYoneticiRaporuPage() {
                 <th className="px-3 py-2.5 text-left font-semibold">Kod</th>
                 <th className="px-3 py-2.5 text-left font-semibold">Başlık</th>
                 <th className="px-3 py-2.5 text-left font-semibold">Açıklama</th>
+
+                <th className="px-3 py-2.5 text-left font-semibold">Eklenen Notlar</th>
                 <th className="px-3 py-2.5 text-left font-semibold">Detay</th>
               </tr>
             </thead>
@@ -327,46 +373,66 @@ export default function PeyzajYoneticiRaporuPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                  <td colSpan={11} className="px-3 py-8 text-center text-zinc-500">
                     Yükleniyor...
                   </td>
                 </tr>
               ) : pagedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                  <td colSpan={11} className="px-3 py-8 text-center text-zinc-500">
                     Kayıt bulunamadı.
                   </td>
                 </tr>
               ) : (
-                pagedItems.map((item) => (
-                  <tr
-                    key={getId(item)}
-                    onClick={() => goDetail(getId(item))}
-                    className="cursor-pointer border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
-                  >
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      {formatDate(pick(item, "OlusturmaTarihiUtc", "olusturmaTarihiUtc"))}
-                    </td>
-                    <td className="px-3 py-2.5">{getSiteText(item)}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap font-semibold text-zinc-800 dark:text-zinc-100">
-                      {getKodText(item)}
-                    </td>
-                    <td className="px-3 py-2.5 min-w-[180px]">{getBaslikText(item)}</td>
-                    <td className="px-3 py-2.5 min-w-[220px]">{getAciklamaText(item)}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          goDetail(getId(item));
-                        }}
-                        className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-[10px] font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
-                      >
-                        Detaya Git
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                pagedItems.map((item) => {
+                  
+
+                  return (
+                    <tr
+                      key={getId(item)}
+                      onClick={() => goDetail(getId(item))}
+                      className="cursor-pointer border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
+                    >
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        {formatDate(pick(item, "OlusturmaTarihiUtc", "olusturmaTarihiUtc"))}
+                      </td>
+
+                      <td className="px-3 py-2.5">{getSiteText(item)}</td>
+
+                      <td className="px-3 py-2.5 whitespace-nowrap font-semibold text-zinc-800 dark:text-zinc-100">
+                        {getKodText(item)}
+                      </td>
+
+                      <td className="px-3 py-2.5 min-w-[180px]">
+                        {getBaslikText(item)}
+                      </td>
+
+                      <td className="px-3 py-2.5 min-w-[220px]">
+                        {getAciklamaText(item)}
+                      </td>
+
+                      
+                     
+
+                      <td className="px-3 py-2.5 min-w-[260px] whitespace-pre-wrap">
+                        {getEklenenNotlar(item)}
+                      </td>
+
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            goDetail(getId(item));
+                          }}
+                          className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-[10px] font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+                        >
+                          Detaya Git
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
