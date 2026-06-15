@@ -1,6 +1,11 @@
+
+
+
+
+
 // src/pages/YonetimKurulu/ileti/[token].jsx
 import Image from "next/image";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
@@ -8,6 +13,10 @@ import { getCookie as getClientCookie } from "@/utils/cookieService";
 import IletiDosyaModals from "@/components/yonetimKurulu/IletiDosyaModals";
 import IletiDosyaOzetCard from "@/components/yonetimKurulu/IletiDosyaOzetCard";
 import IletiGuncelleModals from "@/components/yonetimKurulu/IletiGuncelleModals";
+import IletiPrintA4 from "@/components/yonetimKurulu/IletiPrintA4";
+
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const DURUM_OPTIONS = [
   { value: "Beklemede", label: "Beklemede" },
@@ -16,7 +25,6 @@ const DURUM_OPTIONS = [
   { value: "İptal", label: "İptal" },
 ];
 
-// ✅ Dosya controller base
 const DOSYA_URL_BASE = "ProjeYKIletiDosyaYukle";
 
 function safeText(v) {
@@ -24,12 +32,14 @@ function safeText(v) {
   const s = String(v).trim();
   return s.length ? s : "-";
 }
+
 function pick(obj, ...keys) {
   for (const k of keys) {
     if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
   }
   return undefined;
 }
+
 function normalizePersonel(p) {
   if (!p) return null;
   return {
@@ -39,6 +49,7 @@ function normalizePersonel(p) {
     rol: pick(p, "rol", "Rol") ?? null,
   };
 }
+
 function normalizeSite(s) {
   if (!s) return null;
   return {
@@ -46,6 +57,7 @@ function normalizeSite(s) {
     ad: pick(s, "ad", "Ad") ?? null,
   };
 }
+
 function normalizeYorum(y) {
   if (!y) return null;
   return {
@@ -54,7 +66,8 @@ function normalizeYorum(y) {
     personelId: pick(y, "personelId", "PersonelId") ?? null,
     personel: normalizePersonel(pick(y, "personel", "Personel")),
     yorum: pick(y, "yorum", "Yorum") ?? "",
-    olusturmaTarihiUtc: pick(y, "olusturmaTarihiUtc", "OlusturmaTarihiUtc") ?? null,
+    olusturmaTarihiUtc:
+      pick(y, "olusturmaTarihiUtc", "OlusturmaTarihiUtc") ?? null,
   };
 }
 
@@ -65,10 +78,18 @@ function normalizeIletiDto(dto) {
   const siteNormalized = siteObj ? normalizeSite(siteObj) : null;
 
   const yorumlarRaw = pick(rawIleti, "yorumlar", "Yorumlar");
-  const yorumlar = Array.isArray(yorumlarRaw) ? yorumlarRaw.map(normalizeYorum).filter(Boolean) : [];
+  const yorumlar = Array.isArray(yorumlarRaw)
+    ? yorumlarRaw.map(normalizeYorum).filter(Boolean)
+    : [];
 
-  // Dosyalar token endpoint’inden gelmezse boş kalır; biz ayrıca dolduracağız.
-  const dosyalarRaw = pick(rawIleti, "dosyalar", "Dosyalar", "iletiDosyalar", "IletiDosyalar");
+  const dosyalarRaw = pick(
+    rawIleti,
+    "dosyalar",
+    "Dosyalar",
+    "iletiDosyalar",
+    "IletiDosyalar"
+  );
+
   const dosyalar = Array.isArray(dosyalarRaw) ? dosyalarRaw : [];
 
   const normalized = {
@@ -76,18 +97,24 @@ function normalizeIletiDto(dto) {
     siteId: pick(rawIleti, "siteId", "SiteId") ?? null,
     site: siteNormalized,
     siteBazliNo: pick(rawIleti, "siteBazliNo", "SiteBazliNo") ?? null,
-    tarihUtc: pick(rawIleti, "tarihUtc", "TarihUtc", "tarihUTC", "TarihUTC") ?? null,
-    iletiBaslik: pick(rawIleti, "iletiBaslik", "IletiBaslik", "iletiKonusu", "IletiKonusu") ?? null,
+    tarihUtc:
+      pick(rawIleti, "tarihUtc", "TarihUtc", "tarihUTC", "TarihUTC") ?? null,
+    iletiBaslik:
+      pick(rawIleti, "iletiBaslik", "IletiBaslik", "iletiKonusu", "IletiKonusu") ??
+      null,
     iletiAciklama: pick(rawIleti, "iletiAciklama", "IletiAciklama") ?? null,
     durum: pick(rawIleti, "durum", "Durum") ?? null,
     publicToken: pick(rawIleti, "publicToken", "PublicToken") ?? null,
-    sistemUretilmisLink: pick(rawIleti, "sistemUretilmisLink", "SistemUretilmisLink") ?? null,
-    duzenlemeDurumu: pick(rawIleti, "duzenlemeDurumu", "DuzenlemeDurumu") ?? false,
+    sistemUretilmisLink:
+      pick(rawIleti, "sistemUretilmisLink", "SistemUretilmisLink") ?? null,
+    duzenlemeDurumu:
+      pick(rawIleti, "duzenlemeDurumu", "DuzenlemeDurumu") ?? false,
     yorumlar,
     dosyalar,
   };
 
   const katilimcilarRaw = pick(dto, "katilimcilar", "Katilimcilar");
+
   const katilimcilar = Array.isArray(katilimcilarRaw)
     ? katilimcilarRaw.map((k) => ({
         id: pick(k, "id", "Id") ?? null,
@@ -120,21 +147,34 @@ export default function IletiTokenDetayPage() {
   const [adminMsg, setAdminMsg] = useState(null);
 
   const [dosyaModalOpen, setDosyaModalOpen] = useState(false);
-
-  // ✅ Güncelleme modalı
   const [guncelleModalOpen, setGuncelleModalOpen] = useState(false);
 
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [pdfErr, setPdfErr] = useState("");
+
+  const pdfRef = useRef(null);
+
   const isRol90 = useMemo(() => Number(personel?.rol) === 90, [personel]);
-  const duzenlemeAcikMi = useMemo(() => !!data?.duzenlemeDurumu, [data?.duzenlemeDurumu]);
-  const canComment = useMemo(() => !!personel?.id && duzenlemeAcikMi, [personel?.id, duzenlemeAcikMi]);
+  const duzenlemeAcikMi = useMemo(
+    () => !!data?.duzenlemeDurumu,
+    [data?.duzenlemeDurumu]
+  );
+
+  const canComment = useMemo(
+    () => !!personel?.id && duzenlemeAcikMi,
+    [personel?.id, duzenlemeAcikMi]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     try {
       const cookie = getClientCookie("PersonelUserInfo");
       if (!cookie) return;
+
       const parsed = JSON.parse(cookie);
       const p = parsed?.personel ?? parsed;
+
       setPersonel(p || null);
     } catch (e) {
       console.error("PersonelUserInfo parse error:", e);
@@ -142,10 +182,10 @@ export default function IletiTokenDetayPage() {
     }
   }, []);
 
-  // ✅ İletiId ile dosyaları çek
   const fetchDosyalarByIletiId = useCallback(async (iletiId) => {
     const id = Number(iletiId || 0);
     if (!id) return [];
+
     const list = await getDataAsync(`${DOSYA_URL_BASE}/${id}`);
     return Array.isArray(list) ? list : [];
   }, []);
@@ -153,6 +193,7 @@ export default function IletiTokenDetayPage() {
   const syncDurumInputs = useCallback((merged) => {
     const dStr = merged?.durum ? String(merged.durum) : "";
     const known = DURUM_OPTIONS.some((x) => x.value === dStr) ? dStr : "";
+
     setDurumSelect(known);
     setDurumCustom(known ? "" : dStr);
   }, []);
@@ -162,8 +203,6 @@ export default function IletiTokenDetayPage() {
 
     const dto = await getDataAsync(`projeYonetimKurulu/ileti/public/${token}`);
     const normalized = normalizeIletiDto(dto || {});
-
-    // ✅ Dosyaları ayrıca çekip data içine koy
     const dosyalar = await fetchDosyalarByIletiId(normalized?.id);
     const merged = { ...normalized, dosyalar };
 
@@ -175,12 +214,16 @@ export default function IletiTokenDetayPage() {
     if (!token) return;
 
     let cancelled = false;
+
     const load = async () => {
       try {
         setLoading(true);
         setErr(null);
 
-        const dto = await getDataAsync(`projeYonetimKurulu/ileti/public/${token}`);
+        const dto = await getDataAsync(
+          `projeYonetimKurulu/ileti/public/${token}`
+        );
+
         if (cancelled) return;
 
         const normalized = normalizeIletiDto(dto || {});
@@ -191,7 +234,9 @@ export default function IletiTokenDetayPage() {
         syncDurumInputs(merged);
       } catch (e) {
         console.error("PUBLIC TOKEN GET ERROR:", e);
+
         if (cancelled) return;
+
         setErr("İleti detayı alınamadı (token geçersiz olabilir).");
         setData(null);
       } finally {
@@ -200,6 +245,7 @@ export default function IletiTokenDetayPage() {
     };
 
     load();
+
     return () => {
       cancelled = true;
     };
@@ -207,6 +253,7 @@ export default function IletiTokenDetayPage() {
 
   const formatTR = (iso) => {
     if (!iso) return "-";
+
     try {
       return new Date(iso).toLocaleString("tr-TR", {
         day: "2-digit",
@@ -220,6 +267,93 @@ export default function IletiTokenDetayPage() {
     }
   };
 
+  const handlePdfDownload = async () => {
+    if (!data) return;
+
+    setPdfErr("");
+    setPdfDownloading(true);
+
+    try {
+      const el = pdfRef.current;
+      if (!el) throw new Error("pdfRef yok");
+
+      const styleEl = document.createElement("style");
+      styleEl.setAttribute("data-pdf-style", "1");
+      styleEl.innerHTML = `
+        #pdf-a4-root, #pdf-a4-root * {
+          color: #000 !important;
+          background: #fff !important;
+          border-color: #ddd !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+          filter: none !important;
+        }
+      `;
+
+      document.head.appendChild(styleEl);
+
+      const hidden = [];
+
+      el.querySelectorAll("img,svg,video,canvas,iframe").forEach((node) => {
+        hidden.push({ node, prev: node.style.display });
+        node.style.display = "none";
+      });
+
+      await new Promise((r) => setTimeout(r, 80));
+
+      const canvas = await html2canvas(el, {
+        scale: 1.35,
+        backgroundColor: "#ffffff",
+        useCORS: false,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 1200,
+      });
+
+      hidden.forEach(({ node, prev }) => {
+        node.style.display = prev;
+      });
+
+      styleEl.remove();
+
+      const imgData = canvas.toDataURL("image/png", 0.72);
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `Ileti-${
+        data?.siteBazliNo ?? data?.id ?? "belge"
+      }.pdf`;
+
+      pdf.save(fileName);
+    } catch (e) {
+      console.error("PDF ERROR:", e);
+      setPdfErr("PDF oluşturulamadı.");
+    } finally {
+      setPdfDownloading(false);
+    }
+  };
+
   const handleYorumEkle = async () => {
     if (!data?.id) return;
     if (!personel?.id) return;
@@ -230,6 +364,7 @@ export default function IletiTokenDetayPage() {
     }
 
     const y = (yorum || "").trim();
+
     if (!y) {
       setSaveMsg("Lütfen yorum yazınız.");
       return;
@@ -245,20 +380,30 @@ export default function IletiTokenDetayPage() {
         yorum: y,
       };
 
-      const res = await postDataAsync("projeYonetimKurulu/ileti/yorum", payload);
+      const res = await postDataAsync(
+        "projeYonetimKurulu/ileti/yorum",
+        payload
+      );
 
       const newItem = normalizeYorum({
         Id: res?.id ?? Math.floor(Math.random() * 1e9),
         IletiModalsId: Number(data.id),
         PersonelId: Number(personel.id),
-        Personel: { Id: Number(personel.id), Ad: personel.ad, Soyad: personel.soyad, Rol: personel.rol },
+        Personel: {
+          Id: Number(personel.id),
+          Ad: personel.ad,
+          Soyad: personel.soyad,
+          Rol: personel.rol,
+        },
         Yorum: y,
         OlusturmaTarihiUtc: res?.olusturmaTarihiUtc ?? new Date().toISOString(),
       });
 
       setData((prev) => {
         if (!prev) return prev;
+
         const list = Array.isArray(prev.yorumlar) ? [...prev.yorumlar] : [];
+
         return { ...prev, yorumlar: [newItem, ...list] };
       });
 
@@ -266,8 +411,12 @@ export default function IletiTokenDetayPage() {
       setSaveMsg("Yorum eklendi.");
     } catch (e) {
       console.error("YORUM POST ERROR:", e);
+
       const status = e?.response?.status;
-      setSaveMsg(status ? `Yorum eklenemedi (HTTP ${status}).` : "Yorum eklenemedi.");
+
+      setSaveMsg(
+        status ? `Yorum eklenemedi (HTTP ${status}).` : "Yorum eklenemedi."
+      );
     } finally {
       setSaving(false);
     }
@@ -275,33 +424,48 @@ export default function IletiTokenDetayPage() {
 
   const handleUpdateDurum = async () => {
     if (!data?.id) return;
+
     if (!isRol90) {
       setAdminMsg("Bu işlem sadece rol 90 için.");
       return;
     }
 
     const finalVal = (durumSelect || durumCustom || "").trim();
-    const payload = { durum: finalVal ? finalVal : null };
+
+    const payload = {
+      durum: finalVal ? finalVal : null,
+    };
 
     try {
       setAdminSaving(true);
       setAdminMsg(null);
 
-      const res = await postDataAsync(`projeYonetimKurulu/ileti/${data.id}/durum`, payload);
+      const res = await postDataAsync(
+        `projeYonetimKurulu/ileti/${data.id}/durum`,
+        payload
+      );
 
       const newVal = pick(res, "durum", "Durum") ?? payload.durum;
+
       setData((prev) => (prev ? { ...prev, durum: newVal } : prev));
 
       const newStr = newVal ? String(newVal) : "";
       const isKnown = DURUM_OPTIONS.some((x) => x.value === newStr);
+
       setDurumSelect(isKnown ? newStr : "");
       setDurumCustom(isKnown ? "" : newStr);
 
       setAdminMsg("Durum güncellendi.");
     } catch (e) {
       console.error("DURUM UPDATE ERROR:", e);
+
       const status = e?.response?.status;
-      setAdminMsg(status ? `Durum güncellenemedi (HTTP ${status}).` : "Durum güncellenemedi.");
+
+      setAdminMsg(
+        status
+          ? `Durum güncellenemedi (HTTP ${status}).`
+          : "Durum güncellenemedi."
+      );
     } finally {
       setAdminSaving(false);
     }
@@ -324,30 +488,40 @@ export default function IletiTokenDetayPage() {
         duzenlemeDurumu: !duzenlemeAcikMi,
       };
 
-      const res = await postDataAsync("projeYonetimKurulu/ileti/duzenleme-durumu", payload);
+      const res = await postDataAsync(
+        "projeYonetimKurulu/ileti/duzenleme-durumu",
+        payload
+      );
 
       const newVal =
         typeof pick(res, "duzenlemeDurumu", "DuzenlemeDurumu") === "boolean"
           ? pick(res, "duzenlemeDurumu", "DuzenlemeDurumu")
           : payload.duzenlemeDurumu;
 
-      setData((prev) => (prev ? { ...prev, duzenlemeDurumu: newVal } : prev));
+      setData((prev) =>
+        prev ? { ...prev, duzenlemeDurumu: newVal } : prev
+      );
+
       setAdminMsg(newVal ? "Yorumlar açıldı." : "Yorumlar kapatıldı.");
     } catch (e) {
       console.error("DUZENLEME DURUMU UPDATE ERROR:", e);
+
       const status = e?.response?.status;
-      setAdminMsg(status ? `Güncellenemedi (HTTP ${status}).` : "Güncellenemedi.");
+
+      setAdminMsg(
+        status ? `Güncellenemedi (HTTP ${status}).` : "Güncellenemedi."
+      );
     } finally {
       setAdminSaving(false);
     }
   };
 
-  // ✅ Modal açma: data yoksa açma + mesaj
   const openGuncelleModal = useCallback(() => {
     if (!data?.id) {
       setAdminMsg("İleti verisi henüz yüklenmedi. Lütfen tekrar deneyin.");
       return;
     }
+
     setGuncelleModalOpen(true);
   }, [data?.id]);
 
@@ -356,11 +530,13 @@ export default function IletiTokenDetayPage() {
       tone === "ok"
         ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/15 dark:text-emerald-200"
         : tone === "bad"
-        ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/15 dark:text-red-200"
-        : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200";
+          ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/15 dark:text-red-200"
+          : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200";
 
     return (
-      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${cls}`}>
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${cls}`}
+      >
         {label}
       </span>
     );
@@ -370,11 +546,20 @@ export default function IletiTokenDetayPage() {
     <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
         <div className="min-w-0">
-          <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</div>
-          {subtitle ? <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">{subtitle}</div> : null}
+          <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+            {title}
+          </div>
+
+          {subtitle ? (
+            <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              {subtitle}
+            </div>
+          ) : null}
         </div>
+
         {right ? <div className="shrink-0">{right}</div> : null}
       </div>
+
       <div className="px-5 py-4">{children}</div>
     </div>
   );
@@ -398,7 +583,6 @@ export default function IletiTokenDetayPage() {
         }}
       />
 
-      {/* ✅ Metin + dosya silme güncelleme modalı */}
       <IletiGuncelleModals
         isOpen={guncelleModalOpen}
         onClose={() => setGuncelleModalOpen(false)}
@@ -423,17 +607,18 @@ export default function IletiTokenDetayPage() {
                 className="h-10 w-auto object-contain"
               />
             </div>
+
             <div className="leading-tight">
               <div className="text-sm font-bold tracking-wide">
                 EOS MANAGEMENT
               </div>
+
               <div className="text-xs text-zinc-600 dark:text-zinc-400">
                 Yönetim Kurulu • İleti Detayı
               </div>
             </div>
           </div>
 
-          {/* ✅ Sağ butonlar */}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -452,11 +637,27 @@ export default function IletiTokenDetayPage() {
             >
               ⌂ Anasayfa
             </button>
+
+            <button
+              type="button"
+              onClick={handlePdfDownload}
+              disabled={pdfDownloading || loading || !data}
+              className="inline-flex h-9 items-center gap-2 rounded-xl bg-zinc-900 px-3 text-[12px] font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              title="PDF İndir"
+            >
+              {pdfDownloading ? "PDF Hazırlanıyor..." : "⬇️ PDF İndir"}
+            </button>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-6xl px-3 py-5 sm:px-5 sm:py-6">
+        {pdfErr ? (
+          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700 shadow-sm dark:border-red-800 dark:bg-red-900/20 dark:text-red-100">
+            {pdfErr}
+          </div>
+        ) : null}
+
         <div className="mb-3 flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
             <StatusPill
@@ -517,15 +718,24 @@ export default function IletiTokenDetayPage() {
                     {safeText(data.iletiAciklama)}
                   </div>
                 </div>
+
+                <div className="mt-4 md:hidden">
+                  <button
+                    type="button"
+                    onClick={handlePdfDownload}
+                    disabled={pdfDownloading || loading || !data}
+                    className="h-10 w-full rounded-md bg-zinc-900 px-4 text-[12px] font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    {pdfDownloading ? "PDF Hazırlanıyor..." : "⬇️ PDF İndir"}
+                  </button>
+                </div>
               </div>
 
-              {/* ✅ Token sayfasında görünür */}
               <IletiDosyaOzetCard
                 dosyalar={dosyalar}
                 onOpen={() => setDosyaModalOpen(true)}
               />
 
-              {/* Yorum yazma */}
               <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="mb-3">
                   <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -573,13 +783,13 @@ export default function IletiTokenDetayPage() {
                 </div>
               </div>
 
-              {/* Yorum listesi */}
               <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
                   <div className="min-w-0">
                     <div className="text-[12px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                       Yorumlar
                     </div>
+
                     <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
                       Toplam:{" "}
                       {Array.isArray(data.yorumlar) ? data.yorumlar.length : 0}
@@ -593,6 +803,7 @@ export default function IletiTokenDetayPage() {
                       {data.yorumlar.map((y) => {
                         const isMe =
                           Number(y.personelId) === Number(personel?.id);
+
                         return (
                           <div key={y.id} className="px-4 py-3">
                             <div className="flex items-start justify-between gap-3">
@@ -602,6 +813,7 @@ export default function IletiTokenDetayPage() {
                                     {safeText(y.personel?.ad)}{" "}
                                     {safeText(y.personel?.soyad)}
                                   </div>
+
                                   {isMe ? (
                                     <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
                                       SEN
@@ -637,7 +849,6 @@ export default function IletiTokenDetayPage() {
                   title="Yönetici Paneli"
                   right={
                     <div className="flex items-center gap-2">
-                      {/* ✅ Modal açma butonu */}
                       <button
                         type="button"
                         onClick={openGuncelleModal}
@@ -671,6 +882,7 @@ export default function IletiTokenDetayPage() {
                       <div className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-200">
                         Durum
                       </div>
+
                       <div className="mt-2 flex gap-2">
                         <select
                           value={durumSelect}
@@ -678,6 +890,7 @@ export default function IletiTokenDetayPage() {
                           className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
                         >
                           <option value="">Özel</option>
+
                           {DURUM_OPTIONS.map((x) => (
                             <option key={x.value} value={x.value}>
                               {x.label}
@@ -723,7 +936,6 @@ export default function IletiTokenDetayPage() {
                     tarafından görüntülenebilir.
                   </div>
 
-                  {/* ✅ Her ekranda görünen "Düzenle" */}
                   <button
                     type="button"
                     onClick={openGuncelleModal}
@@ -744,6 +956,21 @@ export default function IletiTokenDetayPage() {
 
         <div className="mt-6 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
           SAYGILARIMIZLA, <span className="font-semibold">EOS MANAGEMENT</span>
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: "fixed",
+          left: "-99999px",
+          top: 0,
+          width: "210mm",
+          background: "#fff",
+          zIndex: -1,
+        }}
+      >
+        <div id="pdf-a4-root" ref={pdfRef}>
+          <IletiPrintA4 data={data} dosyalar={dosyalar} />
         </div>
       </div>
     </div>

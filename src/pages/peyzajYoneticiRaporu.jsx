@@ -181,17 +181,6 @@ export default function PeyzajYoneticiRaporuPage() {
   const getBaslikText = (item) => pick(item, "KisaBaslik", "kisaBaslik") || "-";
   const getAciklamaText = (item) => pick(item, "Aciklama", "aciklama") || "-";
 
-  const getProjeSorDurum = (item) =>
-    pick(item, "ProjeSorSurecDurumu", "projeSorSurecDurumu") || "-";
-
-  const getProjeSorNot = (item) =>
-    pick(item, "ProjeSorSurNot", "projeSorSurNot") || "-";
-
-  const getPeyzajSorDurum = (item) =>
-    pick(item, "PeyzajSorSurecDurumu", "peyzajSorSurecDurumu") || "-";
-
-  const getPeyzajSorNot = (item) =>
-    pick(item, "PeyzajSorSurNot", "peyzajSorSurNot") || "-";
 
   const getEklenenNotlar = (item) => {
     const notlar = pick(item, "Notlar", "notlar");

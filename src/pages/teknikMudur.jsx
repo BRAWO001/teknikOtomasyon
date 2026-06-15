@@ -182,6 +182,12 @@ export default function TeknikMudurPage() {
   const handleYonetimKuruluKararlar = () => {
     router.push("/YonetimKuruluYoneticiRaporu/kararlar");
   };
+  const handleIdariRaporlar = () => {
+    router.push("/idariRaporlar");
+  };
+  const handleIdariRaporlarGir = () => {
+    router.push("/idariRaporGir");
+  };
 
   const handleYonetimKuruluIletiler = () => {
     router.push("/YonetimKuruluYoneticiRaporu/iletiler");
@@ -355,8 +361,29 @@ export default function TeknikMudurPage() {
               {/* ===== YÖNETİM GRUBU ===== */}
               <div className="rounded-xl border border-slate-200 bg-white/90 p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
                 <div className="grid w-full grid-cols-2 gap-1.5 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-7">
+
+
                   {(personel?.id === 4 || personel?.id === 20) && (
                     <>
+
+                    <button
+                        onClick={handleIdariRaporlar}
+                        className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 shadow-sm hover:from-amber-100 hover:to-yellow-100 dark:border-amber-900/60 dark:from-amber-950/35 dark:to-yellow-950/35 dark:text-amber-200`}
+                      >
+                        <svg
+                          className={`${ui.icon} text-amber-600 dark:text-amber-300`}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M9 5h6M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                          <path d="M8 9h8M8 13h8M8 17h5" />
+                        </svg>
+                        İdari Müdür Raporları
+                      </button>
+
+
                       <button
                         onClick={handleYonetimKuruluKararlar}
                         className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 shadow-sm hover:from-emerald-100 hover:to-teal-100 dark:border-emerald-900/60 dark:from-emerald-950/35 dark:to-teal-950/35 dark:text-emerald-200`}
@@ -408,6 +435,42 @@ export default function TeknikMudurPage() {
                       </button>
                     </>
                   )}
+
+
+                  {/* // ===== TEKNİK MÜDÜR RAPORLAR GRUBU  */}
+
+                  
+                  {(personel?.id === 6 || personel?.id === 99) && (
+                    <>
+
+                    <button
+                        onClick={handleIdariRaporlarGir}
+                        className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 shadow-sm hover:from-amber-100 hover:to-yellow-100 dark:border-amber-900/60 dark:from-amber-950/35 dark:to-yellow-950/35 dark:text-amber-200`}
+                      >
+                        <svg
+                          className={`${ui.icon} text-amber-600 dark:text-amber-300`}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M9 5h6M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+                          <path d="M8 9h8M8 13h8M8 17h5" />
+                        </svg>
+                        İdari Müdür Raporu Gir
+                      </button>
+
+
+
+                      
+
+                      
+                    </>
+                  )}
+
+
+
+
 
                   <button
                     onClick={handleYoneticiRaporu}
