@@ -662,7 +662,7 @@ export default function IsEmriPrintPage() {
 
           {/* ✅ İMZA (en altta) */}
           <PrintIsEmriImzalar
-            labels={["İşin Ücreti","Cem Eren ( Ön Kontrol )", "Ali Oğuz ( Onay )"]}
+            labels={["İşin Ücreti","Teknik Müdür ( Ön Kontrol )", "Genel Müdür ( Onay )"]}
             linesH={78}
           />
         </div>
