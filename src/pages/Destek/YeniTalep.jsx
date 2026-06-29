@@ -29,10 +29,7 @@ function toUpperTR(s) {
 }
 
 function normalizeTel(telRaw) {
-  const digits = String(telRaw ?? "").replace(/\D/g, "");
-  if (!digits) return "";
-  if (digits.startsWith("0")) return digits;
-  return digits;
+  return String(telRaw ?? "").replace(/\D/g, "");
 }
 
 function extractBackendMsg(err) {
@@ -90,8 +87,10 @@ export default function YeniTicketPage() {
     setForm((p) => ({ ...p, [key]: value }));
   };
 
-  const selectedSite =
-    sites.find((s) => Number(s.id) === Number(form.siteId)) || null;
+  const selectedSite = useMemo(
+    () => sites.find((s) => Number(s.id) === Number(form.siteId)) || null,
+    [sites, form.siteId]
+  );
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -116,49 +115,28 @@ export default function YeniTicketPage() {
         setSitesLoading(true);
         setSitesError("");
 
-        const [allSitesRes, activeSitesRes] = await Promise.all([
-          getDataAsync("SiteAptEvControllerSet/sites"),
-          getDataAsync("destek-talep-ticket/aktif-siteler"),
-        ]);
-
+        const data = await getDataAsync("SiteAptEvControllerSet/sites");
         if (cancelled) return;
 
-        const activeArr = Array.isArray(activeSitesRes)
-          ? activeSitesRes
-          : activeSitesRes
-          ? [activeSitesRes]
-          : [];
+        const arr = Array.isArray(data) ? data : data ? [data] : [];
 
-        const activeSiteIds = activeArr
-          .map((x) => Number(x?.siteId ?? x?.SiteId ?? x?.id ?? x?.Id ?? 0))
-          .filter((id) => id > 0);
-
-        const activeSet = new Set(activeSiteIds);
-
-        const allSitesArr = Array.isArray(allSitesRes)
-          ? allSitesRes
-          : allSitesRes
-          ? [allSitesRes]
-          : [];
-
-        const mapped = allSitesArr
+        const mapped = arr
           .map((s) => ({
             id: Number(s?.id ?? s?.Id ?? 0),
             ad: String(s?.ad ?? s?.Ad ?? s?.siteAdi ?? s?.SiteAdi ?? "").trim(),
           }))
           .filter((s) => s.id > 0 && s.ad)
-          .filter((s) => activeSet.size === 0 || activeSet.has(s.id))
           .filter((s) => !EXCLUDED_SITE_IDS.includes(s.id))
           .sort((a, b) => a.ad.localeCompare(b.ad, "tr-TR"));
 
         setSites(mapped);
-      } catch (e) {
-        console.error("SITE LIST ERROR:", e);
+      } catch (err) {
+        console.error("SITE LIST ERROR:", err);
         if (cancelled) return;
 
         setSites([]);
         setSitesError(
-          extractBackendMsg(e) || e?.message || "Siteler alınamadı."
+          extractBackendMsg(err) || err?.message || "Siteler alınamadı."
         );
       } finally {
         if (!cancelled) setSitesLoading(false);
@@ -189,7 +167,11 @@ export default function YeniTicketPage() {
 
       const data = await getDataAsync(`SiteAptEvControllerSet/sites/${v}`);
 
-      const aptList = data?.aptler || data?.Aptler || [];
+      const aptList = Array.isArray(data?.aptler)
+        ? data.aptler
+        : Array.isArray(data?.Aptler)
+        ? data.Aptler
+        : [];
 
       const mappedApts = aptList
         .map((a) => ({
@@ -313,9 +295,9 @@ export default function YeniTicketPage() {
       const status = err?.response?.status;
 
       if (status === 401) {
-        setMsg("Yetkisiz (401). Ticket endpoint token istiyor olabilir.");
+        setMsg("Yetkisiz işlem. Backend tarafında destek talebi oluşturma endpointi public olmalı.");
       } else if (status === 403) {
-        setMsg("Erişim reddedildi (403). Endpoint yetki istiyor olabilir.");
+        setMsg("Erişim reddedildi. Endpoint public yetkiye açılmalı.");
       } else {
         setMsg(
           backendMsg || err?.message || "Ticket oluşturulurken bir hata oluştu."
