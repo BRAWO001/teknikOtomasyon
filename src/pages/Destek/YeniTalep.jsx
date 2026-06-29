@@ -14,7 +14,7 @@ const DEPARTMAN_OPTIONS = [
   "Daire içi Temizlik Hizmeti Talebi",
 ];
 
-const BLOK_OPTIONS = ["1C", "2B", "3D", "4A", "5E", "6J", "7F", "8I", "9G", "10H"];
+const EXCLUDED_SITE_IDS = [83, 84, 85, 87, 94, 96];
 
 const FIYAT_LISTESI_URL =
   "https://eosyonetim.com/uploads/tickets/file/Yeni%20Tepe%20Etap%201%20BI%CC%87REYSEL%20TALEPLERI%CC%87NI%CC%87Z%20I%CC%87C%CC%A7I%CC%87N%20EOS%20TEKNI%CC%87K%20FI%CC%87YAT%20LI%CC%87STESI%CC%87DI%CC%87R.pdf";
@@ -41,7 +41,9 @@ function extractBackendMsg(err) {
 
   if (data?.errors && typeof data.errors === "object") {
     const flat = Object.entries(data.errors)
-      .flatMap(([k, arr]) => (Array.isArray(arr) ? arr.map((x) => `${k}: ${x}`) : []))
+      .flatMap(([k, arr]) =>
+        Array.isArray(arr) ? arr.map((x) => `${k}: ${x}`) : []
+      )
       .slice(0, 10);
     if (flat.length) return flat.join(" | ");
   }
@@ -65,6 +67,9 @@ export default function YeniTicketPage() {
   const [siteId, setSiteId] = useState("");
   const [sitesLoading, setSitesLoading] = useState(false);
   const [sitesError, setSitesError] = useState("");
+
+  const [apts, setApts] = useState([]);
+  const [siteDetailLoading, setSiteDetailLoading] = useState(false);
 
   const selectedSite = useMemo(
     () => sites.find((s) => String(s.id) === String(siteId)) || null,
@@ -114,12 +119,15 @@ export default function YeniTicketPage() {
         if (cancelled) return;
 
         const arr = Array.isArray(res) ? res : res ? [res] : [];
+
         const mapped = arr
           .map((x) => ({
             id: Number(x?.id ?? x?.Id ?? 0),
             ad: String(x?.ad ?? x?.Ad ?? "").trim(),
           }))
-          .filter((x) => x.id > 0 && x.ad);
+          .filter((x) => x.id > 0 && x.ad)
+          .filter((x) => !EXCLUDED_SITE_IDS.includes(x.id))
+          .sort((a, b) => a.ad.localeCompare(b.ad, "tr-TR"));
 
         setSites(mapped);
       } catch (e) {
@@ -133,10 +141,52 @@ export default function YeniTicketPage() {
     };
 
     loadSites();
+
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const onSiteChange = async (v) => {
+    setSiteId(v);
+    setField("blok", "");
+    setApts([]);
+
+    if (!v) return;
+
+    try {
+      setSiteDetailLoading(true);
+      setMsg(null);
+
+      const data = await getDataAsync(`SiteAptEvControllerSet/sites/${v}`);
+
+      const aptList = Array.isArray(data?.aptler)
+        ? data.aptler
+        : Array.isArray(data?.Aptler)
+        ? data.Aptler
+        : [];
+
+      const mappedApts = aptList
+        .map((a) => ({
+          id: Number(a?.id ?? a?.Id ?? 0),
+          ad: String(a?.ad ?? a?.Ad ?? "").trim(),
+        }))
+        .filter((a) => a.id > 0 && a.ad)
+        .sort((a, b) => a.ad.localeCompare(b.ad, "tr-TR"));
+
+      setApts(mappedApts);
+    } catch (err) {
+      console.error("SITE DETAIL ERROR:", err);
+      setApts([]);
+      setMsg(
+        extractBackendMsg(err) ||
+          err?.message ||
+          "Seçilen site için bloklar alınamadı."
+      );
+    } finally {
+      setSiteDetailLoading(false);
+    }
+  };
 
   const telStartsWithZero = useMemo(() => {
     const rawDigits = String(form.tel ?? "").replace(/\D/g, "");
@@ -160,7 +210,8 @@ export default function YeniTicketPage() {
 
     const telNorm = normalizeTel(form.tel);
     if (!telNorm) return "Telefon zorunlu.";
-    if (!telStartsWithZero) return "Telefon numarası 0 ile başlamalıdır. (Örn: 05xx...)";
+    if (!telStartsWithZero)
+      return "Telefon numarası 0 ile başlamalıdır. (Örn: 05xx...)";
     if (telNorm.length < 10) return "Telefon numarası eksik görünüyor.";
 
     if (!String(form.konu || "").trim()) return "Konu zorunlu.";
@@ -171,6 +222,7 @@ export default function YeniTicketPage() {
 
   const buildPayload = () => {
     const telDigits = String(form.tel ?? "").replace(/\D/g, "");
+
     return {
       siteId: siteId ? Number(siteId) : null,
       departman: safeTrim(form.departman),
@@ -199,7 +251,12 @@ export default function YeniTicketPage() {
       (panelStatus.pendingCount || 0) === 0;
 
     setAllDone(done);
-  }, [createdTicketId, panelStatus.uploading, panelStatus.attaching, panelStatus.pendingCount]);
+  }, [
+    createdTicketId,
+    panelStatus.uploading,
+    panelStatus.attaching,
+    panelStatus.pendingCount,
+  ]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -226,9 +283,14 @@ export default function YeniTicketPage() {
       const backendMsg = extractBackendMsg(err);
       const status = err?.response?.status;
 
-      if (status === 401) setMsg("Yetkisiz (401). Ticket endpoint token istiyor olabilir.");
-      else if (status === 403) setMsg("Erişim reddedildi (403). Endpoint yetki istiyor olabilir.");
-      else setMsg(backendMsg || err?.message || "Ticket oluşturulurken bir hata oluştu.");
+      if (status === 401)
+        setMsg("Yetkisiz (401). Ticket endpoint token istiyor olabilir.");
+      else if (status === 403)
+        setMsg("Erişim reddedildi (403). Endpoint yetki istiyor olabilir.");
+      else
+        setMsg(
+          backendMsg || err?.message || "Ticket oluşturulurken bir hata oluştu."
+        );
     } finally {
       setSaving(false);
     }
@@ -236,7 +298,8 @@ export default function YeniTicketPage() {
 
   const disabledAll = saving || showSuccess || sitesLoading;
 
-  const visibleTicketNo = createdTicketNo || (createdTicketId != null ? String(createdTicketId) : "");
+  const visibleTicketNo =
+    createdTicketNo || (createdTicketId != null ? String(createdTicketId) : "");
 
   const copyTicketNo = async () => {
     const v = String(visibleTicketNo || "");
@@ -263,6 +326,7 @@ export default function YeniTicketPage() {
               <span className="rounded-md bg-white/70 px-2 py-[2px] font-bold dark:bg-black/20">
                 {visibleTicketNo}
               </span>
+
               <button
                 type="button"
                 onClick={copyTicketNo}
@@ -282,15 +346,20 @@ export default function YeniTicketPage() {
             </div>
 
             <div className="mt-2 text-[12px] text-emerald-900/90 dark:text-emerald-100/90">
-              <b>Bunu kaydetmeyi unutmayın.</b> Bu Talep No üzerinden talebinize ulaşabilirsiniz.
+              <b>Bunu kaydetmeyi unutmayın.</b> Bu Talep No üzerinden talebinize
+              ulaşabilirsiniz.
             </div>
 
             <div className="mt-2 text-[12px]">
-              {panelStatus.uploading || panelStatus.attaching || panelStatus.pendingCount > 0 ? (
+              {panelStatus.uploading ||
+              panelStatus.attaching ||
+              panelStatus.pendingCount > 0 ? (
                 <span>
                   Dosyalar ticket&apos;a bağlanıyor...{" "}
                   {panelStatus.pendingCount > 0 ? (
-                    <span className="opacity-90">(bekleyen: {panelStatus.pendingCount})</span>
+                    <span className="opacity-90">
+                      (bekleyen: {panelStatus.pendingCount})
+                    </span>
                   ) : null}
                 </span>
               ) : (
@@ -304,11 +373,19 @@ export default function YeniTicketPage() {
       <div className="mx-auto max-w-3xl">
         <div className="mb-5 flex flex-col items-center gap-3">
           <div className="relative h-14 w-48">
-            <Image src="/eos_management_logo.png" alt="EOS Yönetim" fill className="object-contain" priority />
+            <Image
+              src="/eos_management_logo.png"
+              alt="EOS Yönetim"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
 
           <div className="text-center">
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Destek Talep Formu</h1>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              Destek Talep Formu
+            </h1>
             <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
               Talebinizi iletin, ekibimiz en kısa sürede dönüş sağlayacaktır.
             </p>
@@ -323,11 +400,9 @@ export default function YeniTicketPage() {
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                
                 <div className="mt-1 text-base font-semibold sm:text-lg">
                   Mevcut talebinizi görüntülemek için giriş yapın
                 </div>
-                
               </div>
 
               <div className="shrink-0 rounded-xl bg-white/15 px-3 py-2 text-[12px] font-semibold text-white backdrop-blur-sm transition group-hover:bg-white/20">
@@ -346,10 +421,13 @@ export default function YeniTicketPage() {
               <select
                 className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
                 value={siteId}
-                onChange={(e) => setSiteId(e.target.value)}
+                onChange={(e) => onSiteChange(e.target.value)}
                 disabled={disabledAll}
               >
-                <option value="">{sitesLoading ? "Yükleniyor..." : "Seçiniz"}</option>
+                <option value="">
+                  {sitesLoading ? "Yükleniyor..." : "Seçiniz"}
+                </option>
+
                 {sites.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.ad}
@@ -365,7 +443,9 @@ export default function YeniTicketPage() {
 
               {selectedSite && (
                 <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-center text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-200">
-                  <div className="font-semibold">Bireysel Talepleriniz için EOS Teknik Fiyat Listesi</div>
+                  <div className="font-semibold">
+                    Bireysel Talepleriniz için EOS Teknik Fiyat Listesi
+                  </div>
                   <div className="mt-2">
                     <a
                       href={FIYAT_LISTESI_URL}
@@ -400,15 +480,22 @@ export default function YeniTicketPage() {
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Blok *">
               <select
-                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
+                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
                 value={form.blok}
                 onChange={(e) => setField("blok", e.target.value)}
-                disabled={disabledAll}
+                disabled={disabledAll || !siteId || siteDetailLoading}
               >
-                <option value="">Seçiniz</option>
-                {BLOK_OPTIONS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
+                <option value="">
+                  {!siteId
+                    ? "Önce proje seç"
+                    : siteDetailLoading
+                    ? "Yükleniyor..."
+                    : "Seçiniz"}
+                </option>
+
+                {apts.map((a) => (
+                  <option key={a.id} value={a.ad}>
+                    {a.ad}
                   </option>
                 ))}
               </select>
@@ -516,7 +603,11 @@ export default function YeniTicketPage() {
               disabled={saving || showSuccess}
               className="w-full rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60 sm:w-auto dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
             >
-              {saving ? "Gönderiliyor..." : showSuccess ? "Ticket Oluşturuldu" : "Talep Oluştur"}
+              {saving
+                ? "Gönderiliyor..."
+                : showSuccess
+                ? "Ticket Oluşturuldu"
+                : "Talep Oluştur"}
             </button>
           </div>
 
@@ -534,7 +625,9 @@ export default function YeniTicketPage() {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <div className="mb-1 text-xs font-semibold text-zinc-700 dark:text-zinc-300">{label}</div>
+      <div className="mb-1 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+        {label}
+      </div>
       {children}
     </label>
   );
