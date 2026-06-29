@@ -45,6 +45,7 @@ function extractBackendMsg(err) {
         Array.isArray(arr) ? arr.map((x) => `${k}: ${x}`) : []
       )
       .slice(0, 10);
+
     if (flat.length) return flat.join(" | ");
   }
 
@@ -90,7 +91,9 @@ export default function YeniTicketPage() {
     not_3: "",
   });
 
-  const setField = (key, value) => setForm((p) => ({ ...p, [key]: value }));
+  const setField = (key, value) => {
+    setForm((p) => ({ ...p, [key]: value }));
+  };
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -122,8 +125,16 @@ export default function YeniTicketPage() {
 
         const mapped = arr
           .map((x) => ({
-            id: Number(x?.id ?? x?.Id ?? 0),
-            ad: String(x?.ad ?? x?.Ad ?? "").trim(),
+            id: Number(x?.siteId ?? x?.SiteId ?? x?.id ?? x?.Id ?? 0),
+            ad: String(
+              x?.ad ??
+                x?.Ad ??
+                x?.siteAdi ??
+                x?.SiteAdi ??
+                x?.projeAdi ??
+                x?.ProjeAdi ??
+                ""
+            ).trim(),
           }))
           .filter((x) => x.id > 0 && x.ad)
           .filter((x) => !EXCLUDED_SITE_IDS.includes(x.id))
@@ -133,8 +144,11 @@ export default function YeniTicketPage() {
       } catch (e) {
         console.error("SITE LIST ERROR:", e);
         if (cancelled) return;
+
         setSites([]);
-        setSitesError(extractBackendMsg(e) || e?.message || "Siteler alınamadı.");
+        setSitesError(
+          extractBackendMsg(e) || e?.message || "Siteler alınamadı."
+        );
       } finally {
         if (!cancelled) setSitesLoading(false);
       }
@@ -160,21 +174,38 @@ export default function YeniTicketPage() {
 
       const data = await getDataAsync(`SiteAptEvControllerSet/sites/${v}`);
 
-      const aptList = Array.isArray(data?.aptler)
-        ? data.aptler
-        : Array.isArray(data?.Aptler)
-        ? data.Aptler
-        : [];
+      const aptList =
+        data?.aptler ??
+        data?.Aptler ??
+        data?.apts ??
+        data?.Apts ??
+        data?.bloklar ??
+        data?.Bloklar ??
+        [];
 
-      const mappedApts = aptList
+      const mappedApts = (Array.isArray(aptList) ? aptList : [])
         .map((a) => ({
           id: Number(a?.id ?? a?.Id ?? 0),
-          ad: String(a?.ad ?? a?.Ad ?? "").trim(),
+          ad: String(
+            a?.ad ??
+              a?.Ad ??
+              a?.aptAdi ??
+              a?.AptAdi ??
+              a?.blokAdi ??
+              a?.BlokAdi ??
+              a?.adi ??
+              a?.Adi ??
+              ""
+          ).trim(),
         }))
         .filter((a) => a.id > 0 && a.ad)
         .sort((a, b) => a.ad.localeCompare(b.ad, "tr-TR"));
 
       setApts(mappedApts);
+
+      if (mappedApts.length === 0) {
+        setMsg("Bu projeye ait blok / apt bulunamadı.");
+      }
     } catch (err) {
       console.error("SITE DETAIL ERROR:", err);
       setApts([]);
@@ -283,14 +314,15 @@ export default function YeniTicketPage() {
       const backendMsg = extractBackendMsg(err);
       const status = err?.response?.status;
 
-      if (status === 401)
+      if (status === 401) {
         setMsg("Yetkisiz (401). Ticket endpoint token istiyor olabilir.");
-      else if (status === 403)
+      } else if (status === 403) {
         setMsg("Erişim reddedildi (403). Endpoint yetki istiyor olabilir.");
-      else
+      } else {
         setMsg(
           backendMsg || err?.message || "Ticket oluşturulurken bir hata oluştu."
         );
+      }
     } finally {
       setSaving(false);
     }
