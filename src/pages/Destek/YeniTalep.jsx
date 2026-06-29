@@ -61,97 +61,18 @@ function extractBackendMsg(err) {
   }
 }
 
-function getRealSiteId(x) {
-  return Number(
-    x?.siteId ??
-      x?.SiteId ??
-      x?.site?.id ??
-      x?.site?.Id ??
-      x?.Site?.id ??
-      x?.Site?.Id ??
-      x?.projeId ??
-      x?.ProjeId ??
-      x?.id ??
-      x?.Id ??
-      0
-  );
-}
-
-function getSiteName(x) {
-  return String(
-    x?.ad ??
-      x?.Ad ??
-      x?.siteAdi ??
-      x?.SiteAdi ??
-      x?.siteAd ??
-      x?.SiteAd ??
-      x?.projeAdi ??
-      x?.ProjeAdi ??
-      x?.site?.ad ??
-      x?.site?.Ad ??
-      x?.Site?.ad ??
-      x?.Site?.Ad ??
-      ""
-  ).trim();
-}
-
-function getAptArray(data) {
-  if (Array.isArray(data)) return data;
-
-  return (
-    data?.aptler ??
-    data?.Aptler ??
-    data?.apts ??
-    data?.Apts ??
-    data?.bloklar ??
-    data?.Bloklar ??
-    data?.data?.aptler ??
-    data?.data?.Aptler ??
-    data?.data?.apts ??
-    data?.data?.Apts ??
-    data?.data?.bloklar ??
-    data?.data?.Bloklar ??
-    data?.site?.aptler ??
-    data?.site?.Aptler ??
-    data?.Site?.aptler ??
-    data?.Site?.Aptler ??
-    []
-  );
-}
-
-function getAptName(a) {
-  return String(
-    a?.ad ??
-      a?.Ad ??
-      a?.aptAdi ??
-      a?.AptAdi ??
-      a?.blokAdi ??
-      a?.BlokAdi ??
-      a?.adi ??
-      a?.Adi ??
-      a?.name ??
-      a?.Name ??
-      ""
-  ).trim();
-}
-
 export default function YeniTicketPage() {
   const router = useRouter();
 
   const [sites, setSites] = useState([]);
-  const [siteId, setSiteId] = useState("");
+  const [apts, setApts] = useState([]);
+
   const [sitesLoading, setSitesLoading] = useState(false);
   const [sitesError, setSitesError] = useState("");
-
-  const [apts, setApts] = useState([]);
   const [siteDetailLoading, setSiteDetailLoading] = useState(false);
 
-  const selectedSite = useMemo(
-    () => sites.find((s) => String(s.id) === String(siteId)) || null,
-    [sites, siteId]
-  );
-
   const [form, setForm] = useState({
+    siteId: "",
     departman: "",
     blok: "",
     daire: "",
@@ -168,6 +89,9 @@ export default function YeniTicketPage() {
   const setField = (key, value) => {
     setForm((p) => ({ ...p, [key]: value }));
   };
+
+  const selectedSite =
+    sites.find((s) => Number(s.id) === Number(form.siteId)) || null;
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -192,18 +116,39 @@ export default function YeniTicketPage() {
         setSitesLoading(true);
         setSitesError("");
 
-        const res = await getDataAsync("destek-talep-ticket/aktif-siteler");
+        const [allSitesRes, activeSitesRes] = await Promise.all([
+          getDataAsync("SiteAptEvControllerSet/sites"),
+          getDataAsync("destek-talep-ticket/aktif-siteler"),
+        ]);
+
         if (cancelled) return;
 
-        const arr = Array.isArray(res) ? res : res ? [res] : [];
+        const activeArr = Array.isArray(activeSitesRes)
+          ? activeSitesRes
+          : activeSitesRes
+          ? [activeSitesRes]
+          : [];
 
-        const mapped = arr
-          .map((x) => ({
-            id: getRealSiteId(x),
-            ad: getSiteName(x),
+        const activeSiteIds = activeArr
+          .map((x) => Number(x?.siteId ?? x?.SiteId ?? x?.id ?? x?.Id ?? 0))
+          .filter((id) => id > 0);
+
+        const activeSet = new Set(activeSiteIds);
+
+        const allSitesArr = Array.isArray(allSitesRes)
+          ? allSitesRes
+          : allSitesRes
+          ? [allSitesRes]
+          : [];
+
+        const mapped = allSitesArr
+          .map((s) => ({
+            id: Number(s?.id ?? s?.Id ?? 0),
+            ad: String(s?.ad ?? s?.Ad ?? s?.siteAdi ?? s?.SiteAdi ?? "").trim(),
           }))
-          .filter((x) => x.id > 0 && x.ad)
-          .filter((x) => !EXCLUDED_SITE_IDS.includes(x.id))
+          .filter((s) => s.id > 0 && s.ad)
+          .filter((s) => activeSet.size === 0 || activeSet.has(s.id))
+          .filter((s) => !EXCLUDED_SITE_IDS.includes(s.id))
           .sort((a, b) => a.ad.localeCompare(b.ad, "tr-TR"));
 
         setSites(mapped);
@@ -228,8 +173,12 @@ export default function YeniTicketPage() {
   }, []);
 
   const onSiteChange = async (v) => {
-    setSiteId(v);
-    setField("blok", "");
+    setForm((prev) => ({
+      ...prev,
+      siteId: v,
+      blok: "",
+    }));
+
     setApts([]);
 
     if (!v) return;
@@ -240,20 +189,15 @@ export default function YeniTicketPage() {
 
       const data = await getDataAsync(`SiteAptEvControllerSet/sites/${v}`);
 
-      console.log("SEÇİLEN SITE ID:", v);
-      console.log("SITE DETAY RESPONSE:", data);
+      const aptList = data?.aptler || data?.Aptler || [];
 
-      const aptList = getAptArray(data);
-
-      const mappedApts = (Array.isArray(aptList) ? aptList : [])
+      const mappedApts = aptList
         .map((a) => ({
           id: Number(a?.id ?? a?.Id ?? 0),
-          ad: getAptName(a),
+          ad: String(a?.ad ?? a?.Ad ?? "").trim(),
         }))
         .filter((a) => a.id > 0 && a.ad)
         .sort((a, b) => a.ad.localeCompare(b.ad, "tr-TR"));
-
-      console.log("MAPLENEN BLOKLAR:", mappedApts);
 
       setApts(mappedApts);
 
@@ -285,7 +229,7 @@ export default function YeniTicketPage() {
   }, [form.tel]);
 
   const validate = () => {
-    if (!siteId) return "Proje (Site) seçmelisin.";
+    if (!form.siteId) return "Proje (Site) seçmelisin.";
     if (!String(form.departman || "").trim()) return "Departman seçmelisin.";
     if (!String(form.blok || "").trim()) return "Blok zorunlu.";
     if (!String(form.daire || "").trim()) return "Daire zorunlu.";
@@ -309,7 +253,7 @@ export default function YeniTicketPage() {
     const telDigits = String(form.tel ?? "").replace(/\D/g, "");
 
     return {
-      siteId: siteId ? Number(siteId) : null,
+      siteId: form.siteId ? Number(form.siteId) : null,
       departman: safeTrim(form.departman),
       blok: safeTrim(form.blok),
       daire: safeTrim(form.daire),
@@ -425,10 +369,31 @@ export default function YeniTicketPage() {
                 type="button"
                 onClick={() => router.push("/")}
                 className="ml-2 rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
-                title="Ana sayfaya dön"
               >
                 Ana Sayfa
               </button>
+            </div>
+
+            <div className="mt-2 text-[12px] text-emerald-900/90 dark:text-emerald-100/90">
+              <b>Bunu kaydetmeyi unutmayın.</b> Bu Talep No üzerinden talebinize
+              ulaşabilirsiniz.
+            </div>
+
+            <div className="mt-2 text-[12px]">
+              {panelStatus.uploading ||
+              panelStatus.attaching ||
+              panelStatus.pendingCount > 0 ? (
+                <span>
+                  Dosyalar ticket&apos;a bağlanıyor...{" "}
+                  {panelStatus.pendingCount > 0 ? (
+                    <span className="opacity-90">
+                      (bekleyen: {panelStatus.pendingCount})
+                    </span>
+                  ) : null}
+                </span>
+              ) : (
+                <span className="font-semibold">Dosyalar eklendi ✅</span>
+              )}
             </div>
           </div>
         </div>
@@ -456,6 +421,24 @@ export default function YeniTicketPage() {
           </div>
         </div>
 
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => router.push("/Destek/Giris")}
+            className="group w-full rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-1 py-1 text-left text-white shadow-[0_10px_30px_rgba(37,99,235,0.20)] transition hover:-translate-y-[1px] hover:shadow-[0_14px_34px_rgba(37,99,235,0.28)] focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-blue-800"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="mt-1 text-base font-semibold sm:text-lg">
+                Mevcut talebinizi görüntülemek için giriş yapın
+              </div>
+
+              <div className="shrink-0 rounded-xl bg-white/15 px-3 py-2 text-[12px] font-semibold text-white backdrop-blur-sm transition group-hover:bg-white/20">
+                Talep Girişi →
+              </div>
+            </div>
+          </button>
+        </div>
+
         <form
           onSubmit={onSubmit}
           className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 dark:border-zinc-800 dark:bg-zinc-900"
@@ -464,7 +447,7 @@ export default function YeniTicketPage() {
             <Field label="Site (Proje) *">
               <select
                 className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
-                value={siteId}
+                value={form.siteId}
                 onChange={(e) => onSiteChange(e.target.value)}
                 disabled={disabledAll}
               >
@@ -484,6 +467,24 @@ export default function YeniTicketPage() {
                   {sitesError}
                 </div>
               ) : null}
+
+              {selectedSite && (
+                <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-center text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950/40 dark:text-zinc-200">
+                  <div className="font-semibold">
+                    Bireysel Talepleriniz için EOS Teknik Fiyat Listesi
+                  </div>
+                  <div className="mt-2">
+                    <a
+                      href={FIYAT_LISTESI_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center rounded-lg bg-zinc-100 px-3 py-2 text-[12px] font-semibold text-black transition hover:bg-zinc-200 dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+                    >
+                      Fiyat Listesi
+                    </a>
+                  </div>
+                </div>
+              )}
             </Field>
 
             <Field label="Departman *">
@@ -509,10 +510,10 @@ export default function YeniTicketPage() {
                 className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
                 value={form.blok}
                 onChange={(e) => setField("blok", e.target.value)}
-                disabled={disabledAll || !siteId || siteDetailLoading}
+                disabled={disabledAll || !form.siteId || siteDetailLoading}
               >
                 <option value="">
-                  {!siteId
+                  {!form.siteId
                     ? "Önce proje seç"
                     : siteDetailLoading
                     ? "Yükleniyor..."
@@ -554,14 +555,26 @@ export default function YeniTicketPage() {
             </Field>
 
             <Field label="Telefon *">
-              <input
-                inputMode="tel"
-                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-zinc-50"
-                value={form.tel}
-                onChange={(e) => setField("tel", e.target.value)}
-                placeholder="05xx..."
-                disabled={disabledAll}
-              />
+              <>
+                <input
+                  inputMode="tel"
+                  className={`h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 dark:bg-zinc-950 ${
+                    showTelZeroWarn
+                      ? "border-amber-400 focus:ring-amber-500 dark:border-amber-700 dark:focus:ring-amber-400"
+                      : "border-zinc-200 focus:ring-zinc-900 dark:border-zinc-700 dark:focus:ring-zinc-50"
+                  }`}
+                  value={form.tel}
+                  onChange={(e) => setField("tel", e.target.value)}
+                  placeholder="05xx..."
+                  disabled={disabledAll}
+                />
+
+                {showTelZeroWarn ? (
+                  <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                    Telefon numarası 0 ile başlamalıdır. Örn: 05xx...
+                  </div>
+                ) : null}
+              </>
             </Field>
 
             <Field label="E-posta *">
@@ -624,6 +637,12 @@ export default function YeniTicketPage() {
                 : "Talep Oluştur"}
             </button>
           </div>
+
+          {showSuccess && allDone ? (
+            <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-[12px] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              Talebiniz alındı. Ticket No: <b>{visibleTicketNo}</b>
+            </div>
+          ) : null}
         </form>
       </div>
     </div>
