@@ -37,6 +37,7 @@ export default function HavuzYoneticiRaporuPage() {
     const today = new Date();
     const start = new Date(today);
     start.setMonth(start.getMonth() - 6);
+
     return {
       startDate: toDateInputValue(start),
       endDate: toDateInputValue(today),
@@ -70,9 +71,7 @@ export default function HavuzYoneticiRaporuPage() {
           } else {
             try {
               const fallback = await getDataAsync("Personeller/ByDurum?aktifMi=true");
-              if (!cancelled) {
-                setPersoneller(Array.isArray(fallback) ? fallback : []);
-              }
+              if (!cancelled) setPersoneller(Array.isArray(fallback) ? fallback : []);
             } catch (fallbackErr) {
               console.error("PERSONELLER FALLBACK ERROR:", fallbackErr);
               if (!cancelled) setPersoneller([]);
@@ -80,11 +79,10 @@ export default function HavuzYoneticiRaporuPage() {
           }
         } else {
           console.error("PERSONELLER FETCH ERROR:", perRes.reason);
+
           try {
             const fallback = await getDataAsync("Personeller/ByDurum?aktifMi=true");
-            if (!cancelled) {
-              setPersoneller(Array.isArray(fallback) ? fallback : []);
-            }
+            if (!cancelled) setPersoneller(Array.isArray(fallback) ? fallback : []);
           } catch (fallbackErr) {
             console.error("PERSONELLER FALLBACK ERROR:", fallbackErr);
             if (!cancelled) setPersoneller([]);
@@ -96,6 +94,7 @@ export default function HavuzYoneticiRaporuPage() {
     };
 
     loadLists();
+
     return () => {
       cancelled = true;
     };
@@ -110,6 +109,7 @@ export default function HavuzYoneticiRaporuPage() {
     if (arama.trim()) qs.set("arama", arama.trim());
     if (startDate) qs.set("startDate", startDate);
     if (endDate) qs.set("endDate", endDate);
+
     qs.set("limit", "500");
 
     return `peyzaj-is-emri-formu/havuz-yonetici-raporu?${qs.toString()}`;
@@ -117,9 +117,13 @@ export default function HavuzYoneticiRaporuPage() {
 
   async function loadData() {
     setLoading(true);
+
     try {
       const res = await getDataAsync(endpoint);
-      const data = Array.isArray(res?.items || res?.Items) ? (res?.items || res?.Items) : [];
+      const data = Array.isArray(res?.items || res?.Items)
+        ? res?.items || res?.Items
+        : [];
+
       setItems(data);
     } catch (err) {
       console.error("Havuz yönetici raporu yükleme hatası:", err);
@@ -141,10 +145,32 @@ export default function HavuzYoneticiRaporuPage() {
   const totalCount = items.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   const pagedItems = useMemo(() => {
     const startIndex = (page - 1) * pageSize;
     return items.slice(startIndex, startIndex + pageSize);
   }, [items, page, pageSize]);
+
+  const visiblePages = useMemo(() => {
+    const pages = [];
+    const maxVisible = 5;
+
+    let start = Math.max(1, page - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }, [page, totalPages]);
 
   const resetFilters = () => {
     setSiteId("");
@@ -170,11 +196,86 @@ export default function HavuzYoneticiRaporuPage() {
 
   const formatDate = (value) => {
     if (!value) return "-";
+
     try {
       return new Date(value).toLocaleString("tr-TR");
     } catch {
       return String(value);
     }
+  };
+
+  const Pagination = ({ bottom = false }) => {
+    if (totalPages <= 1) return null;
+
+    const firstItem = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+    const lastItem = Math.min(page * pageSize, totalCount);
+
+    return (
+      <div
+        className={`flex flex-col gap-2 px-3 py-2.5 md:flex-row md:items-center md:justify-between ${
+          bottom
+            ? "border-t border-zinc-200 dark:border-zinc-800"
+            : "border-b border-zinc-200 dark:border-zinc-800"
+        }`}
+      >
+        <div className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+          {totalCount} kayıt içinden {firstItem} - {lastItem} arası gösteriliyor
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            disabled={page === 1}
+            onClick={() => setPage(1)}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+          >
+            İlk
+          </button>
+
+          <button
+            type="button"
+            disabled={page === 1}
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+          >
+            Önceki
+          </button>
+
+          {visiblePages.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPage(p)}
+              className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${
+                page === p
+                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                  : "border-zinc-300 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            disabled={page === totalPages}
+            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+          >
+            Sonraki
+          </button>
+
+          <button
+            type="button"
+            disabled={page === totalPages}
+            onClick={() => setPage(totalPages)}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+          >
+            Son
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -232,7 +333,8 @@ export default function HavuzYoneticiRaporuPage() {
               <option value="">Tümü</option>
               {personeller.map((p) => (
                 <option key={pick(p, "id", "Id")} value={pick(p, "id", "Id")}>
-                  {pick(p, "ad", "Ad", "AdSoyad") || ""} {pick(p, "soyad", "Soyad") || ""}
+                  {pick(p, "ad", "Ad", "AdSoyad") || ""}{" "}
+                  {pick(p, "soyad", "Soyad") || ""}
                 </option>
               ))}
             </select>
@@ -311,6 +413,8 @@ export default function HavuzYoneticiRaporuPage() {
       </div>
 
       <div className="rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
+        <Pagination />
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-[11px]">
             <thead className="bg-zinc-50 dark:bg-zinc-800/50">
@@ -351,8 +455,12 @@ export default function HavuzYoneticiRaporuPage() {
                     <td className="px-3 py-2.5 whitespace-nowrap font-semibold text-zinc-800 dark:text-zinc-100">
                       {getKodText(item)}
                     </td>
-                    <td className="px-3 py-2.5 min-w-[180px]">{getBaslikText(item)}</td>
-                    <td className="px-3 py-2.5 min-w-[220px]">{getAciklamaText(item)}</td>
+                    <td className="px-3 py-2.5 min-w-[180px]">
+                      {getBaslikText(item)}
+                    </td>
+                    <td className="px-3 py-2.5 min-w-[220px]">
+                      {getAciklamaText(item)}
+                    </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <button
                         type="button"
@@ -371,6 +479,8 @@ export default function HavuzYoneticiRaporuPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination bottom />
       </div>
     </div>
   );
