@@ -27,7 +27,7 @@ import SatinalmaSurecDurumCard from "@/components/satinalma/SatinalmaSurecDurumC
 import TalepFotoModals from "@/components/satinalma/TalepFotoModals";
 
 // const BASE_URL = "http://localhost:3000";
-const BASE_URL = "http://teknik-otomasyon.vercel.app";
+const BASE_URL = "https://eosyonetim.tr";
 
 /* =========================
    helpers

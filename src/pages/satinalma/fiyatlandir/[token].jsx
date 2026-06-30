@@ -1,8 +1,3 @@
-
-
-
-
-
 // src/pages/satinalma/fiyatlandir/[token].jsx
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
@@ -161,6 +156,54 @@ export default function SatinAlmaFiyatlandirPage() {
       );
     });
   }, [dosyalar]);
+
+  const fiyatTeklifleri = useMemo(() => {
+    return (
+      data?.fiyatTeklifleri ??
+      data?.FiyatTeklifleri ??
+      data?.teklifler ??
+      data?.Teklifler ??
+      []
+    );
+  }, [data]);
+
+  const teklifOzetleri = useMemo(() => {
+    const list = data?.teklifOzetleri ?? data?.TeklifOzetleri ?? [];
+    return Array.isArray(list) ? list : [];
+  }, [data]);
+
+  const enUygunOzetKdvDahil = useMemo(() => {
+    if (!teklifOzetleri.length) return null;
+
+    const values = teklifOzetleri
+      .map((o) => Number(o?.toplamTutarKdvDahil ?? o?.ToplamTutarKdvDahil ?? 0))
+      .filter((v) => v > 0);
+
+    if (!values.length) return null;
+
+    return Math.min(...values);
+  }, [teklifOzetleri]);
+
+  const enUygunKalemMap = useMemo(() => {
+    const map = {};
+
+    (fiyatTeklifleri || []).forEach((t) => {
+      const malzemeId = t?.satinAlmaMalzemeId ?? t?.SatinAlmaMalzemeId;
+      if (!malzemeId) return;
+
+      const value = Number(
+        t?.toplamTutarKdvDahil ?? t?.ToplamTutarKdvDahil ?? 0
+      );
+
+      if (value <= 0) return;
+
+      if (!map[malzemeId] || value < map[malzemeId]) {
+        map[malzemeId] = value;
+      }
+    });
+
+    return map;
+  }, [fiyatTeklifleri]);
 
   const openImageModal = (index = 0) => {
     setActiveImageIndex(index);
@@ -377,75 +420,194 @@ export default function SatinAlmaFiyatlandirPage() {
         </div>
       </div>
 
-{imageFiles.length > 0 && (
-  <div
-    style={{
-      border: "1px solid #e5e7eb",
-      borderRadius: 12,
-      padding: "0.9rem 1rem",
-      marginBottom: "1rem",
-      backgroundColor: "#f8fafc",
-    }}
-  >
-    <div
-      style={{
-        fontSize: 14,
-        fontWeight: 900,
-        color: "#0f172a",
-        marginBottom: 10,
-      }}
-    >
-      Görseller
-    </div>
-
-    <div
-      style={{
-        display: "flex",
-        gap: 10,
-        overflowX: "auto",
-        overflowY: "hidden",
-        paddingBottom: 6,
-        WebkitOverflowScrolling: "touch",
-        scrollbarWidth: "thin",
-      }}
-    >
-      {imageFiles.map((img, index) => {
-        const imgUrl = img?.url ?? img?.Url;
-
-        const imgName =
-          img?.dosyaAdi ??
-          img?.DosyaAdi ??
-          `Görsel ${index + 1}`;
-
-        return (
-          <button
-            key={img?.id ?? img?.Id ?? index}
-            type="button"
-            onClick={() => openImageModal(index)}
-            title={imgName}
+      {imageFiles.length > 0 && (
+        <div
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            padding: "0.9rem 1rem",
+            marginBottom: "1rem",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          <div
             style={{
-              border: "1px solid #d1d5db",
-              borderRadius: 14,
-              overflow: "hidden",
-              backgroundColor: "#ffffff",
-              padding: 0,
+              fontSize: 14,
+              fontWeight: 900,
+              color: "#0f172a",
+              marginBottom: 10,
+            }}
+          >
+            Görseller
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              overflowX: "auto",
+              overflowY: "hidden",
+              paddingBottom: 6,
+              WebkitOverflowScrolling: "touch",
+              scrollbarWidth: "thin",
+            }}
+          >
+            {imageFiles.map((img, index) => {
+              const imgUrl = img?.url ?? img?.Url;
+
+              const imgName =
+                img?.dosyaAdi ?? img?.DosyaAdi ?? `Görsel ${index + 1}`;
+
+              return (
+                <button
+                  key={img?.id ?? img?.Id ?? index}
+                  type="button"
+                  onClick={() => openImageModal(index)}
+                  title={imgName}
+                  style={{
+                    border: "1px solid #d1d5db",
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    backgroundColor: "#ffffff",
+                    padding: 0,
+                    cursor: "pointer",
+                    width: 140,
+                    minWidth: 140,
+                    height: 130,
+                    flexShrink: 0,
+                    position: "relative",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <img
+                    src={imgUrl}
+                    alt={imgName}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                      userSelect: "none",
+                      WebkitUserDrag: "none",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      padding: "0.35rem 0.5rem",
+                      background:
+                        "linear-gradient(to top, rgba(0,0,0,0.75), transparent)",
+                      color: "#ffffff",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {imgName}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {imageModalOpen && activeImage && (
+        <div
+          onClick={closeImageModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.96)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+            touchAction: "pan-y",
+          }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeImageModal();
+            }}
+            style={{
+              position: "fixed",
+              top: 16,
+              right: 16,
+              width: 44,
+              height: 44,
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.35)",
+              backgroundColor: "rgba(255,255,255,0.12)",
+              color: "#ffffff",
+              fontSize: 24,
+              fontWeight: 900,
               cursor: "pointer",
-              width: 140,
-              minWidth: 140,
-              height: 130,
-              flexShrink: 0,
-              position: "relative",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              zIndex: 10002,
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            ×
+          </button>
+
+          {imageFiles.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
+              style={{
+                position: "fixed",
+                left: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.35)",
+                backgroundColor: "rgba(255,255,255,0.12)",
+                color: "#ffffff",
+                fontSize: 30,
+                fontWeight: 900,
+                cursor: "pointer",
+                zIndex: 10002,
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              ‹
+            </button>
+          )}
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "96vw",
+              maxHeight: "90vh",
+              textAlign: "center",
+              userSelect: "none",
             }}
           >
             <img
-              src={imgUrl}
-              alt={imgName}
+              src={activeImageUrl}
+              alt={activeImageName}
               style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
+                maxWidth: "96vw",
+                maxHeight: "84vh",
+                objectFit: "contain",
+                borderRadius: 14,
                 display: "block",
+                margin: "0 auto",
                 userSelect: "none",
                 WebkitUserDrag: "none",
               }}
@@ -453,168 +615,282 @@ export default function SatinAlmaFiyatlandirPage() {
 
             <div
               style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                padding: "0.35rem 0.5rem",
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,0.75), transparent)",
+                marginTop: 12,
                 color: "#ffffff",
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: 700,
-                textAlign: "left",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                opacity: 0.92,
               }}
             >
-              {imgName}
+              {activeImageIndex + 1} / {imageFiles.length} — {activeImageName}
             </div>
-          </button>
-        );
-      })}
-    </div>
-  </div>
-)}
+          </div>
 
-{imageModalOpen && activeImage && (
-  <div
-    onClick={closeImageModal}
-    style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "rgba(0,0,0,0.96)",
-      zIndex: 10000,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "1rem",
-      touchAction: "pan-y",
-    }}
-  >
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        closeImageModal();
-      }}
-      style={{
-        position: "fixed",
-        top: 16,
-        right: 16,
-        width: 44,
-        height: 44,
-        borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.35)",
-        backgroundColor: "rgba(255,255,255,0.12)",
-        color: "#ffffff",
-        fontSize: 24,
-        fontWeight: 900,
-        cursor: "pointer",
-        zIndex: 10002,
-        backdropFilter: "blur(4px)",
-      }}
-    >
-      ×
-    </button>
+          {imageFiles.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
+              style={{
+                position: "fixed",
+                right: 14,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.35)",
+                backgroundColor: "rgba(255,255,255,0.12)",
+                color: "#ffffff",
+                fontSize: 30,
+                fontWeight: 900,
+                cursor: "pointer",
+                zIndex: 10002,
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              ›
+            </button>
+          )}
+        </div>
+      )}
 
-    {imageFiles.length > 1 && (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          prevImage();
-        }}
-        style={{
-          position: "fixed",
-          left: 14,
-          top: "50%",
-          transform: "translateY(-50%)",
-          width: 48,
-          height: 48,
-          borderRadius: 999,
-          border: "1px solid rgba(255,255,255,0.35)",
-          backgroundColor: "rgba(255,255,255,0.12)",
-          color: "#ffffff",
-          fontSize: 30,
-          fontWeight: 900,
-          cursor: "pointer",
-          zIndex: 10002,
-          backdropFilter: "blur(4px)",
-        }}
-      >
-        ‹
-      </button>
-    )}
+      {(teklifOzetleri.length > 0 || fiyatTeklifleri.length > 0) && (
+        <div
+          style={{
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            padding: "0.9rem 1rem",
+            marginBottom: "1rem",
+            backgroundColor: "#f8fafc",
+          }}
+        >
+          <div
+            className="text-center"
+            style={{
+              fontSize: 16,
+              fontWeight: 900,
+              color: "#0f172a",
+              marginBottom: 12,
+            }}
+          >
+            GÖNDERİLMİŞ TEKLİFLER
+          </div>
 
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        maxWidth: "96vw",
-        maxHeight: "90vh",
-        textAlign: "center",
-        userSelect: "none",
-      }}
-    >
-      <img
-        src={activeImageUrl}
-        alt={activeImageName}
-        style={{
-          maxWidth: "96vw",
-          maxHeight: "84vh",
-          objectFit: "contain",
-          borderRadius: 14,
-          display: "block",
-          margin: "0 auto",
-          userSelect: "none",
-          WebkitUserDrag: "none",
-        }}
-      />
+          {teklifOzetleri.length > 0 && (
+            <div style={{ display: "grid", gap: 10, marginBottom: 14 }}>
+              {teklifOzetleri.map((o, index) => {
+                const tedarikciAdi =
+                  o?.tedarikciAdi ??
+                  o?.TedarikciAdi ??
+                  "Tedarikçi belirtilmemiş";
 
-      <div
-        style={{
-          marginTop: 12,
-          color: "#ffffff",
-          fontSize: 13,
-          fontWeight: 700,
-          opacity: 0.92,
-        }}
-      >
-        {activeImageIndex + 1} / {imageFiles.length} — {activeImageName}
-      </div>
-    </div>
+                const paraBirimi = o?.paraBirimi ?? o?.ParaBirimi ?? "TRY";
+                const kalemSayisi = o?.kalemSayisi ?? o?.KalemSayisi ?? 0;
+                const toplamTutar = o?.toplamTutar ?? o?.ToplamTutar ?? 0;
 
-    {imageFiles.length > 1 && (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          nextImage();
-        }}
-        style={{
-          position: "fixed",
-          right: 14,
-          top: "50%",
-          transform: "translateY(-50%)",
-          width: 48,
-          height: 48,
-          borderRadius: 999,
-          border: "1px solid rgba(255,255,255,0.35)",
-          backgroundColor: "rgba(255,255,255,0.12)",
-          color: "#ffffff",
-          fontSize: 30,
-          fontWeight: 900,
-          cursor: "pointer",
-          zIndex: 10002,
-          backdropFilter: "blur(4px)",
-        }}
-      >
-        ›
-      </button>
-    )}
-  </div>
-)}
+                const toplamTutarKdvDahil =
+                  o?.toplamTutarKdvDahil ?? o?.ToplamTutarKdvDahil ?? 0;
+
+                const sonTeklifTarihiUtc =
+                  o?.sonTeklifTarihiUtc ?? o?.SonTeklifTarihiUtc;
+
+                const isEnUygun =
+                  enUygunOzetKdvDahil !== null &&
+                  Number(toplamTutarKdvDahil) === Number(enUygunOzetKdvDahil);
+
+                return (
+                  <div
+                    key={`${tedarikciAdi}-${paraBirimi}-${index}`}
+                    style={{
+                      border: isEnUygun
+                        ? "2px solid #16a34a"
+                        : "1px solid #d1d5db",
+                      borderRadius: 12,
+                      backgroundColor: isEnUygun ? "#f0fdf4" : "#ffffff",
+                      padding: "0.8rem 0.9rem",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        marginBottom: 6,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 900,
+                          color: isEnUygun ? "#166534" : "#0f172a",
+                          fontSize: 14,
+                        }}
+                      >
+                        {index + 1}. {tedarikciAdi}
+                      </div>
+
+                      {isEnUygun && (
+                        <div
+                          style={{
+                            backgroundColor: "#16a34a",
+                            color: "#ffffff",
+                            borderRadius: 999,
+                            padding: "0.25rem 0.65rem",
+                            fontSize: 11,
+                            fontWeight: 900,
+                          }}
+                        >
+                          EN UYGUN TEKLİF
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 4,
+                        fontSize: 13,
+                        color: "#111827",
+                      }}
+                    >
+                      <div>
+                        <strong>Kalem Sayısı:</strong> {kalemSayisi}
+                      </div>
+                      <div>
+                        <strong>Net Toplam:</strong>{" "}
+                        {formatCurrency(toplamTutar)} {paraBirimi}
+                      </div>
+                      <div>
+                        <strong>KDV Dahil Toplam:</strong>{" "}
+                        {formatCurrency(toplamTutarKdvDahil)} {paraBirimi}
+                      </div>
+                      <div>
+                        <strong>Son Teklif Tarihi:</strong>{" "}
+                        {sonTeklifTarihiUtc
+                          ? new Date(sonTeklifTarihiUtc).toLocaleString(
+                              "tr-TR"
+                            )
+                          : "-"}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {fiyatTeklifleri.length > 0 && (
+            <div style={{ display: "grid", gap: 8 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 900,
+                  color: "#0f172a",
+                }}
+              >
+                Teklif Kalemleri
+              </div>
+
+              {fiyatTeklifleri.map((t, index) => {
+                const tedarikciAdi =
+                  t?.tedarikciAdi ??
+                  t?.TedarikciAdi ??
+                  "Tedarikçi belirtilmemiş";
+
+                const malzemeAdi = t?.malzemeAdi ?? t?.MalzemeAdi ?? "-";
+                const birimFiyat = t?.birimFiyat ?? t?.BirimFiyat ?? 0;
+                const paraBirimi = t?.paraBirimi ?? t?.ParaBirimi ?? "TRY";
+                const adet = t?.adet ?? t?.Adet ?? 1;
+
+                const toplamTutarKdvDahil =
+                  t?.toplamTutarKdvDahil ?? t?.ToplamTutarKdvDahil ?? 0;
+
+                const malzemeId =
+                  t?.satinAlmaMalzemeId ?? t?.SatinAlmaMalzemeId;
+
+                const isEnUygunKalem =
+                  malzemeId &&
+                  enUygunKalemMap[malzemeId] &&
+                  Number(toplamTutarKdvDahil) ===
+                    Number(enUygunKalemMap[malzemeId]);
+
+                return (
+                  <div
+                    key={t?.id ?? t?.Id ?? index}
+                    style={{
+                      border: isEnUygunKalem
+                        ? "1px solid #16a34a"
+                        : "1px solid #e5e7eb",
+                      borderRadius: 10,
+                      backgroundColor: isEnUygunKalem ? "#f0fdf4" : "#ffffff",
+                      padding: "0.55rem 0.7rem",
+                      fontSize: 12,
+                      color: "#111827",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 900,
+                        color: isEnUygunKalem ? "#166534" : "#0f172a",
+                      }}
+                    >
+                      {malzemeAdi}
+                    </span>
+
+                    <span>
+                      <strong>Tedarikçi:</strong> {tedarikciAdi}
+                    </span>
+
+                    <span>
+                      <strong>Birim:</strong> {formatCurrency(birimFiyat)}{" "}
+                      {paraBirimi}
+                    </span>
+
+                    <span>
+                      <strong>Adet:</strong> {adet}
+                    </span>
+
+                    <span
+                      style={{
+                        fontWeight: 900,
+                        color: isEnUygunKalem ? "#166534" : "#111827",
+                      }}
+                    >
+                      KDV Dahil: {formatCurrency(toplamTutarKdvDahil)}{" "}
+                      {paraBirimi}
+                    </span>
+
+                    {isEnUygunKalem && (
+                      <span
+                        style={{
+                          backgroundColor: "#16a34a",
+                          color: "#ffffff",
+                          borderRadius: 999,
+                          padding: "0.2rem 0.55rem",
+                          fontSize: 11,
+                          fontWeight: 900,
+                        }}
+                      >
+                        UYGUN
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       <div
         style={{
           border: "1px solid #e5e7eb",
@@ -860,136 +1136,6 @@ export default function SatinAlmaFiyatlandirPage() {
               Kapat
             </button>
           </div>
-        </div>
-      )}
-
-      {imageModalOpen && activeImage && (
-        <div
-          onClick={closeImageModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.95)",
-            zIndex: 10000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              closeImageModal();
-            }}
-            style={{
-              position: "fixed",
-              top: 16,
-              right: 16,
-              width: 42,
-              height: 42,
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.35)",
-              backgroundColor: "rgba(255,255,255,0.12)",
-              color: "#ffffff",
-              fontSize: 24,
-              fontWeight: 900,
-              cursor: "pointer",
-              zIndex: 10002,
-            }}
-          >
-            ×
-          </button>
-
-          {imageFiles.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                prevImage();
-              }}
-              style={{
-                position: "fixed",
-                left: 14,
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: 44,
-                height: 44,
-                borderRadius: 999,
-                border: "1px solid rgba(255,255,255,0.35)",
-                backgroundColor: "rgba(255,255,255,0.12)",
-                color: "#ffffff",
-                fontSize: 28,
-                fontWeight: 900,
-                cursor: "pointer",
-                zIndex: 10002,
-              }}
-            >
-              ‹
-            </button>
-          )}
-
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: "94vw",
-              maxHeight: "88vh",
-              textAlign: "center",
-            }}
-          >
-            <img
-              src={activeImageUrl}
-              alt={activeImageName}
-              style={{
-                maxWidth: "94vw",
-                maxHeight: "82vh",
-                objectFit: "contain",
-                borderRadius: 12,
-                display: "block",
-                margin: "0 auto",
-              }}
-            />
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#ffffff",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {activeImageIndex + 1} / {imageFiles.length} — {activeImageName}
-            </div>
-          </div>
-
-          {imageFiles.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                nextImage();
-              }}
-              style={{
-                position: "fixed",
-                right: 14,
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: 44,
-                height: 44,
-                borderRadius: 999,
-                border: "1px solid rgba(255,255,255,0.35)",
-                backgroundColor: "rgba(255,255,255,0.12)",
-                color: "#ffffff",
-                fontSize: 28,
-                fontWeight: 900,
-                cursor: "pointer",
-                zIndex: 10002,
-              }}
-            >
-              ›
-            </button>
-          )}
         </div>
       )}
     </div>

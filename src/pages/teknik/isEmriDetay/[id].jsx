@@ -21,6 +21,10 @@ import IsEmriDetayDosyalar from "../../../components/isEmriDetay/IsEmriDetayDosy
 import IsEmriDetayPersoneller from "../../../components/isEmriDetay/IsEmriDetayPersoneller";
 import IsEmriDetayMalzemeler from "../../../components/isEmriDetay/IsEmriDetayMalzemeler";
 import IsEmriDetaySurecDurumlari from "@/components/isEmriDetay/IsEmriDetaySurecDurumlari";
+import KasaKayitModals from "../../../components/KasaKayitModals";
+
+
+
 
 // ✅ cookie okuma helper (client-side)
 function getCookie(name) {
@@ -34,7 +38,7 @@ function getCookie(name) {
 export default function IsEmriDetayPage() {
   const router = useRouter();
   const { id } = router.query;
-
+  const [isKasaModalOpen, setIsKasaModalOpen] = useState(false);
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -252,6 +256,18 @@ export default function IsEmriDetayPage() {
 
               {/* İstersen butonların durduğu mini satır (mobilde taşma olmaz) */}
               <div className="flex w-full items-center justify-end gap-2">
+
+                {currentRol === 90 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsKasaModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-200 px-3 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-zinc-300 
+               dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+                  >
+                    💼 Kasa Kaydı
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
@@ -423,6 +439,16 @@ export default function IsEmriDetayPage() {
           currentDurumKod={localDurumKod}
           personelId={currentPersonelId}
           onUpdated={handleDurumUpdated}
+        />
+
+        <KasaKayitModals
+          isOpen={isKasaModalOpen}
+          onClose={() => setIsKasaModalOpen(false)}
+          isEmriId={isEmriId}
+          isEmriKod={kod}
+          onSaved={() => {
+            window.location.reload();
+          }}
         />
       </div>
     </>

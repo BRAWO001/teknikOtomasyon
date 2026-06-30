@@ -6,6 +6,10 @@ function safeText(v) {
   return s.length ? s : "-";
 }
 
+function isEmptyValue(v) {
+  return v === null || v === undefined || String(v).trim() === "";
+}
+
 function formatDateTR(iso) {
   if (!iso) return "-";
   try {
@@ -85,6 +89,19 @@ function SurecDot({ value }) {
   );
 }
 
+function KasaIcon() {
+  return (
+    <span
+      title="Kasa / fiyat işareti: kod_2 dolu"
+      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-1 text-[11px] font-extrabold text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200"
+    >
+      💼
+    </span>
+  );
+}
+
+
+
 function CellLink({ href, title, className = "", children }) {
   return (
     <a
@@ -92,11 +109,7 @@ function CellLink({ href, title, className = "", children }) {
       target="_blank"
       rel="noopener noreferrer"
       title={title}
-      className={`block w-full h-full text-inherit no-underline ${className}`}
-      onClick={(e) => {
-        // normal sol tıkta da yeni sekme açılır, mevcut sayfa kalır
-        // target="_blank" bunu zaten native olarak yapıyor
-      }}
+      className={`block h-full w-full text-inherit no-underline ${className}`}
     >
       {children}
     </a>
@@ -141,6 +154,7 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
         <tbody>
           {data.map((r, i) => {
             const href = getHref(r?.id);
+            const kod2DoluMu = !isEmptyValue(r?.kod_2);
 
             return (
               <tr
@@ -154,14 +168,14 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                 </td>
 
                 <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
-                  <CellLink href={href}>
-                    {safeText(r?.siteAdi)}
-                  </CellLink>
+                  <CellLink href={href}>{safeText(r?.siteAdi)}</CellLink>
                 </td>
 
                 <td className="px-2 py-2 whitespace-nowrap font-semibold text-zinc-800 dark:text-zinc-100">
                   <CellLink href={href}>
-                    {[safeText(r?.kod), r?.kod_2, r?.kod_3].filter(Boolean).join(" | ")}
+                    {[safeText(r?.kod), r?.kod_2, r?.kod_3]
+                      .filter((x) => !isEmptyValue(x) && x !== "-")
+                      .join(" | ")}
                   </CellLink>
                 </td>
 
@@ -182,10 +196,12 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                         {safeText(r?.durumAd)}
                       </span>
 
-                      <div className="flex gap-1">
+                      <div className="flex items-center gap-1">
                         <SurecDot value={r?.projeYoneticiSurecDurumu} />
                         <SurecDot value={r?.operasyonTeknikMudurSurecDurumu} />
                         <SurecDot value={r?.operasyonGenelMudurSurecDurumu} />
+
+                        {kod2DoluMu && <KasaIcon />}
                       </div>
                     </div>
                   </CellLink>
@@ -204,15 +220,11 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
                 </td>
 
                 <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
-                  <CellLink href={href}>
-                    {moneyTR(r?.depoTutar)}
-                  </CellLink>
+                  <CellLink href={href}>{moneyTR(r?.depoTutar)}</CellLink>
                 </td>
 
                 <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
-                  <CellLink href={href}>
-                    {moneyTR(r?.yeniAlimTutar)}
-                  </CellLink>
+                  <CellLink href={href}>{moneyTR(r?.yeniAlimTutar)}</CellLink>
                 </td>
 
                 <td className="px-2 py-2 whitespace-nowrap text-zinc-700 dark:text-zinc-200">
@@ -226,7 +238,10 @@ export default function YoneticiRaporuIsEmriCard({ data = [] }) {
 
           {!data.length && (
             <tr>
-              <td colSpan={headers.length} className="py-6 text-center text-zinc-500">
+              <td
+                colSpan={headers.length}
+                className="py-6 text-center text-zinc-500"
+              >
                 Kayıt yok
               </td>
             </tr>
