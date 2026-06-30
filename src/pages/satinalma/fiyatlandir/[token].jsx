@@ -805,10 +805,12 @@ export default function SatinAlmaFiyatlandirPage() {
                 const birimFiyat = t?.birimFiyat ?? t?.BirimFiyat ?? 0;
                 const paraBirimi = t?.paraBirimi ?? t?.ParaBirimi ?? "TRY";
                 const adet = t?.adet ?? t?.Adet ?? 1;
+                
 
                 const toplamTutarKdvDahil =
                   t?.toplamTutarKdvDahil ?? t?.ToplamTutarKdvDahil ?? 0;
 
+                const notText = t?.not ?? t?.Not ?? "";
                 const malzemeId =
                   t?.satinAlmaMalzemeId ?? t?.SatinAlmaMalzemeId;
 
@@ -868,6 +870,12 @@ export default function SatinAlmaFiyatlandirPage() {
                       KDV Dahil: {formatCurrency(toplamTutarKdvDahil)}{" "}
                       {paraBirimi}
                     </span>
+
+                    {notText && (
+                      <span>
+                        <strong>Not:</strong> {notText}
+                      </span>
+                    )}
 
                     {isEnUygunKalem && (
                       <span
