@@ -527,7 +527,7 @@ const DosyaTile = ({ d, mode }) => {
             <SatinalmaHeaderCard
               seriNo={seriNo}
               tarih={tarih}
-              talepCinsi={talepCinsi}
+              talepCinsi={talepCinsi}  
               talepEden={talepEden}
               site={site}
               aciklama={aciklama}
