@@ -519,13 +519,7 @@ const DosyaTile = ({ d, mode }) => {
           onCopy={copyLink}
         />
 
-        {/* ✅ FATURA + PDF DURUM KARTI */}
-        <div className="mt-3">
-          <SatinalmaFaturaPdfDurumCard
-            faturaShareUrl={faturaShareUrl}
-            not2Raw={not2Raw}
-          />
-        </div>
+
 
         {/* ÜST GRID */}
         <div className="mt-3 grid gap-3 md:grid-cols-2">
