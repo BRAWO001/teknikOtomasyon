@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 
 function formatDateTR(iso) {
   if (!iso) return "-";
+
   try {
     return new Date(iso).toLocaleString("tr-TR", {
       day: "2-digit",
@@ -46,6 +47,14 @@ function getDefaultRange() {
   };
 }
 
+function getVal(obj, ...keys) {
+  for (const key of keys) {
+    if (obj?.[key] !== undefined && obj?.[key] !== null) return obj[key];
+  }
+
+  return null;
+}
+
 export default function KasaKayitlariPage() {
   const router = useRouter();
   const defaults = getDefaultRange();
@@ -58,13 +67,32 @@ export default function KasaKayitlariPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  const [toplamKasaTutari, setToplamKasaTutari] = useState(0);
-  const [toplamIscilikTutari, setToplamIscilikTutari] = useState(0);
-  const [toplamMalzemeTutari, setToplamMalzemeTutari] = useState(0);
+  const [ozet, setOzet] = useState({
+    toplamAlinanTutar: 0,
+    toplamMalzemeTutari: 0,
+    toplamDusulenTutar: 0,
+    toplamIscilikTutari: 0,
+    genelBakiye: 0,
+    ibanliKayitSayisi: 0,
+    nakitKayitSayisi: 0,
+    nakit: {
+      kayitSayisi: 0,
+      toplamAlinan: 0,
+      toplamMalzeme: 0,
+      kasayaKalan: 0,
+    },
+    iban: {
+      kayitSayisi: 0,
+      toplamAlinan: 0,
+      toplamMalzeme: 0,
+      kasayaKalan: 0,
+    },
+  });
 
   const [search, setSearch] = useState("");
   const [personel, setPersonel] = useState("");
   const [isEmriKod, setIsEmriKod] = useState("");
+  const [odemeTipi, setOdemeTipi] = useState("tumu");
   const [startDate, setStartDate] = useState(defaults.startDate);
   const [endDate, setEndDate] = useState(defaults.endDate);
 
@@ -78,11 +106,13 @@ export default function KasaKayitlariPage() {
     if (personel.trim()) qs.set("personel", personel.trim());
     if (isEmriKod.trim()) qs.set("isEmriKod", isEmriKod.trim());
 
+    if (odemeTipi !== "tumu") qs.set("odemeTipi", odemeTipi);
+
     if (startDate) qs.set("startDate", startDate);
     if (endDate) qs.set("endDate", endDate);
 
     return `kasa-kayit?${qs.toString()}`;
-  }, [page, pageSize, search, personel, isEmriKod, startDate, endDate]);
+  }, [page, pageSize, search, personel, isEmriKod, odemeTipi, startDate, endDate]);
 
   async function loadKasaKayitlari() {
     setLoading(true);
@@ -94,19 +124,32 @@ export default function KasaKayitlariPage() {
       setTotalPages(res?.totalPages || 1);
       setTotalCount(res?.totalCount || 0);
 
-      setToplamKasaTutari(res?.toplamKasaTutari ?? 0);
-      setToplamIscilikTutari(res?.toplamIscilikTutari ?? 0);
-      setToplamMalzemeTutari(res?.toplamMalzemeTutari ?? 0);
+      setOzet({
+        toplamAlinanTutar: res?.ozet?.toplamAlinanTutar ?? 0,
+        toplamMalzemeTutari: res?.ozet?.toplamMalzemeTutari ?? 0,
+        toplamDusulenTutar: res?.ozet?.toplamDusulenTutar ?? 0,
+        toplamIscilikTutari: res?.ozet?.toplamIscilikTutari ?? 0,
+        genelBakiye: res?.ozet?.genelBakiye ?? 0,
+        ibanliKayitSayisi: res?.ozet?.ibanliKayitSayisi ?? 0,
+        nakitKayitSayisi: res?.ozet?.nakitKayitSayisi ?? 0,
+        nakit: {
+          kayitSayisi: res?.ozet?.nakit?.kayitSayisi ?? 0,
+          toplamAlinan: res?.ozet?.nakit?.toplamAlinan ?? 0,
+          toplamMalzeme: res?.ozet?.nakit?.toplamMalzeme ?? 0,
+          kasayaKalan: res?.ozet?.nakit?.kasayaKalan ?? 0,
+        },
+        iban: {
+          kayitSayisi: res?.ozet?.iban?.kayitSayisi ?? 0,
+          toplamAlinan: res?.ozet?.iban?.toplamAlinan ?? 0,
+          toplamMalzeme: res?.ozet?.iban?.toplamMalzeme ?? 0,
+          kasayaKalan: res?.ozet?.iban?.kasayaKalan ?? 0,
+        },
+      });
     } catch (err) {
       console.error("Kasa kayıtları GET hata:", err);
-
       setItems([]);
       setTotalPages(1);
       setTotalCount(0);
-
-      setToplamKasaTutari(0);
-      setToplamIscilikTutari(0);
-      setToplamMalzemeTutari(0);
     } finally {
       setLoading(false);
     }
@@ -121,34 +164,37 @@ export default function KasaKayitlariPage() {
     setSearch("");
     setPersonel("");
     setIsEmriKod("");
+    setOdemeTipi("tumu");
     setStartDate("");
     setEndDate("");
     setPage(1);
   };
 
   const goDetail = (id) => {
+    if (!id) return;
     router.push(`/kasaKayitlari/${id}`);
   };
 
   return (
-    <div className="space-y-3 p-3">
-      <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center justify-between gap-2">
+    <div className="space-y-2 p-2">
+      <div className="rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex flex-col gap-2 border-b border-zinc-100 p-2 dark:border-zinc-800 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+            <div className="text-[13px] font-bold text-zinc-900 dark:text-zinc-100">
               Kasa Kayıtları
             </div>
 
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Toplam: {totalCount} kayıt • Sayfa: {page}/{totalPages}
+            <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
+              {totalCount} kayıt • Sayfa {page}/{totalPages} • Nakit/Kişi:{" "}
+              {ozet.nakitKayitSayisi} • IBAN: {ozet.ibanliKayitSayisi}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center gap-1">
             <button
               type="button"
               onClick={() => router.back()}
-              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-[10px] font-semibold text-zinc-700"
             >
               ← Geri
             </button>
@@ -156,63 +202,147 @@ export default function KasaKayitlariPage() {
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-[10px] font-semibold text-zinc-700"
             >
-              ⌂ Anasayfa
+              Anasayfa
             </button>
 
             <button
               type="button"
               onClick={resetFilters}
-              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-[10px] font-semibold text-zinc-700"
             >
-              Filtreleri Sıfırla
+              Sıfırla
             </button>
 
             <button
               type="button"
               onClick={loadKasaKayitlari}
-              className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200"
+              className="h-7 rounded-md border border-emerald-200 bg-emerald-50 px-2 text-[10px] font-semibold text-emerald-700"
             >
               Yenile
             </button>
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
-            <div className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-200">
-              Toplam Kasa
+        <div className="grid gap-1.5 p-2 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1.5">
+            <div className="text-[10px] font-semibold text-emerald-700">
+              Toplam Alınan
             </div>
-            <div className="mt-1 text-lg font-extrabold text-emerald-900 dark:text-emerald-100">
-              {moneyTR(toplamKasaTutari)}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-            <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
-              Toplam İşçilik
-            </div>
-            <div className="mt-1 text-lg font-extrabold text-zinc-900 dark:text-zinc-100">
-              {moneyTR(toplamIscilikTutari)}
+            <div className="text-[13px] font-extrabold text-emerald-900">
+              {moneyTR(ozet.toplamAlinanTutar)}
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
-            <div className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
-              Toplam Malzeme
+          <div className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5">
+            <div className="text-[10px] font-semibold text-rose-700">
+              Düşülen Malzeme
             </div>
-            <div className="mt-1 text-lg font-extrabold text-zinc-900 dark:text-zinc-100">
-              {moneyTR(toplamMalzemeTutari)}
+            <div className="text-[13px] font-extrabold text-rose-900">
+              - {moneyTR(ozet.toplamDusulenTutar)}
+            </div>
+          </div>
+
+          <div className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1.5">
+            <div className="text-[10px] font-semibold text-zinc-600">
+              Malzeme Gideri
+            </div>
+            <div className="text-[13px] font-extrabold text-zinc-900">
+              {moneyTR(ozet.toplamMalzemeTutari)}
+            </div>
+          </div>
+
+          <div className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1.5">
+            <div className="text-[10px] font-semibold text-indigo-700">
+              İşçilik
+            </div>
+            <div className="text-[13px] font-extrabold text-indigo-900">
+              {moneyTR(ozet.toplamIscilikTutari)}
+            </div>
+          </div>
+
+          <div className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1.5">
+            <div className="text-[10px] font-semibold text-sky-700">
+              Kasaya Kalan Bakiye
+            </div>
+            <div className="text-[13px] font-extrabold text-sky-900">
+              {moneyTR(ozet.genelBakiye)}
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-2 dark:border-zinc-800 dark:bg-zinc-950/40">
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-[190px] flex-[1.3]">
-              <label className="mb-1 block text-[11px] text-zinc-500">
-                Başlık / Açıklama / Genel Arama
+        <div className="grid gap-1.5 border-t border-zinc-100 p-2 sm:grid-cols-2">
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[10px] font-bold text-amber-800">
+                Nakit 
+              </div>
+              <div className="text-[10px] font-semibold text-amber-700">
+                {ozet.nakit.kayitSayisi} kayıt
+              </div>
+            </div>
+
+            <div className="mt-1 grid grid-cols-3 gap-1 text-[10px]">
+              <div>
+                <div className="text-amber-700">Alınan</div>
+                <div className="font-extrabold text-amber-950">
+                  {moneyTR(ozet.nakit.toplamAlinan)}
+                </div>
+              </div>
+              <div>
+                <div className="text-amber-700">Malzeme</div>
+                <div className="font-extrabold text-amber-950">
+                  {moneyTR(ozet.nakit.toplamMalzeme)}
+                </div>
+              </div>
+              <div>
+                <div className="text-amber-700">Kasaya Kalan</div>
+                <div className="font-extrabold text-amber-950">
+                  {moneyTR(ozet.nakit.kasayaKalan)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[10px] font-bold text-emerald-800">
+                IBAN 
+              </div>
+              <div className="text-[10px] font-semibold text-emerald-700">
+                {ozet.iban.kayitSayisi} kayıt
+              </div>
+            </div>
+
+            <div className="mt-1 grid grid-cols-3 gap-1 text-[10px]">
+              <div>
+                <div className="text-emerald-700">Alınan</div>
+                <div className="font-extrabold text-emerald-950">
+                  {moneyTR(ozet.iban.toplamAlinan)}
+                </div>
+              </div>
+              <div>
+                <div className="text-emerald-700">Malzeme</div>
+                <div className="font-extrabold text-emerald-950">
+                  {moneyTR(ozet.iban.toplamMalzeme)}
+                </div>
+              </div>
+              <div>
+                <div className="text-emerald-700">Kasaya Kalan</div>
+                <div className="font-extrabold text-emerald-950">
+                  {moneyTR(ozet.iban.kasayaKalan)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-zinc-100 p-2">
+          <div className="grid gap-1.5 md:grid-cols-12">
+            <div className="md:col-span-3">
+              <label className="mb-0.5 block text-[10px] text-zinc-500">
+                Genel Arama
               </label>
               <input
                 type="text"
@@ -221,14 +351,14 @@ export default function KasaKayitlariPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Metin ara"
-                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                placeholder="Başlık, açıklama, personel..."
+                className="h-7 w-full rounded-md border border-zinc-300 bg-white px-2 text-[11px]"
               />
             </div>
 
-            <div className="min-w-[150px] flex-1">
-              <label className="mb-1 block text-[11px] text-zinc-500">
-                Teslim Edilen Personel
+            <div className="md:col-span-2">
+              <label className="mb-0.5 block text-[10px] text-zinc-500">
+                Teslim Edilen
               </label>
               <input
                 type="text"
@@ -237,13 +367,13 @@ export default function KasaKayitlariPage() {
                   setPersonel(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Personel ara"
-                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                placeholder="Kişi veya IBAN"
+                className="h-7 w-full rounded-md border border-zinc-300 bg-white px-2 text-[11px]"
               />
             </div>
 
-            <div className="min-w-[150px] flex-1">
-              <label className="mb-1 block text-[11px] text-zinc-500">
+            <div className="md:col-span-2">
+              <label className="mb-0.5 block text-[10px] text-zinc-500">
                 İş Emri Kodu
               </label>
               <input
@@ -254,12 +384,30 @@ export default function KasaKayitlariPage() {
                   setPage(1);
                 }}
                 placeholder="EOS..."
-                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="h-7 w-full rounded-md border border-zinc-300 bg-white px-2 text-[11px]"
               />
             </div>
 
-            <div className="w-[135px]">
-              <label className="mb-1 block text-[11px] text-zinc-500">
+            <div className="md:col-span-2">
+              <label className="mb-0.5 block text-[10px] text-zinc-500">
+                Liste Tipi
+              </label>
+              <select
+                value={odemeTipi}
+                onChange={(e) => {
+                  setOdemeTipi(e.target.value);
+                  setPage(1);
+                }}
+                className="h-7 w-full rounded-md border border-zinc-300 bg-white px-2 text-[11px]"
+              >
+                <option value="tumu">Tümü</option>
+                <option value="nakit">Nakit / Kişiler</option>
+                <option value="iban">IBAN / Hesap</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="mb-0.5 block text-[10px] text-zinc-500">
                 Başlangıç
               </label>
               <input
@@ -269,12 +417,12 @@ export default function KasaKayitlariPage() {
                   setStartDate(e.target.value);
                   setPage(1);
                 }}
-                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="h-7 w-full rounded-md border border-zinc-300 bg-white px-2 text-[11px]"
               />
             </div>
 
-            <div className="w-[135px]">
-              <label className="mb-1 block text-[11px] text-zinc-500">
+            <div className="md:col-span-1">
+              <label className="mb-0.5 block text-[10px] text-zinc-500">
                 Bitiş
               </label>
               <input
@@ -284,23 +432,15 @@ export default function KasaKayitlariPage() {
                   setEndDate(e.target.value);
                   setPage(1);
                 }}
-                className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="h-7 w-full rounded-md border border-zinc-300 bg-white px-2 text-[11px]"
               />
             </div>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="h-8 rounded-md border border-zinc-300 bg-white px-3 text-[12px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-              >
-                Sıfırla
-              </button>
-
+            <div className="flex items-end md:col-span-1">
               <button
                 type="button"
                 onClick={loadKasaKayitlari}
-                className="h-8 rounded-md border border-sky-200 bg-sky-50 px-3 text-[12px] font-semibold text-sky-700 hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200"
+                className="h-7 w-full rounded-md border border-sky-200 bg-sky-50 px-2 text-[10px] font-semibold text-sky-700"
               >
                 Ara
               </button>
@@ -309,119 +449,137 @@ export default function KasaKayitlariPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
-            Kasa Listesi
-          </div>
-
-          {loading && (
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Yükleniyor…
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-          >
-            ◀ Önceki
-          </button>
-
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-          >
-            Sonraki ▶
-          </button>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <table className="min-w-[900px] w-full text-[10px]">
-          <thead className="bg-zinc-50 dark:bg-zinc-900/60">
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
+        <table className="w-full min-w-[1220px] text-[10px]">
+          <thead className="bg-zinc-50">
             <tr>
-              <th className="px-2 py-2 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+              <th className="px-1.5 py-1.5 text-left font-bold text-zinc-600">
                 Tarih
               </th>
-              <th className="px-2 py-2 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+              <th className="px-1.5 py-1.5 text-left font-bold text-zinc-600">
                 İş Emri
               </th>
-              <th className="px-2 py-2 text-left font-semibold text-zinc-600 dark:text-zinc-300">
-                Başlık
-              </th>
-              <th className="px-2 py-2 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+             
+              <th className="px-1.5 py-1.5 text-left font-bold text-zinc-600">
                 Teslim Edilen
               </th>
-              <th className="px-2 py-2 text-left font-semibold text-zinc-600 dark:text-zinc-300">
+              <th className="px-1.5 py-1.5 text-left font-bold text-zinc-600">
+                Başlık / Açıklama
+              </th>
+              <th className="px-1.5 py-1.5 text-left font-bold text-zinc-600">
                 Kaydı Yapan
               </th>
-              <th className="px-2 py-2 text-right font-semibold text-zinc-600 dark:text-zinc-300">
-                Toplam
+              <th className="px-1.5 py-1.5 text-right font-bold text-emerald-700">
+                Alınan
               </th>
-              <th className="px-2 py-2 text-right font-semibold text-zinc-600 dark:text-zinc-300">
+              <th className="px-1.5 py-1.5 text-right font-bold text-rose-700">
+                Malzeme
+              </th>
+              <th className="px-1.5 py-1.5 text-right font-bold text-rose-700">
+                Düşülen
+              </th>
+              <th className="px-1.5 py-1.5 text-right font-bold text-sky-700">
+                Kasaya Kalan
+              </th>
+              <th className="px-1.5 py-1.5 text-right font-bold text-indigo-700">
+                İşçilik
+              </th>
+              <th className="px-1.5 py-1.5 text-right font-bold text-zinc-600">
                 İşlem
               </th>
             </tr>
           </thead>
 
           <tbody>
-            {items.map((x) => (
-              <tr
-                key={x.id ?? x.Id}
-                onDoubleClick={() => goDetail(x.id ?? x.Id)}
-                className="border-b border-zinc-100/80 hover:bg-zinc-50/80 dark:border-zinc-800/70 dark:hover:bg-zinc-800/30"
-              >
-                <td className="whitespace-nowrap px-2 py-2 text-zinc-700 dark:text-zinc-200">
-                  {formatDateTR(x.kayitTarihi ?? x.KayitTarihi)}
-                </td>
+            {items.map((x) => {
+              const id = getVal(x, "id", "Id");
+              const ibanliMi = Boolean(getVal(x, "ibanliMi", "IbanliMi"));
 
-                <td className="whitespace-nowrap px-2 py-2 font-semibold text-zinc-800 dark:text-zinc-100">
-                  {x.isEmriKodu ?? x.IsEmriKodu ?? "-"}
-                </td>
+              const alinan = getVal(x, "alinanTutar", "AlinanTutar") ?? 0;
+              const malzeme = getVal(x, "malzemeTutari", "MalzemeTutari") ?? 0;
+              const dusulen = getVal(x, "dusulenTutar", "DusulenTutar") ?? malzeme;
+              const bakiye = getVal(x, "bakiye", "Bakiye") ?? Number(alinan) - Number(dusulen);
+              const iscilik = getVal(x, "iscilikTutari", "IscilikTutari") ?? 0;
 
-                <td className="max-w-[240px] truncate px-2 py-2 text-zinc-700 dark:text-zinc-200">
-                  <div className="font-semibold">
-                    {x.baslik ?? x.Baslik ?? "-"}
-                  </div>
-                  <div className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                    {x.aciklama ?? x.Aciklama ?? ""}
-                  </div>
-                </td>
+              return (
+                <tr
+                  key={id}
+                  onDoubleClick={() => goDetail(id)}
+                  className={`border-b border-zinc-100 hover:bg-zinc-50 `}
+                >
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-zinc-700">
+                    {formatDateTR(getVal(x, "kayitTarihi", "KayitTarihi"))}
+                  </td>
 
-                <td className="whitespace-nowrap px-2 py-2 text-zinc-700 dark:text-zinc-200">
-                  {x.teslimEdilenPersonel ?? x.TeslimEdilenPersonel ?? "-"}
-                </td>
+                  <td className="whitespace-nowrap px-1.5 py-1.5 font-bold text-zinc-900">
+                    {getVal(x, "isEmriKodu", "IsEmriKodu") ?? "-"}
+                  </td>
 
-                <td className="whitespace-nowrap px-2 py-2 text-zinc-700 dark:text-zinc-200">
-                  {x.kaydiYapanPersonel ?? x.KaydiYapanPersonel ?? "-"}
-                </td>
+                 
 
-                <td className="whitespace-nowrap px-2 py-2 text-right font-extrabold text-emerald-700 dark:text-emerald-300">
-                  {moneyTR(x.alinanToplamTutar ?? x.AlinanToplamTutar)}
-                </td>
+                  <td className="min-w-[220px] max-w-[280px] px-1.5 py-1.5 text-zinc-700">
+                    <div className="truncate font-bold">
+                      {getVal(x, "teslimEdilenKisi", "TeslimEdilenKisi") ?? "-"}
+                    </div>
 
-                <td className="whitespace-nowrap px-2 py-2 text-right">
-                  <button
-                    type="button"
-                    onClick={() => goDetail(x.id ?? x.Id)}
-                    className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200"
-                  >
-                    Detay
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    <div
+                      className={`truncate text-[9px] ${
+                        ibanliMi ? "text-emerald-700" : "text-amber-700"
+                      }`}
+                    >
+                     
+                    </div>
+                  </td>
+
+                  <td className="max-w-[240px] px-1.5 py-1.5 text-zinc-700">
+                    <div className="truncate font-semibold">
+                      {getVal(x, "baslik", "Baslik") ?? "-"}
+                    </div>
+                    <div className="truncate text-[9px] text-zinc-500">
+                      {getVal(x, "aciklama", "Aciklama") ?? ""}
+                    </div>
+                  </td>
+
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-zinc-700">
+                    {getVal(x, "kaydiYapanPersonel", "KaydiYapanPersonel") ?? "-"}
+                  </td>
+
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-right font-bold text-emerald-700">
+                    {moneyTR(alinan)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-right text-rose-700">
+                    {moneyTR(malzeme)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-right font-bold text-rose-800">
+                    - {moneyTR(dusulen)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-right font-extrabold text-sky-700">
+                    {moneyTR(bakiye)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-right font-semibold text-indigo-700">
+                    {moneyTR(iscilik)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-1.5 py-1.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => goDetail(id)}
+                      className="h-6 rounded-md border border-sky-200 bg-sky-50 px-2 text-[10px] font-semibold text-sky-700"
+                    >
+                      Detay
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
 
             {!items.length && !loading && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-zinc-500">
+                <td colSpan={12} className="py-6 text-center text-[11px] text-zinc-500">
                   Kasa kaydı bulunamadı.
                 </td>
               </tr>
@@ -429,7 +587,7 @@ export default function KasaKayitlariPage() {
 
             {loading && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-zinc-500">
+                <td colSpan={12} className="py-6 text-center text-[11px] text-zinc-500">
                   Kayıtlar yükleniyor...
                 </td>
               </tr>
