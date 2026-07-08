@@ -1,7 +1,12 @@
+
+
+
+
+
+
 import { useEffect, useState } from "react";
 import { getDataAsync, postDataAsync } from "../utils/apiService";
 
-import ProjeDosyaHeader from "./ProjeDosyaHeader";
 import ProjeDosyaUploadBlock from "./ProjeDosyaUploadBlock";
 import ProjeUploadedFilesSection from "./ProjeUploadedFilesSection";
 
@@ -9,23 +14,25 @@ const UPLOAD_URL = "HttpUpload/upload-ftp";
 const SAVE_URL_BASE = "ProjeYonetimDosyaEkle";
 
 export default function ProjeDosyaModals({ isOpen, onClose, siteId, baslik }) {
-  if (!isOpen) return null;
-
   const [files, setFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [filesError, setFilesError] = useState("");
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handler = (e) => e.key === "Escape" && onClose?.();
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [isOpen, onClose]);
 
   const loadFiles = async () => {
     if (!siteId) return;
+
     try {
       setLoadingFiles(true);
       setFilesError("");
+
       const data = await getDataAsync(`${SAVE_URL_BASE}/${siteId}`);
       setFiles(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -78,9 +85,7 @@ export default function ProjeDosyaModals({ isOpen, onClose, siteId, baslik }) {
     return url;
   };
 
-  const handleClose = () => {
-    onClose?.();
-  };
+  if (!isOpen) return null;
 
   return (
     <div
@@ -91,22 +96,22 @@ export default function ProjeDosyaModals({ isOpen, onClose, siteId, baslik }) {
         className="relative flex h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-zinc-900"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 🔥 BAŞLIK OVERRIDE */}
         <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
           <div className="flex items-center justify-between">
-            <h2 className="text-4xl font-extrabold text-emerald-600 tracking-wide">
-              {baslik} 
+            <h2 className="text-4xl font-extrabold tracking-wide text-emerald-600">
+              {baslik}
             </h2>
 
             <button
-              onClick={handleClose}
+              type="button"
+              onClick={onClose}
               className="text-xs font-semibold text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100"
             >
               Kapat ✕
             </button>
           </div>
 
-          <p className="text-[11px] text-zinc-500 mt-1">
+          <p className="mt-1 text-[11px] text-zinc-500">
             Bu dokümanlar seçili siteye aittir.
           </p>
         </div>

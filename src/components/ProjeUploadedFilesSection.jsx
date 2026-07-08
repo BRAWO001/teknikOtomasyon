@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-// ✅ Site yönetimine uygun seçenekler
 const TUR_OPTIONS = [
   { value: "Genel", label: "Genel" },
   { value: "Tutanak", label: "Tutanak" },
@@ -8,7 +7,6 @@ const TUR_OPTIONS = [
   { value: "Sozlesme", label: "Sözleşme" },
   { value: "Ihtarname", label: "İhtarname" },
   { value: "Tedarikçi / Dış İşlem", label: "Tedarikçi / Dış İşlem" },
-
 ];
 
 function extOf(nameOrUrl = "") {
@@ -23,7 +21,7 @@ function iconFromExt(ext) {
   if (["pdf"].includes(e)) return "PDF";
   if (["doc", "docx"].includes(e)) return "WD";
   if (["xls", "xlsx"].includes(e)) return "XL";
-  if (["png", "jpg", "jpeg", "webp"].includes(e)) return "IM";
+  if (["png", "jpg", "jpeg", "webp", "gif"].includes(e)) return "IM";
   if (["zip", "rar", "7z"].includes(e)) return "ZP";
   return "FL";
 }
@@ -44,6 +42,7 @@ function normalizeIso(iso) {
 function formatTRWithIstanbulTZ(iso) {
   const fixed = normalizeIso(iso);
   if (!fixed) return "-";
+
   try {
     const d = new Date(fixed);
     return d.toLocaleString("tr-TR", {
@@ -59,6 +58,79 @@ function formatTRWithIstanbulTZ(iso) {
   }
 }
 
+function ImageSideModal({ item, onClose }) {
+  useEffect(() => {
+    if (!item) return;
+
+    const handler = (e) => e.key === "Escape" && onClose?.();
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [item, onClose]);
+
+  if (!item) return null;
+
+  const openImageNewTab = () => {
+    window.open(item.url, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex justify-end bg-black/95">
+      <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-l border-zinc-800 bg-black text-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-4">
+          <div className="min-w-0">
+            <h3 className="truncate text-xl font-extrabold text-emerald-400">
+              {item.baslik || item.name || "Görsel"}
+            </h3>
+
+            {item.aciklama && (
+              <p className="mt-1 text-sm leading-relaxed text-zinc-300">
+                {item.aciklama}
+              </p>
+            )}
+
+            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-400">
+              <span className="rounded-full border border-zinc-700 px-2 py-1">
+                {item.tur}
+              </span>
+
+              <span className="rounded-full border border-zinc-700 px-2 py-1">
+                {item.tarihTR}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:bg-zinc-900"
+          >
+            Kapat ✕
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col overflow-hidden p-4">
+          <button
+            type="button"
+            onClick={openImageNewTab}
+            className="mb-3 self-end rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+          >
+            Görseli Büyük Aç
+          </button>
+
+          <div className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.url}
+              alt={item.baslik || item.name || "Görsel"}
+              className="max-h-full max-w-full rounded-xl object-contain"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProjeUploadedFilesSection({
   files,
   loadingFiles,
@@ -66,11 +138,10 @@ export default function ProjeUploadedFilesSection({
 }) {
   const totalCount = files?.length || 0;
 
-  // ✅ filtre state
   const [turFilter, setTurFilter] = useState("ALL");
   const [q, setQ] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  // ✅ filtre + arama + sıralama (en yeni üstte)
   const filteredFiles = useMemo(() => {
     const list = Array.isArray(files) ? files : [];
     const query = (q || "").trim().toLowerCase();
@@ -84,7 +155,11 @@ export default function ProjeUploadedFilesSection({
       const url = (f.url || f.Url || "").toLowerCase();
       const name = (f.dosyaAdi || f.DosyaAdi || url || "").toLowerCase();
       const baslik = (f.belgeBasligi || f.BelgeBasligi || "").toLowerCase();
-      const aciklama = (f.belgeAciklamasi || f.BelgeAciklamasi || "").toLowerCase();
+      const aciklama = (
+        f.belgeAciklamasi ||
+        f.BelgeAciklamasi ||
+        ""
+      ).toLowerCase();
 
       return (
         name.includes(query) ||
@@ -98,9 +173,11 @@ export default function ProjeUploadedFilesSection({
       const ta = new Date(
         normalizeIso(a.yuklemeTarihiUtc || a.YuklemeTarihiUtc || 0) || 0
       ).getTime();
+
       const tb = new Date(
         normalizeIso(b.yuklemeTarihiUtc || b.YuklemeTarihiUtc || 0) || 0
       ).getTime();
+
       return tb - ta;
     });
 
@@ -111,12 +188,17 @@ export default function ProjeUploadedFilesSection({
 
   return (
     <div>
-      {/* ✅ Üst Bar */}
+      <ImageSideModal
+        item={selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
+
       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <div className="font-semibold text-zinc-700 dark:text-zinc-300">
             Yüklenmiş Dosyalar
           </div>
+
           <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
             Gösterilen: <span className="font-semibold">{shownCount}</span> /{" "}
             <span className="font-semibold">{totalCount}</span>
@@ -124,7 +206,6 @@ export default function ProjeUploadedFilesSection({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          {/* ✅ Tür filtresi */}
           <select
             value={turFilter}
             onChange={(e) => setTurFilter(e.target.value)}
@@ -138,7 +219,6 @@ export default function ProjeUploadedFilesSection({
             ))}
           </select>
 
-          {/* ✅ Arama */}
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -172,13 +252,13 @@ export default function ProjeUploadedFilesSection({
         </div>
       )}
 
-      {/* ✅ 2 sütun liste */}
       {!loadingFiles && !filesError && shownCount > 0 && (
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {filteredFiles.map((f, idx) => {
             const url = f.url || f.Url;
             const name = f.dosyaAdi || f.DosyaAdi || url;
             const tur = (f.tur || f.Tur || "Genel").trim();
+
             const ext = extOf(name) || extOf(url);
             const icon = iconFromExt(ext);
 
@@ -190,26 +270,13 @@ export default function ProjeUploadedFilesSection({
 
             const showThumb = isImageUrl(url) || isImageUrl(name);
 
-            return (
-              <a
-                key={f.id ?? idx}
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className="group rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200 dark:hover:bg-zinc-900"
-              >
-                {/* Başlık + tarih */}
+            const cardContent = (
+              <>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    {baslik ? (
-                      <div className="text-[13px] font-semibold truncate">
-                        {baslik}
-                      </div>
-                    ) : (
-                      <div className="text-[13px] font-semibold truncate">
-                        {name}
-                      </div>
-                    )}
+                    <div className="truncate text-[13px] font-semibold">
+                      {baslik || name}
+                    </div>
 
                     {aciklama && (
                       <div className="mt-0.5 line-clamp-2 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -223,9 +290,8 @@ export default function ProjeUploadedFilesSection({
                   </div>
                 </div>
 
-                {/* Alt satır: ikon + dosya adı + tür + thumbnail */}
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-zinc-900 text-[11px] font-semibold text-white dark:bg-zinc-50 dark:text-black">
                       {icon}
                     </span>
@@ -238,7 +304,6 @@ export default function ProjeUploadedFilesSection({
                     </div>
                   </div>
 
-                  {/* ✅ Görsel thumbnail */}
                   {showThumb && (
                     <div className="flex-shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -251,6 +316,40 @@ export default function ProjeUploadedFilesSection({
                     </div>
                   )}
                 </div>
+              </>
+            );
+
+            if (showThumb) {
+              return (
+                <button
+                  key={f.id ?? idx}
+                  type="button"
+                  onClick={() =>
+                    setSelectedImage({
+                      url,
+                      name,
+                      baslik,
+                      aciklama,
+                      tur,
+                      tarihTR,
+                    })
+                  }
+                  className="group cursor-pointer w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-left text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                >
+                  {cardContent}
+                </button>
+              );
+            }
+
+            return (
+              <a
+                key={f.id ?? idx}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="group rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              >
+                {cardContent}
               </a>
             );
           })}
