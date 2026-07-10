@@ -23,6 +23,18 @@ const TEKNIK_TALEP_OPTIONS = [
   { value: "Hayır", label: "Hayır" },
 ];
 
+const SATIN_ALMA_DURUM_OPTIONS = [
+  { value: "", label: "Tümü" },
+  { value: "true", label: "Satın Alındı" },
+  { value: "false", label: "Satın Alınmadı" },
+];
+
+const TAMAMLANMA_DURUM_OPTIONS = [
+  { value: "", label: "Tümü" },
+  { value: "true", label: "Tamamlandı" },
+  { value: "false", label: "Tamamlanmadı" },
+];
+
 function toDateInputValue(d) {
   try {
     return d.toISOString().slice(0, 10);
@@ -99,10 +111,14 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
 
   const [talepCinsi, setTalepCinsi] = useState("");
   const [teknikTalep, setTeknikTalep] = useState("");
+  const [satinAlindi, setSatinAlindi] = useState("");
+  const [tamamlandi, setTamamlandi] = useState("");
+  const [notArama, setNotArama] = useState("");
+  const [onayciAdi, setOnayciAdi] = useState("");
+  const [talepEdenAdi, setTalepEdenAdi] = useState("");
 
-  const defaults = getDefaultRange();
-  const [start, setStart] = useState(defaults.startDate);
-  const [end, setEnd] = useState(defaults.endDate);
+  const [start, setStart] = useState(() => getDefaultRange().startDate);
+  const [end, setEnd] = useState(() => getDefaultRange().endDate);
 
   const personelKodu = useMemo(() => {
     return (
@@ -250,6 +266,11 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
 
       if (talepCinsi) qs.set("talepCinsi", String(talepCinsi));
       if (teknikTalep) qs.set("teknikTalep", String(teknikTalep));
+      if (satinAlindi !== "") qs.set("satinAlindi", satinAlindi);
+      if (tamamlandi !== "") qs.set("tamamlandi", tamamlandi);
+      if (notArama.trim()) qs.set("notArama", notArama.trim());
+      if (onayciAdi.trim()) qs.set("onayciAdi", onayciAdi.trim());
+      if (talepEdenAdi.trim()) qs.set("talepEdenAdi", talepEdenAdi.trim());
 
       if (start && end) {
         qs.set("startDate", start);
@@ -258,7 +279,17 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
 
       return `DetayliFilterTalep?${qs.toString()}`;
     },
-    [talepCinsi, teknikTalep, start, end]
+    [
+      talepCinsi,
+      teknikTalep,
+      satinAlindi,
+      tamamlandi,
+      notArama,
+      onayciAdi,
+      talepEdenAdi,
+      start,
+      end,
+    ]
   );
 
   const loadData = useCallback(async () => {
@@ -352,6 +383,11 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
   const resetFilters = () => {
     setTalepCinsi("");
     setTeknikTalep("");
+    setSatinAlindi("");
+    setTamamlandi("");
+    setNotArama("");
+    setOnayciAdi("");
+    setTalepEdenAdi("");
 
     const freshDefaults = getDefaultRange();
 
@@ -372,8 +408,8 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
   };
 
   return (
-    <div className="p-3 space-y-3">
-      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="space-y-2 p-2">
+      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div>
             <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
@@ -449,10 +485,10 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Site</label>
-
+        {/* Filtreler: geniş ekranda en fazla iki satır */}
+        <div className="grid w-full grid-cols-1 gap-1.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Site</label>
             {allowedSiteIds.length > 1 ? (
               <select
                 value={siteId}
@@ -461,14 +497,12 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
                   setPage(1);
                 }}
                 disabled={siteLoading || !allowedSiteIds.length}
-                className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
               >
                 <option value="">Tümü</option>
-
                 {siteList.map((s) => {
                   const id = getSiteId(s);
                   const ad = getSiteName(s) || "Site adı yok";
-
                   return (
                     <option key={id} value={String(id)}>
                       {ad}
@@ -482,83 +516,154 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
                 value={siteLoading ? "Yükleniyor..." : selectedSiteName}
                 readOnly
                 disabled
-                className="h-8 rounded-md border border-zinc-300 bg-zinc-100 px-2 text-[12px] text-zinc-700 disabled:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-zinc-100 px-1.5 text-[11px] text-zinc-700 disabled:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
               />
             )}
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Talep Cinsi</label>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Talep Cinsi</label>
             <select
               value={talepCinsi}
               onChange={(e) => {
                 setTalepCinsi(e.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               <option value="">Tümü</option>
-
               {TALEP_CINSI_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Teknik Talep</label>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Teknik Talep</label>
             <select
               value={teknikTalep}
               onChange={(e) => {
                 setTeknikTalep(e.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               {TEKNIK_TALEP_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Start</label>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Satın Alma</label>
+            <select
+              value={satinAlindi}
+              onChange={(e) => {
+                setSatinAlindi(e.target.value);
+                setPage(1);
+              }}
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            >
+              {SATIN_ALMA_DURUM_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Tamamlanma</label>
+            <select
+              value={tamamlandi}
+              onChange={(e) => {
+                setTamamlandi(e.target.value);
+                setPage(1);
+              }}
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            >
+              {TAMAMLANMA_DURUM_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Başlangıç</label>
             <input
               type="date"
               value={start}
+              max={end || undefined}
               onChange={(e) => {
                 setStart(e.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">End</label>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Bitiş</label>
             <input
               type="date"
               value={end}
+              min={start || undefined}
               onChange={(e) => {
                 setEnd(e.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
 
-          <div className="flex items-end gap-2 md:col-span-1">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Onaycı Ara</label>
+            <input
+              type="text"
+              value={onayciAdi}
+              onChange={(e) => {
+                setOnayciAdi(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Ad soyad..."
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Talebi Açan</label>
+            <input
+              type="text"
+              value={talepEdenAdi}
+              onChange={(e) => {
+                setTalepEdenAdi(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Ad soyad..."
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-0.5 xl:col-span-2">
+            <label className="text-[10px] text-zinc-500 dark:text-zinc-400">Not / Açıklama / Yorum Ara</label>
+            <input
+              type="text"
+              value={notArama}
+              onChange={(e) => {
+                setNotArama(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Not, açıklama veya yorum..."
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          <div className="flex items-end">
             <button
               type="button"
               onClick={loadData}
-              disabled={!allowedSiteIds.length}
-              className="h-8 rounded-md border border-sky-200 bg-sky-50 px-3 text-[12px] font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-60 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200 dark:hover:bg-sky-900/45"
+              disabled={!allowedSiteIds.length || loading}
+              className="h-7 w-full rounded-md border border-sky-200 bg-sky-50 px-2 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200 dark:hover:bg-sky-900/45"
             >
-              Yenile
+              {loading ? "Yükleniyor..." : "Yenile"}
             </button>
           </div>
         </div>
@@ -600,7 +705,7 @@ export default function ProjeGorevlileriDetayliTaleplerPage() {
 
       <YoneticiRaporuDetayliTalepCard
         data={items}
-        page={1}
+        page={page}
         pageSize={pageSize}
       />
     </div>

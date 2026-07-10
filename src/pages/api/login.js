@@ -9,7 +9,7 @@ import https from "https";
 import { setCookie } from "@/utils/cookieHelper";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://pilotapisrc.com/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7289/api";
 
 const httpsAgent = API_BASE_URL.includes("localhost")
   ? new https.Agent({ rejectUnauthorized: false })

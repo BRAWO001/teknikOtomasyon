@@ -1,7 +1,9 @@
 // pages/detayliTaleplerRaporu.jsx
+
 import { useEffect, useMemo, useState } from "react";
-import { getDataAsync } from "@/utils/apiService";
 import { useRouter } from "next/router";
+import { getDataAsync } from "@/utils/apiService";
+
 import YoneticiRaporuDetayliTalepCard from "@/components/yoneticiRaporu/YoneticiRaporuDetayliTalepCard";
 import SonYorumOzetMiniPanel from "@/components/yoneticiRaporu/SonYorumOzetMiniPanel";
 
@@ -22,9 +24,35 @@ const TEKNIK_TALEP_OPTIONS = [
   { value: "Hayır", label: "Hayır" },
 ];
 
-function toDateInputValue(d) {
+/*
+ * Endpoint tarafına gönderilecek değerler:
+ *
+ * ""      => Filtre uygulanmaz
+ * "true"  => Not_1 dolu olanlar
+ * "false" => Not_1 boş olanlar
+ */
+const SATIN_ALMA_DURUM_OPTIONS = [
+  { value: "", label: "Tümü" },
+  { value: "true", label: "Satın Alındı" },
+  { value: "false", label: "Satın Alınmadı" },
+];
+
+/*
+ * Endpoint tarafına gönderilecek değerler:
+ *
+ * ""      => Filtre uygulanmaz
+ * "true"  => Not_5 dolu olanlar
+ * "false" => Not_5 boş olanlar
+ */
+const TAMAMLANMA_DURUM_OPTIONS = [
+  { value: "", label: "Tümü" },
+  { value: "true", label: "Tamamlandı" },
+  { value: "false", label: "Tamamlanmadı" },
+];
+
+function toDateInputValue(date) {
   try {
-    return d.toISOString().slice(0, 10);
+    return date.toISOString().slice(0, 10);
   } catch {
     return "";
   }
@@ -32,81 +60,177 @@ function toDateInputValue(d) {
 
 function getDefaultRange() {
   const today = new Date();
-  const start = new Date(today);
-  start.setMonth(start.getMonth() - 3);
+  const startDate = new Date(today);
+
+  startDate.setMonth(startDate.getMonth() - 3);
 
   return {
-    startDate: toDateInputValue(start),
+    startDate: toDateInputValue(startDate),
     endDate: toDateInputValue(today),
   };
 }
 
-function normalizePagedResponse(res) {
-  if (!res) return { items: [], totalPages: 1, totalCount: 0 };
+function normalizePagedResponse(response) {
+  if (!response) {
+    return {
+      items: [],
+      totalPages: 1,
+      totalCount: 0,
+    };
+  }
 
-  const items = res.items ?? res.Items ?? [];
-  const totalPages = Number(res.totalPages ?? res.TotalPages ?? 1) || 1;
+  const items = response.items ?? response.Items ?? [];
+
+  const totalPages =
+    Number(response.totalPages ?? response.TotalPages ?? 1) || 1;
+
   const totalCount =
     Number(
-      res.totalCount ??
-        res.TotalCount ??
+      response.totalCount ??
+        response.TotalCount ??
         (Array.isArray(items) ? items.length : 0)
     ) || 0;
 
-  return { items, totalPages, totalCount };
+  return {
+    items,
+    totalPages,
+    totalCount,
+  };
 }
 
 export default function DetayliTaleplerRaporuPage() {
   const router = useRouter();
 
-  const [sites, setSites] = useState([]);
+  /*
+   * Liste verileri
+   */
 
+  const [sites, setSites] = useState([]);
   const [items, setItems] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
+  /*
+   * Sayfalama
+   */
 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(25);
+
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+
+  /*
+   * Filtreler
+   */
 
   const [siteId, setSiteId] = useState("");
   const [talepCinsi, setTalepCinsi] = useState("");
   const [teknikTalep, setTeknikTalep] = useState("");
-  const [notArama, setNotArama] = useState("");
 
+  /*
+   * Not_1 filtresi
+   *
+   * ""      => Tümü
+   * "true"  => Satın Alındı
+   * "false" => Satın Alınmadı
+   */
+  const [satinAlindi, setSatinAlindi] = useState("");
+
+  /*
+   * Not_5 filtresi
+   *
+   * ""      => Tümü
+   * "true"  => Tamamlandı
+   * "false" => Tamamlanmadı
+   */
+  const [tamamlandi, setTamamlandi] = useState("");
+
+  const [notArama, setNotArama] = useState("");
   const [onayciAdi, setOnayciAdi] = useState("");
   const [talepEdenAdi, setTalepEdenAdi] = useState("");
 
-  const defaults = getDefaultRange();
-  const [start, setStart] = useState(defaults.startDate);
-  const [end, setEnd] = useState(defaults.endDate);
+  const [start, setStart] = useState(
+    () => getDefaultRange().startDate
+  );
+
+  const [end, setEnd] = useState(
+    () => getDefaultRange().endDate
+  );
+
+  /*
+   * Endpoint oluşturma
+   */
 
   const endpoint = useMemo(() => {
-    const qs = new URLSearchParams();
+    const queryParams = new URLSearchParams();
 
-    qs.set("page", String(page));
-    qs.set("pageSize", String(pageSize));
+    queryParams.set("page", String(page));
+    queryParams.set("pageSize", String(pageSize));
 
-    if (siteId) qs.set("siteId", String(siteId));
-    if (talepCinsi) qs.set("talepCinsi", String(talepCinsi));
-    if (teknikTalep) qs.set("teknikTalep", String(teknikTalep));
-
-    if (notArama?.trim()) qs.set("notArama", notArama.trim());
-    if (onayciAdi?.trim()) qs.set("onayciAdi", onayciAdi.trim());
-    if (talepEdenAdi?.trim()) qs.set("talepEdenAdi", talepEdenAdi.trim());
-
-    if (start && end) {
-      qs.set("startDate", start);
-      qs.set("endDate", end);
+    if (siteId) {
+      queryParams.set("siteId", String(siteId));
     }
 
-    return `DetayliFilterTalep?${qs.toString()}`;
+    if (talepCinsi) {
+      queryParams.set("talepCinsi", talepCinsi);
+    }
+
+    if (teknikTalep) {
+      queryParams.set("teknikTalep", teknikTalep);
+    }
+
+    /*
+     * Boş string gönderilmez.
+     *
+     * satinAlindi değeri "true" veya "false" olabilir.
+     * JavaScript'te "false" stringi truthy olduğu için:
+     *
+     * if (satinAlindi)
+     *
+     * kontrolü hem true hem false seçeneklerinde çalışır.
+     */
+    if (satinAlindi !== "") {
+      queryParams.set("satinAlindi", satinAlindi);
+    }
+
+    if (tamamlandi !== "") {
+      queryParams.set("tamamlandi", tamamlandi);
+    }
+
+    if (notArama.trim()) {
+      queryParams.set("notArama", notArama.trim());
+    }
+
+    if (onayciAdi.trim()) {
+      queryParams.set("onayciAdi", onayciAdi.trim());
+    }
+
+    if (talepEdenAdi.trim()) {
+      queryParams.set("talepEdenAdi", talepEdenAdi.trim());
+    }
+
+    /*
+     * Tarihler ayrı ayrı gönderilebilir.
+     */
+
+    if (start) {
+      queryParams.set("startDate", start);
+    }
+
+    if (end) {
+      queryParams.set("endDate", end);
+    }
+
+    return `DetayliFilterTalep?${queryParams.toString()}`;
   }, [
     page,
     pageSize,
     siteId,
     talepCinsi,
     teknikTalep,
+    satinAlindi,
+    tamamlandi,
     notArama,
     onayciAdi,
     talepEdenAdi,
@@ -114,18 +238,26 @@ export default function DetayliTaleplerRaporuPage() {
     end,
   ]);
 
+  /*
+   * Talepleri getir
+   */
+
   async function loadData() {
     setLoading(true);
 
     try {
-      const res = await getDataAsync(endpoint);
-      const norm = normalizePagedResponse(res);
+      const response = await getDataAsync(endpoint);
+      const normalizedResponse = normalizePagedResponse(response);
 
-      setItems(norm.items || []);
-      setTotalPages(norm.totalPages || 1);
-      setTotalCount(norm.totalCount || 0);
-    } catch (e) {
-      console.error("DetayliTaleplerRaporu GET hata:", e);
+      setItems(normalizedResponse.items);
+      setTotalPages(normalizedResponse.totalPages);
+      setTotalCount(normalizedResponse.totalCount);
+    } catch (error) {
+      console.error(
+        "DetayliTaleplerRaporu GET hata:",
+        error
+      );
+
       setItems([]);
       setTotalPages(1);
       setTotalCount(0);
@@ -134,71 +266,119 @@ export default function DetayliTaleplerRaporuPage() {
     }
   }
 
+  /*
+   * Site listesini getir
+   */
+
   useEffect(() => {
     let cancelled = false;
 
-    const loadLists = async () => {
+    async function loadSites() {
       try {
-        const siteRes = await getDataAsync("SiteAptEvControllerSet/sites");
-        if (cancelled) return;
-        setSites(siteRes || []);
-      } catch (err) {
-        console.error("SITES FETCH ERROR:", err);
-      }
-    };
+        const siteResponse = await getDataAsync(
+          "SiteAptEvControllerSet/sites"
+        );
 
-    loadLists();
+        if (cancelled) {
+          return;
+        }
+
+        setSites(
+          Array.isArray(siteResponse)
+            ? siteResponse
+            : []
+        );
+      } catch (error) {
+        console.error(
+          "SITES FETCH ERROR:",
+          error
+        );
+
+        if (!cancelled) {
+          setSites([]);
+        }
+      }
+    }
+
+    loadSites();
 
     return () => {
       cancelled = true;
     };
   }, []);
 
+  /*
+   * Endpoint değiştiğinde veriyi yeniden getir
+   */
+
   useEffect(() => {
     loadData();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint]);
 
+  /*
+   * Filtreleri sıfırla
+   */
+
   const resetFilters = () => {
+    const defaultRange = getDefaultRange();
+
     setSiteId("");
     setTalepCinsi("");
     setTeknikTalep("");
+
+    setSatinAlindi("");
+    setTamamlandi("");
+
     setNotArama("");
     setOnayciAdi("");
     setTalepEdenAdi("");
-    setStart("");
-    setEnd("");
+
+    setStart(defaultRange.startDate);
+    setEnd(defaultRange.endDate);
+
     setPage(1);
   };
+
+  /*
+   * Manuel yenileme
+   */
 
   const refresh = async () => {
     await loadData();
   };
 
   return (
-    <div className="p-3 space-y-3">
-      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex items-center justify-between gap-2">
+    <div className="space-y-2 p-2">
+      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        {/* Başlık ve butonlar */}
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
               Detaylı Talepler Raporu
             </div>
 
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            <div className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
               {totalCount} kayıt • Sayfa: {page}/{totalPages}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex flex-wrap items-center justify-start gap-1.5 lg:justify-end">
             <button
               type="button"
-              onClick={() => router.push("/satinalma/onayBekleyen")}
-              className="rounded-md border cursor-pointer border-zinc-300 bg-yellow-200 px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              onClick={() =>
+                router.push("/satinalma/onayBekleyen")
+              }
+              className="cursor-pointer rounded-md border border-yellow-300 bg-yellow-200 px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-yellow-300 dark:border-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-100 dark:hover:bg-yellow-900/60"
             >
               Onayımı Bekleyen Talepler
             </button>
 
-            <SonYorumOzetMiniPanel take={30} stickyTop={8} />
+            <SonYorumOzetMiniPanel
+              take={30}
+              stickyTop={8}
+            />
 
             <button
               type="button"
@@ -227,150 +407,230 @@ export default function DetayliTaleplerRaporuPage() {
             <button
               type="button"
               onClick={refresh}
-              className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200 dark:hover:bg-emerald-900/45"
+              disabled={loading}
+              className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200 dark:hover:bg-emerald-900/45"
             >
-              Yenile
+              {loading ? "Yükleniyor..." : "Yenile"}
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-9">
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Site</label>
+
+
+
+        {/* Filtreler */}
+        <div className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+          {/* Site */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Site
+            </label>
 
             <select
               value={siteId}
-              onChange={(e) => {
-                setSiteId(e.target.value);
+              onChange={(event) => {
+                setSiteId(event.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               <option value="">Tümü</option>
 
-              {sites.map((s) => (
-                <option key={s.id ?? s.Id} value={s.id ?? s.Id}>
-                  {s.ad ?? s.Ad ?? `Site #${s.id ?? s.Id}`}
-                </option>
-              ))}
+              {sites.map((site) => {
+                const currentSiteId =
+                  site.id ?? site.Id;
+
+                const currentSiteName =
+                  site.ad ??
+                  site.Ad ??
+                  `Site #${currentSiteId}`;
+
+                return (
+                  <option
+                    key={currentSiteId}
+                    value={currentSiteId}
+                  >
+                    {currentSiteName}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Talep Cinsi</label>
+          {/* Talep cinsi */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Talep Cinsi
+            </label>
 
             <select
               value={talepCinsi}
-              onChange={(e) => {
-                setTalepCinsi(e.target.value);
+              onChange={(event) => {
+                setTalepCinsi(event.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               <option value="">Tümü</option>
 
-              {TALEP_CINSI_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {TALEP_CINSI_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
                 </option>
               ))}
             </select>
-          </div>
+          </div>  
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Teknik Talep</label>
+
+          {/* Satın alma durumu */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Satın Alma Durumu
+            </label>
 
             <select
-              value={teknikTalep}
-              onChange={(e) => {
-                setTeknikTalep(e.target.value);
+              value={satinAlindi}
+              onChange={(event) => {
+                setSatinAlindi(event.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
-              {TEKNIK_TALEP_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {SATIN_ALMA_DURUM_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="flex flex-col gap-1 md:col-span-2">
-            <label className="text-[11px] text-zinc-500">Not / Yorum Ara</label>
+          {/* Tamamlanma durumu */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Tamamlanma Durumu
+            </label>
 
-            <input
-              type="text"
-              value={notArama}
-              onChange={(e) => {
-                setNotArama(e.target.value);
+            <select
+              value={tamamlandi}
+              onChange={(event) => {
+                setTamamlandi(event.target.value);
                 setPage(1);
               }}
-              placeholder="Notlar, açıklama ve yorumlarda ara..."
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-            />
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            >
+              {TAMAMLANMA_DURUM_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Onaycı Ara</label>
+          {/* Onaycı */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Onaycı Ara
+            </label>
 
             <input
               type="text"
               value={onayciAdi}
-              onChange={(e) => {
-                setOnayciAdi(e.target.value);
+              onChange={(event) => {
+                setOnayciAdi(event.target.value);
                 setPage(1);
               }}
               placeholder="Onaycı adı..."
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Talebi Açan Ara</label>
+          {/* Talebi açan */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Talebi Açan Ara
+            </label>
 
             <input
               type="text"
               value={talepEdenAdi}
-              onChange={(e) => {
-                setTalepEdenAdi(e.target.value);
+              onChange={(event) => {
+                setTalepEdenAdi(event.target.value);
                 setPage(1);
               }}
               placeholder="Talebi açan kişi..."
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">Start</label>
+          {/* Not ve yorum arama */}
+          <div className="min-w-0 flex flex-col gap-0.5 sm:col-span-2 lg:col-span-2">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Not / Yorum Ara
+            </label>
+
+            <input
+              type="text"
+              value={notArama}
+              onChange={(event) => {
+                setNotArama(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Notlar, açıklama ve yorumlarda ara..."
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+
+          {/* Başlangıç tarihi */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Başlangıç
+            </label>
 
             <input
               type="date"
               value={start}
-              onChange={(e) => {
-                setStart(e.target.value);
+              max={end || undefined}
+              onChange={(event) => {
+                setStart(event.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-zinc-500">End</label>
+          {/* Bitiş tarihi */}
+          <div className="min-w-0 flex flex-col gap-0.5">
+            <label className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
+              Bitiş
+            </label>
 
             <input
               type="date"
               value={end}
-              onChange={(e) => {
-                setEnd(e.target.value);
+              min={start || undefined}
+              onChange={(event) => {
+                setEnd(event.target.value);
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[12px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
         </div>
+
+
+
       </div>
 
+      {/* Liste başlığı ve sayfalama */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
@@ -378,7 +638,7 @@ export default function DetayliTaleplerRaporuPage() {
           </div>
 
           {loading && (
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            <span className="text-[10px] leading-none text-zinc-500 dark:text-zinc-400">
               Yükleniyor…
             </span>
           )}
@@ -387,29 +647,57 @@ export default function DetayliTaleplerRaporuPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            disabled={loading || page <= 1}
+            onClick={() =>
+              setPage((currentPage) =>
+                Math.max(1, currentPage - 1)
+              )
+            }
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
             ◀ Önceki
           </button>
 
+          <span className="min-w-[55px] text-center text-[11px] text-zinc-500 dark:text-zinc-400">
+            {page} / {totalPages}
+          </span>
+
           <button
             type="button"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            disabled={
+              loading ||
+              page >= totalPages
+            }
+            onClick={() =>
+              setPage((currentPage) =>
+                Math.min(
+                  totalPages,
+                  currentPage + 1
+                )
+              )
+            }
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
             Sonraki ▶
           </button>
         </div>
       </div>
 
-      <YoneticiRaporuDetayliTalepCard
-        data={items}
-        page={page}
-        pageSize={pageSize}
-      />
+      {/* Sonuç bulunamadı */}
+      {!loading && items.length === 0 && (
+        <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+          Seçilen filtrelere uygun talep bulunamadı.
+        </div>
+      )}
+
+      {/* Talep kartları */}
+      {items.length > 0 && (
+        <YoneticiRaporuDetayliTalepCard
+          data={items}
+          page={page}
+          pageSize={pageSize}
+        />
+      )}
     </div>
   );
 }
