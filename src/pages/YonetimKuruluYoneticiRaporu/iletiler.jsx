@@ -3,6 +3,13 @@ import { useRouter } from "next/router";
 import { getDataAsync } from "@/utils/apiService";
 import YoneticiRaporuIletilerTable from "@/components/yoneticiRaporu/YoneticiRaporuIletilerTable";
 
+import { roleGuard } from "@/utils/roleGuard";
+
+export const getServerSideProps = (ctx) =>
+  roleGuard(ctx, { allow: [40,90,30,33,34], redirectTo: "/" });
+
+
+
 function normalizePagedResponse(res) {
   if (Array.isArray(res)) {
     return { items: res, totalPages: 1, totalCount: res.length };
