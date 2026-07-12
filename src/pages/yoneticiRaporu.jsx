@@ -11,6 +11,14 @@ import YoneticiRaporuIsEmriCard from "@/components/yoneticiRaporu/YoneticiRaporu
 import YoneticiRaporuIsEmriGrafikPanel from "@/components/yoneticiRaporu/YoneticiRaporuIsEmriGrafikPanel";
 import IsEmriRemoveModal from "@/components/yoneticiRaporu/IsEmriRemoveModal";
 
+
+import { roleGuard } from "@/utils/roleGuard";
+
+export const getServerSideProps = (ctx) =>
+  roleGuard(ctx, { allow: [40,90,30,33,34], redirectTo: "/" });
+
+
+
 const SUREC_OPTIONS = ["İncelemede", "Kontrol Ediliyor", "Tamamlandı"];
 
 export default function YoneticiRaporuPage() {
