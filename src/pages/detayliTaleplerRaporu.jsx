@@ -7,6 +7,14 @@ import { getDataAsync } from "@/utils/apiService";
 import YoneticiRaporuDetayliTalepCard from "@/components/yoneticiRaporu/YoneticiRaporuDetayliTalepCard";
 import SonYorumOzetMiniPanel from "@/components/yoneticiRaporu/SonYorumOzetMiniPanel";
 
+
+import { roleGuard } from "@/utils/roleGuard";
+
+export const getServerSideProps = (ctx) =>
+  roleGuard(ctx, { allow: [40,90,30,33,34], redirectTo: "/" });
+
+
+
 const TALEP_CINSI_OPTIONS = [
   { value: "Satın Alma", label: "Satın Alma" },
   { value: "Teknik Talep", label: "Teknik Talep" },
