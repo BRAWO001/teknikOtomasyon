@@ -2,6 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { getDataAsync } from "@/utils/apiService";
 import { useRouter } from "next/router";
 
+import { roleGuard } from "@/utils/roleGuard";
+
+export const getServerSideProps = (ctx) =>
+  roleGuard(ctx, { allow: [40,90,30,33,34], redirectTo: "/" });
+
+
+
 function formatDateTR(iso) {
   if (!iso) return "-";
 
