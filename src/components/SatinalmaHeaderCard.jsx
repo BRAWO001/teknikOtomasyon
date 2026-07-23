@@ -34,6 +34,7 @@ export default function SatinalmaHeaderCard({
   site,
   talepEden,
   aciklama,
+  id,
 
   // ✅ Teknik Açıklama (Not_4)
   teknikAciklama,
@@ -59,7 +60,7 @@ export default function SatinalmaHeaderCard({
       
       <div className="mb-3 flex items-center justify-evenly gap-2">
         <div className="text-[12px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Talep Bilgileri
+         {id}. Talep Bilgileri
         </div>
 
         {siteAd ? (

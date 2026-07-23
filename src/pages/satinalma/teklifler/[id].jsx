@@ -526,6 +526,7 @@ const DosyaTile = ({ d, mode }) => {
           <div className="flex flex-col gap-3">
             <SatinalmaHeaderCard
               seriNo={seriNo}
+              id={id}
               tarih={tarih}
               talepCinsi={talepCinsi}  
               talepEden={talepEden}
