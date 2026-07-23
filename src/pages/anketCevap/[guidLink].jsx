@@ -566,9 +566,7 @@ setSuccess(true);
               <div className="truncate text-sm font-bold tracking-wide">
                 EOS MANAGEMENT
               </div>
-              <div className="truncate text-xs text-zinc-600 dark:text-zinc-400">
-                Anket Cevaplama Formu
-              </div>
+              
             </div>
           </div>
 
@@ -590,9 +588,7 @@ setSuccess(true);
               <div className="text-lg font-semibold tracking-tight">
                 {anket?.baslik ?? "-"}
               </div>
-              <div className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Lütfen aşağıdaki bilgileri doldurup anketi tamamlayınız.
-              </div>
+              
             </div>
           </div>
 
