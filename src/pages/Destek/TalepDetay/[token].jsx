@@ -51,6 +51,72 @@ function upperTR(s) {
     .toUpperCase();
 }
 
+function getPersonelRoleCode(personel) {
+  const raw =
+    pickAny(
+      personel,
+      "rolKod",
+      "RolKod",
+      "rolKodu",
+      "RolKodu",
+      "roleCode",
+      "RoleCode",
+      "rolId",
+      "RolId",
+    ) ??
+    pickAny(personel?.rol, "kod", "Kod", "id", "Id") ??
+    pickAny(personel?.Rol, "kod", "Kod", "id", "Id");
+
+  const numberValue = Number(raw);
+  if (Number.isFinite(numberValue) && numberValue > 0) return numberValue;
+
+  const roles = pickAny(personel, "roller", "Roller", "roles", "Roles");
+  if (Array.isArray(roles)) {
+    const role77 = roles.find((item) => {
+      const code =
+        typeof item === "object"
+          ? pickAny(item, "rolKod", "RolKod", "kod", "Kod", "id", "Id")
+          : item;
+
+      return Number(code) === 77;
+    });
+
+    if (role77) return 77;
+  }
+
+  return 0;
+}
+
+function getSakinRole(ticket) {
+  const rawRole = String(
+    pickAny(
+      ticket,
+      "iliskiTipAd",
+      "IliskiTipAd",
+      "iliskiTipi",
+      "IliskiTipi",
+      "kullaniciTipAd",
+      "KullaniciTipAd",
+      "sakinTipi",
+      "SakinTipi",
+      "talepSahibiRol",
+      "TalepSahibiRol",
+    ) ?? "",
+  )
+    .trim()
+    .toLocaleLowerCase("tr-TR");
+
+  if (
+    rawRole.includes("kiracı") ||
+    rawRole.includes("kiraci") ||
+    rawRole.includes("tenant")
+  ) {
+    return "Kiracı";
+  }
+
+  return "Kat Maliki";
+}
+
 const DURUM_OPTIONS = ["Devam Ediyor", "Beklemede", "Kapalı"];
 
 export default function TalepDetayPage() {
@@ -62,7 +128,15 @@ export default function TalepDetayPage() {
 
   // auth/cookie
   const [personel, setPersonel] = useState(null);
-  const isPersonel = !!personel;
+
+  const personelRolKodu = useMemo(
+    () => getPersonelRoleCode(personel),
+    [personel],
+  );
+
+  // Rol 77 sakin girişidir; personel yetkileri verilmez.
+  const isRol77 = personelRolKodu === 77;
+  const isPersonel = !!personel && !isRol77;
 
   // data
   const [loading, setLoading] = useState(false);
@@ -93,7 +167,9 @@ export default function TalepDetayPage() {
     try {
       const c = getClientCookie("PersonelUserInfo");
       if (!c) return setPersonel(null);
-      setPersonel(JSON.parse(c));
+
+      const parsed = JSON.parse(decodeURIComponent(c));
+      setPersonel(parsed?.personel ?? parsed?.Personel ?? parsed);
     } catch {
       setPersonel(null);
     }
@@ -184,12 +260,17 @@ export default function TalepDetayPage() {
       const ad = pickAny(personel, "ad", "Ad") ?? "";
       const soyad = pickAny(personel, "soyad", "Soyad") ?? "";
       adSoyad = `${ad} ${soyad}`.trim();
-      rol = String(pickAny(personel, "rol", "Rol") ?? "Personel").trim();
+      rol = String(
+        pickAny(personel, "rol", "Rol", "rolAd", "RolAd") ?? "Personel",
+      ).trim();
+
       if (!adSoyad) return showToast("Cookie personel adı boş.");
     } else {
+      // Rol 77 dahil sakin kullanıcı yorumlarında adı ticket sahibinden al.
       const tAdSoyad = pickAny(ticket, "adSoyad", "AdSoyad") ?? "";
       adSoyad = String(tAdSoyad || "").trim();
-      rol = "Kat Maliki";
+      rol = getSakinRole(ticket);
+
       if (!adSoyad) return showToast("Ticket üzerinde ad soyad yok.");
     }
 
@@ -231,6 +312,7 @@ export default function TalepDetayPage() {
   const konu = safeText(pickAny(ticket, "konu", "Konu"));
   const aciklama = safeText(pickAny(ticket, "aciklama", "Aciklama"));
   const durum = safeText(pickAny(ticket, "durum", "Durum", "not_1", "Not_1"));
+  const sakinRol = getSakinRole(ticket);
 
   const ticketId = Number(pickAny(ticket, "id", "Id")) || 0;
 
@@ -289,7 +371,7 @@ export default function TalepDetayPage() {
                   isPersonel ? "bg-emerald-500" : "bg-amber-500",
                 ].join(" ")}
               />
-              {isPersonel ? "PERSONEL" : "KAT MALİKİ"}
+              {isPersonel ? "PERSONEL" : upperTR(sakinRol)}
             </span>
 
             {!isPersonel ? (
@@ -348,7 +430,7 @@ export default function TalepDetayPage() {
 
                   {!isPersonel ? (
                     <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 text-[10px] font-extrabold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200">
-                      Kat Maliki: {adSoyadTicket}
+                      {sakinRol}: {adSoyadTicket}
                     </span>
                   ) : (
                     <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 text-[10px] font-extrabold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200">
@@ -373,7 +455,7 @@ export default function TalepDetayPage() {
                   />
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      {isPersonel ? "Personel Not ekleme." : "Kat Maliki Notu."}
+                      {isPersonel ? "Personel Not ekleme." : `${sakinRol} Notu.`}
                     </div>
                     <button
                       type="button"

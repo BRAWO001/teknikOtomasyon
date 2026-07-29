@@ -424,13 +424,13 @@ export default function KararTokenDetayPage() {
               ← Geri
             </button>
 
-            <button
+            {/* <button
               type="button"
               onClick={() => router.push("/")}
               className="h-9 rounded-md border border-zinc-200 bg-white px-3 text-[12px] font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900"
             >
               ⌂ Anasayfa
-            </button>
+            </button> */}
 
             <span className="rounded-full border border-zinc-200 bg-white px-4 py-1 text-[11px] font-medium text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
               Kararlar kurumsal kayıt esaslarına uygun şekilde yönetilir ve

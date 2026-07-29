@@ -26,6 +26,8 @@ export function getRouteByRole(rol) {
       return "/genelMudur";
     case 70:
       return "/patron";
+    case 77:
+      return "/sakinGiris/sakin";
     case 10:
     default:
       return "/satinAlim";
