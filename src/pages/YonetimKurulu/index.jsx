@@ -1,8 +1,3 @@
-
-
-
-
-
 // src/pages/YonetimKurulu/index.jsx
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -183,6 +178,11 @@ export default function YonetimKuruluIndexPage() {
   const handleOpenIleti = (token) => {
     if (!token) return;
     router.push(`/YonetimKurulu/ileti/${token}`);
+  };
+
+  const handleOpenBelgeler = () => {
+    if (!siteId) return;
+    router.push(`/YonetimKurulu/belgeler?siteId=${encodeURIComponent(siteId)}`);
   };
 
   const handleToggleDuzenlemeKarar = async (kararId, nextValue) => {
@@ -428,6 +428,14 @@ export default function YonetimKuruluIndexPage() {
               <span className="ml-1 text-[12px] opacity-80">
                 ({kararCount})
               </span>
+            </button>
+
+            <button
+              onClick={handleOpenBelgeler}
+              disabled={!siteId}
+              className="h-9 rounded-md border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200 dark:hover:bg-blue-900/40"
+            >
+              Proje Belgeleri
             </button>
 
             <button
