@@ -1,5 +1,5 @@
 import "@/styles/globals.css";
-// pilotapisrc.compilotapisrc.com          pilotapisrc.com            pilotapisrc.com
+// localhost:7289localhost:7289          localhost:7289            localhost:7289
 export default function App({ Component, pageProps }) {
   return <Component {...pageProps} />;
 }

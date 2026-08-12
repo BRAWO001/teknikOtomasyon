@@ -5,7 +5,7 @@ import { getCookie as getClientCookie } from "@/utils/cookieService";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "https://pilotapisrc.com/api";
+  "https://localhost:7289/api";
 
 
 

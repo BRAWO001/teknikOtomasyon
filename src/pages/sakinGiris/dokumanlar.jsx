@@ -7,7 +7,7 @@ import { roleGuard } from "@/utils/roleGuard";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "https://pilotapisrc.com/api";
+  "https://localhost:7289/api";
 
 const PUBLIC_WEB_BASE_URL =
   process.env.NEXT_PUBLIC_WEB_BASE_URL ||
