@@ -3,7 +3,7 @@ import axios from "axios";
 
 // 🔧 .env KULLANMIYORUZ, SABİT DEĞİŞKEN
 // .NET API base adresin:
-const API_BASE_URL = "https://localhost:7289/api"; // gerekirse değiştirirsin
+const API_BASE_URL = "https://pilotapisrc.com/api"; // gerekirse değiştirirsin
 
 // .NET appsettings'teki Vapid:PublicKey ile aynı olmalı
 const VAPID_PUBLIC_KEY =

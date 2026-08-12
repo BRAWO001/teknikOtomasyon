@@ -9,7 +9,7 @@
 // import { getCookie as getClientCookie } from "@/utils/cookieService";
 
 // const BASE_URL =
-//   process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7289/api";
+//   process.env.NEXT_PUBLIC_API_BASE_URL || "https://pilotapisrc.com/api";
 
 // function getToken(req) {
 //   if (req) return getServerCookie(req, "AuthToken_01") || null;
@@ -70,7 +70,7 @@ import { getCookie as getServerCookie } from "@/utils/cookieHelper";
 import { getCookie as getClientCookie } from "@/utils/cookieService";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:7289/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://pilotapisrc.com/api";
 
 function getToken(req) {
   if (req) return getServerCookie(req, "AuthToken_01") || null;
