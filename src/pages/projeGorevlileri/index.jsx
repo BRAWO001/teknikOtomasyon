@@ -372,7 +372,7 @@ export default function ProjeGorevlileriPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between xl:items-center xl:gap-4">
                 {personel?.id && (
                   <div className="w-full xl:w-auto">
-                    <ProjeGorevlileriSonYorumOzetCard personelId={personel.id} />
+                    <ProjeGorevlileriSonYorumOzetCard personelId={personel.id}  />
                   </div>
                 )}
 

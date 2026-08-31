@@ -910,6 +910,8 @@ export default function SatinAlmaFiyatlandirPage() {
 
 
 
+
+
       <div
         style={{
           border: "1px solid #e5e7eb",

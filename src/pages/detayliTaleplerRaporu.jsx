@@ -384,7 +384,7 @@ export default function DetayliTaleplerRaporuPage() {
             </button>
 
             <SonYorumOzetMiniPanel
-              take={30}
+              take={50}
               stickyTop={8}
             />
 
