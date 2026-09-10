@@ -1,8 +1,6 @@
 
 
 
-
-
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
@@ -520,7 +518,7 @@ setSuccess(true);
                   {anket?.baslik ?? "-"}
                 </div>
                 {anket?.aciklama ? (
-                  <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                  <div className="mt-2 whitespace-pre-wrap text-sm text-zinc-600 dark:text-zinc-300">
                     {anket.aciklama}
                   </div>
                 ) : null}
@@ -593,7 +591,7 @@ setSuccess(true);
           </div>
 
           {anket?.aciklama ? (
-            <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-200">
+            <div className="mt-4 whitespace-pre-wrap rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-200">
               {anket.aciklama}
             </div>
           ) : null}
@@ -688,7 +686,7 @@ setSuccess(true);
                     </div>
 
                     {soru?.aciklama ? (
-                      <div className="mt-1 text-[12px] text-zinc-600 dark:text-zinc-400">
+                      <div className="mt-1 whitespace-pre-wrap text-[12px] text-zinc-600 dark:text-zinc-400">
                         {soru.aciklama}
                       </div>
                     ) : null}
