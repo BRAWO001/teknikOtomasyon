@@ -659,9 +659,9 @@ export default function SatinAlmaFiyatlandirPage() {
 
 
       
-{/* 
 
-      // Teklif Fİyatlarını açma kapatma
+
+     
 
 
       {(teklifOzetleri.length > 0 || fiyatTeklifleri.length > 0) && (
@@ -905,7 +905,7 @@ export default function SatinAlmaFiyatlandirPage() {
           )}
         </div>
       )}
- */}
+
 
 
 
