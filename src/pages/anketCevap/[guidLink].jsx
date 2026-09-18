@@ -1,6 +1,3 @@
-
-
-
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
@@ -13,7 +10,7 @@ function extractBackendMsg(err) {
   if (data?.errors && typeof data.errors === "object") {
     const flat = Object.entries(data.errors)
       .flatMap(([k, arr]) =>
-        Array.isArray(arr) ? arr.map((x) => `${k}: ${x}`) : []
+        Array.isArray(arr) ? arr.map((x) => `${k}: ${x}`) : [],
       )
       .slice(0, 10);
 
@@ -67,6 +64,7 @@ export default function AnketCevapPage() {
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [anketDosyalari, setAnketDosyalari] = useState([]);
 
   const [anket, setAnket] = useState(null);
   const [sorular, setSorular] = useState([]);
@@ -93,6 +91,42 @@ export default function AnketCevapPage() {
 
         const res = await getDataAsync(`anket/public/${guidLink}`);
         if (cancelled) return;
+
+        let dosyalar = [];
+
+
+        try {
+          const dosyaRes = await getDataAsync(`anket-dosya/public/${guidLink}`);
+
+          console.log("ANKET DOSYA API RESPONSE:", dosyaRes);
+
+          if (Array.isArray(dosyaRes)) {
+            dosyalar = dosyaRes;
+          } else if (Array.isArray(dosyaRes?.dosyalar)) {
+            dosyalar = dosyaRes.dosyalar;
+          } else if (Array.isArray(dosyaRes?.Dosyalar)) {
+            dosyalar = dosyaRes.Dosyalar;
+          } else if (Array.isArray(dosyaRes?.data)) {
+            dosyalar = dosyaRes.data;
+          } else if (Array.isArray(dosyaRes?.Data)) {
+            dosyalar = dosyaRes.Data;
+          }
+
+          console.log("ANKET DOSYALARI STATE'E GİDECEK:", dosyalar);
+        } catch (dosyaError) {
+          console.error("ANKET PUBLIC DOSYA LOAD ERROR:", dosyaError);
+
+          console.error(
+            "ANKET PUBLIC DOSYA ERROR RESPONSE:",
+            dosyaError?.response?.data,
+          );
+
+          dosyalar = [];
+        }
+
+        if (!cancelled) {
+          setAnketDosyalari(dosyalar);
+        }
 
         const a = res?.anket ?? null;
         const s = Array.isArray(res?.sorular) ? res.sorular : [];
@@ -156,7 +190,7 @@ export default function AnketCevapPage() {
         setLoadError(
           backendMsg
             ? `Anket yüklenemedi: ${backendMsg}`
-            : "Anket yüklenemedi."
+            : "Anket yüklenemedi.",
         );
       } finally {
         if (!cancelled) setLoading(false);
@@ -193,7 +227,9 @@ export default function AnketCevapPage() {
 
     const maxSecim = soru?.maxSecimSayisi ?? null;
     if (maxSecim && next.length > Number(maxSecim)) {
-      setMsg(`"${soru.baslik}" için en fazla ${maxSecim} seçim yapabilirsiniz.`);
+      setMsg(
+        `"${soru.baslik}" için en fazla ${maxSecim} seçim yapabilirsiniz.`,
+      );
       return;
     }
 
@@ -249,8 +285,7 @@ export default function AnketCevapPage() {
     if (!adSoyad.trim()) return "Ad Soyad zorunludur.";
     const temizTelefon = telefon.replace(/\D/g, "");
 
-    if (!temizTelefon)
-      return "Telefon zorunludur.";
+    if (!temizTelefon) return "Telefon zorunludur.";
 
     if (temizTelefon.length !== 10)
       return "Telefon numarası 10 haneli olmalıdır.";
@@ -349,15 +384,18 @@ export default function AnketCevapPage() {
 
       const payload = buildPayload();
 
-const res = await postDataAsync(`anket/public/${guidLink}/cevapla`, payload);
+      const res = await postDataAsync(
+        `anket/public/${guidLink}/cevapla`,
+        payload,
+      );
 
-if (res?.ok === false) {
-  setMsg(res?.message || "Bilgilerinizi kontrol ediniz.");
-  setSuccess(false);
-  return;
-}
+      if (res?.ok === false) {
+        setMsg(res?.message || "Bilgilerinizi kontrol ediniz.");
+        setSuccess(false);
+        return;
+      }
 
-setSuccess(true);
+      setSuccess(true);
     } catch (e) {
       console.error("ANKET SUBMIT ERROR:", e);
       console.log("BACKEND DATA", e?.response?.data);
@@ -373,13 +411,13 @@ setSuccess(true);
         setMsg(
           backendMsg
             ? backendMsg
-            : "Cevaplar gönderilemedi. Bilgilerinizi kontrol ediniz."
+            : "Cevaplar gönderilemedi. Bilgilerinizi kontrol ediniz.",
         );
       } else {
         setMsg(
           backendMsg
             ? `Cevaplar gönderilemedi: ${backendMsg}`
-            : "Cevaplar gönderilemedi."
+            : "Cevaplar gönderilemedi.",
         );
       }
     } finally {
@@ -522,6 +560,107 @@ setSuccess(true);
                     {anket.aciklama}
                   </div>
                 ) : null}
+
+                {anketDosyalari.length > 0 && (
+                  <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+                    <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      Anket Dosyaları
+                    </div>
+
+                    
+
+                    {/* FOTOĞRAFLAR */}
+
+                    {anketDosyalari.some(
+                      (x) => Number(x?.turKod ?? x?.TurKod) === 10,
+                    ) && (
+                      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {anketDosyalari
+                          .filter((x) => Number(x?.turKod ?? x?.TurKod) === 10)
+                          .map((file) => {
+                            const id = file?.id ?? file?.Id;
+
+                            const url = file?.url ?? file?.Url;
+
+                            const dosyaAdi =
+                              file?.dosyaAdi ?? file?.DosyaAdi ?? "Fotoğraf";
+
+                            return (
+                              <a
+                                key={id}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-emerald-300 dark:border-zinc-800 dark:bg-zinc-900"
+                              >
+                                <div className="h-52 w-full bg-zinc-100 dark:bg-zinc-950">
+                                  <img
+                                    src={url}
+                                    alt={dosyaAdi}
+                                    loading="lazy"
+                                    className="h-full w-full object-contain transition group-hover:scale-[1.02]"
+                                  />
+                                </div>
+
+                                <div className="p-3">
+                                  <div className="truncate text-[12px] font-semibold text-zinc-700 dark:text-zinc-200">
+                                    {dosyaAdi}
+                                  </div>
+
+                                  <div className="mt-1 text-[10px] text-emerald-700 dark:text-emerald-300">
+                                    Görseli aç
+                                  </div>
+                                </div>
+                              </a>
+                            );
+                          })}
+                      </div>
+                    )}
+
+                    {/* BELGELER */}
+
+                    {anketDosyalari.some(
+                      (x) => Number(x?.turKod ?? x?.TurKod) === 20,
+                    ) && (
+                      <div className="mt-4 space-y-2">
+                        {anketDosyalari
+                          .filter((x) => Number(x?.turKod ?? x?.TurKod) === 20)
+                          .map((file) => {
+                            const id = file?.id ?? file?.Id;
+
+                            const url = file?.url ?? file?.Url;
+
+                            const dosyaAdi =
+                              file?.dosyaAdi ?? file?.DosyaAdi ?? "Belge";
+
+                            return (
+                              <a
+                                key={id}
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-emerald-950/20"
+                              >
+                                <div className="min-w-0">
+                                  <div className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                                    {dosyaAdi}
+                                  </div>
+
+                                  <div className="mt-1 text-[10px] text-zinc-500">
+                                    Anket Belgesi
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-[11px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                                  Aç
+                                </div>
+                              </a>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="mt-6">
@@ -537,7 +676,8 @@ setSuccess(true);
           </div>
 
           <div className="mt-6 border-t border-zinc-200 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-            SAYGILARIMIZLA, <span className="font-semibold">EOS MANAGEMENT</span>
+            SAYGILARIMIZLA,{" "}
+            <span className="font-semibold">EOS MANAGEMENT</span>
           </div>
         </div>
       </div>
@@ -564,7 +704,6 @@ setSuccess(true);
               <div className="truncate text-sm font-bold tracking-wide">
                 EOS MANAGEMENT
               </div>
-              
             </div>
           </div>
 
@@ -586,7 +725,6 @@ setSuccess(true);
               <div className="text-lg font-semibold tracking-tight">
                 {anket?.baslik ?? "-"}
               </div>
-              
             </div>
           </div>
 
@@ -595,6 +733,129 @@ setSuccess(true);
               {anket.aciklama}
             </div>
           ) : null}
+
+          {anketDosyalari.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/30">
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                Anket Dosyaları
+              </div>
+
+              
+
+              {anketDosyalari.some(
+                (x) =>
+                  Number(x?.turKod ?? x?.TurKod ?? x?.tur ?? x?.Tur) === 10,
+              ) && (
+                <div className="mt-4">
+                  <div className="mb-2 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                    Görseller
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {anketDosyalari
+                      .filter(
+                        (x) =>
+                          Number(x?.turKod ?? x?.TurKod ?? x?.tur ?? x?.Tur) ===
+                          10,
+                      )
+                      .map((file, index) => {
+                        const id = file?.id ?? file?.Id ?? index;
+
+                        const url = file?.url ?? file?.Url;
+
+                        const dosyaAdi =
+                          file?.dosyaAdi ?? file?.DosyaAdi ?? "Fotoğraf";
+
+                        if (!url) return null;
+
+                        return (
+                          <a
+                            key={id}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:border-emerald-300 dark:border-zinc-800 dark:bg-zinc-900"
+                          >
+                            <div className="h-52 w-full bg-zinc-100 dark:bg-zinc-950">
+                              <img
+                                src={url}
+                                alt={dosyaAdi}
+                                loading="lazy"
+                                className="h-full w-full object-contain transition group-hover:scale-[1.02]"
+                              />
+                            </div>
+
+                            <div className="p-3">
+                              <div className="truncate text-[12px] font-semibold text-zinc-700 dark:text-zinc-200">
+                                {dosyaAdi}
+                              </div>
+
+                              <div className="mt-1 text-[10px] text-emerald-700 dark:text-emerald-300">
+                                Görseli aç
+                              </div>
+                            </div>
+                          </a>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {anketDosyalari.some(
+                (x) =>
+                  Number(x?.turKod ?? x?.TurKod ?? x?.tur ?? x?.Tur) === 20,
+              ) && (
+                <div className="mt-4">
+                  <div className="mb-2 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                    Belgeler
+                  </div>
+
+                  <div className="space-y-2">
+                    {anketDosyalari
+                      .filter(
+                        (x) =>
+                          Number(x?.turKod ?? x?.TurKod ?? x?.tur ?? x?.Tur) ===
+                          20,
+                      )
+                      .map((file, index) => {
+                        const id = file?.id ?? file?.Id ?? index;
+
+                        const url = file?.url ?? file?.Url;
+
+                        const dosyaAdi =
+                          file?.dosyaAdi ?? file?.DosyaAdi ?? "Belge";
+
+                        if (!url) return null;
+
+                        return (
+                          <a
+                            key={id}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-emerald-950/20"
+                          >
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                                {dosyaAdi}
+                              </div>
+
+                              <div className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+                                Anket Belgesi
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-[11px] font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                              Aç
+                            </div>
+                          </a>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {msg && (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
