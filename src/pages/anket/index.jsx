@@ -149,6 +149,13 @@ export default function AnketListPage() {
     router.push("/");
   };
 
+  const handleMemnuniyetAnketOlustur = () => {
+    router.push("/memnuniyetAnketi");
+  };
+
+
+  
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
       <div className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70">
@@ -183,7 +190,13 @@ export default function AnketListPage() {
             >
               🏠 Ana Sayfaya Dön
             </button>
-
+            <button
+              type="button"
+              onClick={handleMemnuniyetAnketOlustur}
+              className="inline-flex items-center justify-center gap-2 rounded-md px-2 py-1 text-[11px] font-semibold bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+            >
+              📊 Memnuniyet Anketi Oluştur
+            </button>
             <button
               type="button"
               onClick={handleYeni}
