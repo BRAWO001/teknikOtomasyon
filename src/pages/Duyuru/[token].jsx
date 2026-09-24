@@ -224,12 +224,34 @@ export default function DuyuruDetayPage() {
                     {safeText(duyuruBaslik)}
                   </h1>
 
+
+
                   <div className="mt-3 flex flex-col gap-1 text-[12px] text-zinc-500 dark:text-zinc-400 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
-                    <span>Tarih: {formatDate(tarihUtc)}</span>
-                    <span>Site: {siteName}</span>
-                    <span>Bu Duyuruda <strong>{fotoList.length}</strong> Görsel ve <strong>{belgeList.length}</strong> Belge Var.</span>
-                    
-                  </div>
+  <span>Tarih: {formatDate(tarihUtc)}</span>
+  <span>Site: {siteName}</span>
+
+  {(fotoList.length > 0 || belgeList.length > 0) && (
+    <span>
+      Bu Duyuruda{" "}
+      {fotoList.length > 0 && (
+        <>
+          <strong>{fotoList.length}</strong> Görsel
+        </>
+      )}
+
+      {fotoList.length > 0 && belgeList.length > 0 && " ve "}
+
+      {belgeList.length > 0 && (
+        <>
+          <strong>{belgeList.length}</strong> Belge
+        </>
+      )}{" "}
+      Var.
+    </span>
+  )}
+</div>
+
+
                 </div>
 
                 <div className="px-4 py-4 sm:px-6 sm:py-5">
