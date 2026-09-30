@@ -1,4 +1,5 @@
 // src/pages/satinalma/fiyatlandir/[token].jsx
+
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { getDataAsync, postDataAsync } from "@/utils/apiService";
@@ -8,6 +9,7 @@ export default function SatinAlmaFiyatlandirPage() {
   const router = useRouter();
 
   const rawToken = router.query.token;
+
   const token =
     typeof rawToken === "string"
       ? rawToken
@@ -37,14 +39,20 @@ export default function SatinAlmaFiyatlandirPage() {
 
     getDataAsync(`satinalma/public/${token}`)
       .then((res) => {
+        console.log("SATIN ALMA PUBLIC RESPONSE:", res);
+        console.log("SITE:", res?.site);
+        console.log("SITE ADI:", res?.site?.ad);
+
         setData(res);
 
         const malzemeler =
           res.malzemeler ?? res.Malzeme ?? res.Malzemeler ?? [];
 
         const initial = {};
+
         (malzemeler || []).forEach((m) => {
           const id = m.id ?? m.Id;
+
           initial[id] = {
             birimFiyat: "",
             paraBirimi: "TRY",
@@ -100,16 +108,21 @@ export default function SatinAlmaFiyatlandirPage() {
       const id = m.id ?? m.Id;
       const adet = Number(m.adet ?? m.Adet) || 0;
       const row = teklifForm[id];
+
       if (!row || adet <= 0) return;
 
       const birimFiyatNum = parseFloat(
         (row.birimFiyat || "").toString().replace(",", ".")
       );
+
       if (isNaN(birimFiyatNum) || birimFiyatNum <= 0) return;
 
       const kdvYuzdeNum = parseFloat(row.kdvOraniYuzde || "0");
+
       const kdvOrani =
-        !isNaN(kdvYuzdeNum) && kdvYuzdeNum > 0 ? kdvYuzdeNum / 100 : 0;
+        !isNaN(kdvYuzdeNum) && kdvYuzdeNum > 0
+          ? kdvYuzdeNum / 100
+          : 0;
 
       const satirNet = birimFiyatNum * adet;
       const satirKdv = satirNet * kdvOrani;
@@ -118,7 +131,11 @@ export default function SatinAlmaFiyatlandirPage() {
       kdv += satirKdv;
     });
 
-    return { netTotal: net, toplamKdv: kdv, genelToplam: net + kdv };
+    return {
+      netTotal: net,
+      toplamKdv: kdv,
+      genelToplam: net + kdv,
+    };
   }, [data, teklifForm]);
 
   const formatCurrency = (val) =>
@@ -168,7 +185,11 @@ export default function SatinAlmaFiyatlandirPage() {
   }, [data]);
 
   const teklifOzetleri = useMemo(() => {
-    const list = data?.teklifOzetleri ?? data?.TeklifOzetleri ?? [];
+    const list =
+      data?.teklifOzetleri ??
+      data?.TeklifOzetleri ??
+      [];
+
     return Array.isArray(list) ? list : [];
   }, [data]);
 
@@ -176,7 +197,13 @@ export default function SatinAlmaFiyatlandirPage() {
     if (!teklifOzetleri.length) return null;
 
     const values = teklifOzetleri
-      .map((o) => Number(o?.toplamTutarKdvDahil ?? o?.ToplamTutarKdvDahil ?? 0))
+      .map((o) =>
+        Number(
+          o?.toplamTutarKdvDahil ??
+            o?.ToplamTutarKdvDahil ??
+            0
+        )
+      )
       .filter((v) => v > 0);
 
     if (!values.length) return null;
@@ -188,11 +215,16 @@ export default function SatinAlmaFiyatlandirPage() {
     const map = {};
 
     (fiyatTeklifleri || []).forEach((t) => {
-      const malzemeId = t?.satinAlmaMalzemeId ?? t?.SatinAlmaMalzemeId;
+      const malzemeId =
+        t?.satinAlmaMalzemeId ??
+        t?.SatinAlmaMalzemeId;
+
       if (!malzemeId) return;
 
       const value = Number(
-        t?.toplamTutarKdvDahil ?? t?.ToplamTutarKdvDahil ?? 0
+        t?.toplamTutarKdvDahil ??
+          t?.ToplamTutarKdvDahil ??
+          0
       );
 
       if (value <= 0) return;
@@ -216,64 +248,102 @@ export default function SatinAlmaFiyatlandirPage() {
 
   const nextImage = () => {
     setActiveImageIndex((prev) =>
-      imageFiles.length ? (prev + 1) % imageFiles.length : 0
+      imageFiles.length
+        ? (prev + 1) % imageFiles.length
+        : 0
     );
   };
 
   const prevImage = () => {
     setActiveImageIndex((prev) =>
-      imageFiles.length ? (prev - 1 + imageFiles.length) % imageFiles.length : 0
+      imageFiles.length
+        ? (prev - 1 + imageFiles.length) %
+          imageFiles.length
+        : 0
     );
   };
 
-  const activeImage = imageFiles[activeImageIndex] || null;
-  const activeImageUrl = activeImage?.url ?? activeImage?.Url;
+  const activeImage =
+    imageFiles[activeImageIndex] || null;
+
+  const activeImageUrl =
+    activeImage?.url ?? activeImage?.Url;
+
   const activeImageName =
-    activeImage?.dosyaAdi ?? activeImage?.DosyaAdi ?? "Görsel";
+    activeImage?.dosyaAdi ??
+    activeImage?.DosyaAdi ??
+    "Görsel";
 
   const handleSubmit = async () => {
     if (!data) return;
 
     const satinAlmaId = data.id ?? data.Id;
-    const malzemeler =
-      data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
 
-    const trimmedName = globalTedarikciAdi.trim();
+    const malzemeler =
+      data.malzemeler ??
+      data.Malzeme ??
+      data.Malzemeler ??
+      [];
+
+    const trimmedName =
+      globalTedarikciAdi.trim();
+
     if (!trimmedName) {
-      alert("Lütfen tedarikçi / firma adını giriniz.");
+      alert(
+        "Lütfen tedarikçi / firma adını giriniz."
+      );
       return;
     }
 
-    const firmaAdiUpper = trimmedName.toUpperCase("tr-TR");
+    const firmaAdiUpper =
+      trimmedName.toUpperCase("tr-TR");
 
     const payload = [];
 
     for (const m of malzemeler) {
       const malzemeId = m.id ?? m.Id;
       const formRow = teklifForm[malzemeId];
+
       if (!formRow) continue;
 
       const birimFiyatNum = parseFloat(
-        (formRow.birimFiyat || "").toString().replace(",", ".")
+        (formRow.birimFiyat || "")
+          .toString()
+          .replace(",", ".")
       );
-      if (isNaN(birimFiyatNum) || birimFiyatNum <= 0) continue;
 
-      const kdvYuzdeNum = parseFloat(formRow.kdvOraniYuzde || "0");
+      if (
+        isNaN(birimFiyatNum) ||
+        birimFiyatNum <= 0
+      )
+        continue;
+
+      const kdvYuzdeNum = parseFloat(
+        formRow.kdvOraniYuzde || "0"
+      );
+
       const kdvOrani =
-        !isNaN(kdvYuzdeNum) && kdvYuzdeNum > 0 ? kdvYuzdeNum / 100 : 0;
+        !isNaN(kdvYuzdeNum) &&
+        kdvYuzdeNum > 0
+          ? kdvYuzdeNum / 100
+          : 0;
 
       payload.push({
         satinAlmaMalzemeId: malzemeId,
         tedarikciAdi: firmaAdiUpper,
         birimFiyat: birimFiyatNum,
-        paraBirimi: formRow.paraBirimi || "TRY",
+        paraBirimi:
+          formRow.paraBirimi || "TRY",
         not: formRow.not || null,
-        kdvOrani: kdvOrani > 0 ? kdvOrani : null,
+        kdvOrani:
+          kdvOrani > 0 ? kdvOrani : null,
       });
     }
 
     if (payload.length === 0) {
-      alert("En az bir malzeme için geçerli birim fiyat girmelisiniz.");
+      alert(
+        "En az bir malzeme için geçerli birim fiyat girmelisiniz."
+      );
       return;
     }
 
@@ -281,12 +351,21 @@ export default function SatinAlmaFiyatlandirPage() {
       setSending(true);
       setError(null);
 
-      await postDataAsync(`satinalma/${satinAlmaId}/teklifler`, payload);
+      await postDataAsync(
+        `satinalma/${satinAlmaId}/teklifler`,
+        payload
+      );
 
       setSuccessModal(true);
     } catch (err) {
-      console.error("TEKLIF POST ERROR:", err);
-      setError("Teklif gönderilirken bir hata oluştu.");
+      console.error(
+        "TEKLIF POST ERROR:",
+        err
+      );
+
+      setError(
+        "Teklif gönderilirken bir hata oluştu."
+      );
     } finally {
       setSending(false);
     }
@@ -294,15 +373,25 @@ export default function SatinAlmaFiyatlandirPage() {
 
   const handleCloseModal = () => {
     setSuccessModal(false);
+
     if (typeof window !== "undefined") {
-      if (window.history.length > 1) router.back();
-      else window.close();
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        window.close();
+      }
     }
   };
 
   if (loading) {
     return (
-      <div style={{ padding: "1.5rem", fontSize: 14, color: "#000" }}>
+      <div
+        style={{
+          padding: "1.5rem",
+          fontSize: 14,
+          color: "#000",
+        }}
+      >
         Yükleniyor...
       </div>
     );
@@ -325,19 +414,51 @@ export default function SatinAlmaFiyatlandirPage() {
 
   if (!data) {
     return (
-      <div style={{ padding: "1.5rem", fontSize: 14, color: "#000" }}>
+      <div
+        style={{
+          padding: "1.5rem",
+          fontSize: 14,
+          color: "#000",
+        }}
+      >
         Kayıt bulunamadı.
       </div>
     );
   }
 
-  const seriNo = data.seriNo ?? data.SeriNo;
-  const tarih = data.tarih ?? data.Tarih;
-  const talepCinsi = data.talepCinsi ?? data.TalepCinsi;
-  const aciklama = data.aciklama ?? data.Aciklama;
+  const seriNo =
+    data.seriNo ?? data.SeriNo;
+
+  const tarih =
+    data.tarih ?? data.Tarih;
+
+  const talepCinsi =
+    data.talepCinsi ?? data.TalepCinsi;
+
+  // =====================================================
+  // PROJE / SITE
+  // API RESPONSE:
+  //
+  // "site": {
+  //   "id": 102,
+  //   "ad": "MY WAY WINS BLUE"
+  // }
+  // =====================================================
+  const siteAdi =
+    data?.site?.ad ||
+    data?.Site?.Ad ||
+    data?.siteAdi ||
+    data?.SiteAdi ||
+    "-";
+
+  const aciklama =
+    data.aciklama ?? data.Aciklama;
 
   const malzemeler =
-    data.malzemeler ?? data.Malzeme ?? data.Malzemeler ?? [];
+    data.malzemeler ??
+    data.Malzeme ??
+    data.Malzemeler ??
+    [];
 
   return (
     <div
@@ -358,7 +479,8 @@ export default function SatinAlmaFiyatlandirPage() {
           padding: "0.85rem 1rem",
           borderRadius: 10,
           border: "1px solid #d1d5db",
-          background: "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)",
+          background:
+            "linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)",
         }}
       >
         <div
@@ -371,10 +493,20 @@ export default function SatinAlmaFiyatlandirPage() {
         >
           EOS MANAGEMENT
         </div>
-        <div style={{ fontSize: 13, color: "#111827", lineHeight: 1.5 }}>
-          EOS MANAGEMENT, aşağıda listelenen ürünler için sizden fiyat teklifi
-          talep etmektedir. Lütfen birim fiyatlarınızı, para birimini ve KDV
-          oranını eksiksiz doldurarak teklifinizi gönderiniz.
+
+        <div
+          style={{
+            fontSize: 13,
+            color: "#111827",
+            lineHeight: 1.5,
+          }}
+        >
+          EOS MANAGEMENT, aşağıda listelenen
+          ürünler için sizden fiyat teklifi
+          talep etmektedir. Lütfen birim
+          fiyatlarınızı, para birimini ve KDV
+          oranını eksiksiz doldurarak teklifinizi
+          gönderiniz.
         </div>
       </div>
 
@@ -398,24 +530,79 @@ export default function SatinAlmaFiyatlandirPage() {
           backgroundColor: "#f8fafc",
         }}
       >
-        <div style={{ display: "grid", gap: 6, color: "#0f172a" }}>
+        <div
+          style={{
+            display: "grid",
+            gap: 6,
+            color: "#0f172a",
+          }}
+        >
           <div>
-            <strong>Seri No:</strong> {seriNo}
+            <strong>Seri No:</strong>{" "}
+            {seriNo}
           </div>
+
           <div>
             <strong>Tarih:</strong>{" "}
-            {tarih ? new Date(tarih).toLocaleString("tr-TR") : "-"}
+            {tarih
+              ? new Date(
+                  tarih
+                ).toLocaleString("tr-TR")
+              : "-"}
           </div>
+
           <div>
-            <strong>Talep Cinsi:</strong> {talepCinsi}
+            <strong>Talep Cinsi:</strong>{" "}
+            {talepCinsi}
           </div>
+
+          {/* ============================================= */}
+          {/* PROJE / SITE */}
+          {/* ============================================= */}
+          <div
+            style={{
+              marginTop: 4,
+              marginBottom: 4,
+              padding: "0.8rem 1rem",
+              borderRadius: 10,
+              border:
+                "1px solid #7dd3fc",
+              backgroundColor: "#e0f2fe",
+              color: "#075985",
+              fontSize: 15,
+              fontWeight: 900,
+            }}
+          >
+            <span
+              style={{
+                color: "#0369a1",
+                fontWeight: 900,
+              }}
+            >
+              Proje / Site:
+            </span>{" "}
+            <span
+              style={{
+                color: "#075985",
+                fontWeight: 900,
+              }}
+            >
+              {siteAdi}
+            </span>
+          </div>
+
           <div>
-            <strong>Açıklama:</strong> {aciklama || "-"}
+            <strong>Açıklama:</strong>{" "}
+            {aciklama || "-"}
           </div>
 
           <div>
             <strong>Not:</strong>{" "}
-            {(data.not ?? data.Not ?? data.notu ?? data.Notu) || "-"}
+            {(data.not ??
+              data.Not ??
+              data.notu ??
+              data.Notu) ||
+              "-"}
           </div>
         </div>
       </div>
@@ -448,222 +635,265 @@ export default function SatinAlmaFiyatlandirPage() {
               overflowX: "auto",
               overflowY: "hidden",
               paddingBottom: 6,
-              WebkitOverflowScrolling: "touch",
+              WebkitOverflowScrolling:
+                "touch",
               scrollbarWidth: "thin",
             }}
           >
-            {imageFiles.map((img, index) => {
-              const imgUrl = img?.url ?? img?.Url;
+            {imageFiles.map(
+              (img, index) => {
+                const imgUrl =
+                  img?.url ?? img?.Url;
 
-              const imgName =
-                img?.dosyaAdi ?? img?.DosyaAdi ?? `Görsel ${index + 1}`;
+                const imgName =
+                  img?.dosyaAdi ??
+                  img?.DosyaAdi ??
+                  `Görsel ${index + 1}`;
 
-              return (
-                <button
-                  key={img?.id ?? img?.Id ?? index}
-                  type="button"
-                  onClick={() => openImageModal(index)}
-                  title={imgName}
-                  style={{
-                    border: "1px solid #d1d5db",
-                    borderRadius: 14,
-                    overflow: "hidden",
-                    backgroundColor: "#ffffff",
-                    padding: 0,
-                    cursor: "pointer",
-                    width: 140,
-                    minWidth: 140,
-                    height: 130,
-                    flexShrink: 0,
-                    position: "relative",
-                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-                  }}
-                >
-                  <img
-                    src={imgUrl}
-                    alt={imgName}
+                return (
+                  <button
+                    key={
+                      img?.id ??
+                      img?.Id ??
+                      index
+                    }
+                    type="button"
+                    onClick={() =>
+                      openImageModal(index)
+                    }
+                    title={imgName}
                     style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                      userSelect: "none",
-                      WebkitUserDrag: "none",
-                    }}
-                  />
-
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      padding: "0.35rem 0.5rem",
-                      background:
-                        "linear-gradient(to top, rgba(0,0,0,0.75), transparent)",
-                      color: "#ffffff",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      textAlign: "left",
-                      whiteSpace: "nowrap",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius: 14,
                       overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      backgroundColor:
+                        "#ffffff",
+                      padding: 0,
+                      cursor: "pointer",
+                      width: 140,
+                      minWidth: 140,
+                      height: 130,
+                      flexShrink: 0,
+                      position: "relative",
+                      boxShadow:
+                        "0 1px 4px rgba(0,0,0,0.08)",
                     }}
                   >
-                    {imgName}
-                  </div>
-                </button>
-              );
-            })}
+                    <img
+                      src={imgUrl}
+                      alt={imgName}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                        userSelect: "none",
+                        WebkitUserDrag:
+                          "none",
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        position:
+                          "absolute",
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        padding:
+                          "0.35rem 0.5rem",
+                        background:
+                          "linear-gradient(to top, rgba(0,0,0,0.75), transparent)",
+                        color: "#ffffff",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textAlign: "left",
+                        whiteSpace:
+                          "nowrap",
+                        overflow:
+                          "hidden",
+                        textOverflow:
+                          "ellipsis",
+                      }}
+                    >
+                      {imgName}
+                    </div>
+                  </button>
+                );
+              }
+            )}
           </div>
         </div>
       )}
 
-      {imageModalOpen && activeImage && (
-        <div
-          onClick={closeImageModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.96)",
-            zIndex: 10000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-            touchAction: "pan-y",
-          }}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              closeImageModal();
-            }}
+      {imageModalOpen &&
+        activeImage && (
+          <div
+            onClick={closeImageModal}
             style={{
               position: "fixed",
-              top: 16,
-              right: 16,
-              width: 44,
-              height: 44,
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.35)",
-              backgroundColor: "rgba(255,255,255,0.12)",
-              color: "#ffffff",
-              fontSize: 24,
-              fontWeight: 900,
-              cursor: "pointer",
-              zIndex: 10002,
-              backdropFilter: "blur(4px)",
+              inset: 0,
+              backgroundColor:
+                "rgba(0,0,0,0.96)",
+              zIndex: 10000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent:
+                "center",
+              padding: "1rem",
+              touchAction: "pan-y",
             }}
           >
-            ×
-          </button>
-
-          {imageFiles.length > 1 && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                prevImage();
+                closeImageModal();
               }}
               style={{
                 position: "fixed",
-                left: 14,
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: 48,
-                height: 48,
+                top: 16,
+                right: 16,
+                width: 44,
+                height: 44,
                 borderRadius: 999,
-                border: "1px solid rgba(255,255,255,0.35)",
-                backgroundColor: "rgba(255,255,255,0.12)",
+                border:
+                  "1px solid rgba(255,255,255,0.35)",
+                backgroundColor:
+                  "rgba(255,255,255,0.12)",
                 color: "#ffffff",
-                fontSize: 30,
+                fontSize: 24,
                 fontWeight: 900,
                 cursor: "pointer",
                 zIndex: 10002,
-                backdropFilter: "blur(4px)",
+                backdropFilter:
+                  "blur(4px)",
               }}
             >
-              ‹
+              ×
             </button>
-          )}
 
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: "96vw",
-              maxHeight: "90vh",
-              textAlign: "center",
-              userSelect: "none",
-            }}
-          >
-            <img
-              src={activeImageUrl}
-              alt={activeImageName}
-              style={{
-                maxWidth: "96vw",
-                maxHeight: "84vh",
-                objectFit: "contain",
-                borderRadius: 14,
-                display: "block",
-                margin: "0 auto",
-                userSelect: "none",
-                WebkitUserDrag: "none",
-              }}
-            />
+            {imageFiles.length >
+              1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevImage();
+                }}
+                style={{
+                  position:
+                    "fixed",
+                  left: 14,
+                  top: "50%",
+                  transform:
+                    "translateY(-50%)",
+                  width: 48,
+                  height: 48,
+                  borderRadius: 999,
+                  border:
+                    "1px solid rgba(255,255,255,0.35)",
+                  backgroundColor:
+                    "rgba(255,255,255,0.12)",
+                  color: "#ffffff",
+                  fontSize: 30,
+                  fontWeight: 900,
+                  cursor: "pointer",
+                  zIndex: 10002,
+                  backdropFilter:
+                    "blur(4px)",
+                }}
+              >
+                ‹
+              </button>
+            )}
 
             <div
+              onClick={(e) =>
+                e.stopPropagation()
+              }
               style={{
-                marginTop: 12,
-                color: "#ffffff",
-                fontSize: 13,
-                fontWeight: 700,
-                opacity: 0.92,
+                maxWidth: "96vw",
+                maxHeight: "90vh",
+                textAlign: "center",
+                userSelect: "none",
               }}
             >
-              {activeImageIndex + 1} / {imageFiles.length} — {activeImageName}
+              <img
+                src={activeImageUrl}
+                alt={activeImageName}
+                style={{
+                  maxWidth: "96vw",
+                  maxHeight: "84vh",
+                  objectFit: "contain",
+                  borderRadius: 14,
+                  display: "block",
+                  margin: "0 auto",
+                  userSelect: "none",
+                  WebkitUserDrag:
+                    "none",
+                }}
+              />
+
+              <div
+                style={{
+                  marginTop: 12,
+                  color: "#ffffff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  opacity: 0.92,
+                }}
+              >
+                {activeImageIndex +
+                  1}{" "}
+                / {imageFiles.length} —{" "}
+                {activeImageName}
+              </div>
             </div>
+
+            {imageFiles.length >
+              1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextImage();
+                }}
+                style={{
+                  position:
+                    "fixed",
+                  right: 14,
+                  top: "50%",
+                  transform:
+                    "translateY(-50%)",
+                  width: 48,
+                  height: 48,
+                  borderRadius: 999,
+                  border:
+                    "1px solid rgba(255,255,255,0.35)",
+                  backgroundColor:
+                    "rgba(255,255,255,0.12)",
+                  color: "#ffffff",
+                  fontSize: 30,
+                  fontWeight: 900,
+                  cursor: "pointer",
+                  zIndex: 10002,
+                  backdropFilter:
+                    "blur(4px)",
+                }}
+              >
+                ›
+              </button>
+            )}
           </div>
-
-          {imageFiles.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                nextImage();
-              }}
-              style={{
-                position: "fixed",
-                right: 14,
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: 48,
-                height: 48,
-                borderRadius: 999,
-                border: "1px solid rgba(255,255,255,0.35)",
-                backgroundColor: "rgba(255,255,255,0.12)",
-                color: "#ffffff",
-                fontSize: 30,
-                fontWeight: 900,
-                cursor: "pointer",
-                zIndex: 10002,
-                backdropFilter: "blur(4px)",
-              }}
-            >
-              ›
-            </button>
-          )}
-        </div>
-      )}
+        )}
 
 
-      
 
 
-     
-
-
+{/* 
+      Teklik veya toplu teklif gönderilmişse, teklif özetlerini ve kalemlerini göster
       {(teklifOzetleri.length > 0 || fiyatTeklifleri.length > 0) && (
         <div
           style={{
@@ -694,19 +924,28 @@ export default function SatinAlmaFiyatlandirPage() {
                   o?.TedarikciAdi ??
                   "Tedarikçi belirtilmemiş";
 
-                const paraBirimi = o?.paraBirimi ?? o?.ParaBirimi ?? "TRY";
-                const kalemSayisi = o?.kalemSayisi ?? o?.KalemSayisi ?? 0;
-                const toplamTutar = o?.toplamTutar ?? o?.ToplamTutar ?? 0;
+                const paraBirimi =
+                  o?.paraBirimi ?? o?.ParaBirimi ?? "TRY";
+
+                const kalemSayisi =
+                  o?.kalemSayisi ?? o?.KalemSayisi ?? 0;
+
+                const toplamTutar =
+                  o?.toplamTutar ?? o?.ToplamTutar ?? 0;
 
                 const toplamTutarKdvDahil =
-                  o?.toplamTutarKdvDahil ?? o?.ToplamTutarKdvDahil ?? 0;
+                  o?.toplamTutarKdvDahil ??
+                  o?.ToplamTutarKdvDahil ??
+                  0;
 
                 const sonTeklifTarihiUtc =
-                  o?.sonTeklifTarihiUtc ?? o?.SonTeklifTarihiUtc;
+                  o?.sonTeklifTarihiUtc ??
+                  o?.SonTeklifTarihiUtc;
 
                 const isEnUygun =
                   enUygunOzetKdvDahil !== null &&
-                  Number(toplamTutarKdvDahil) === Number(enUygunOzetKdvDahil);
+                  Number(toplamTutarKdvDahil) ===
+                    Number(enUygunOzetKdvDahil);
 
                 return (
                   <div
@@ -716,7 +955,9 @@ export default function SatinAlmaFiyatlandirPage() {
                         ? "2px solid #16a34a"
                         : "1px solid #d1d5db",
                       borderRadius: 12,
-                      backgroundColor: isEnUygun ? "#f0fdf4" : "#ffffff",
+                      backgroundColor: isEnUygun
+                        ? "#f0fdf4"
+                        : "#ffffff",
                       padding: "0.8rem 0.9rem",
                     }}
                   >
@@ -733,7 +974,9 @@ export default function SatinAlmaFiyatlandirPage() {
                       <div
                         style={{
                           fontWeight: 900,
-                          color: isEnUygun ? "#166534" : "#0f172a",
+                          color: isEnUygun
+                            ? "#166534"
+                            : "#0f172a",
                           fontSize: 14,
                         }}
                       >
@@ -767,20 +1010,24 @@ export default function SatinAlmaFiyatlandirPage() {
                       <div>
                         <strong>Kalem Sayısı:</strong> {kalemSayisi}
                       </div>
+
                       <div>
                         <strong>Net Toplam:</strong>{" "}
                         {formatCurrency(toplamTutar)} {paraBirimi}
                       </div>
+
                       <div>
                         <strong>KDV Dahil Toplam:</strong>{" "}
-                        {formatCurrency(toplamTutarKdvDahil)} {paraBirimi}
+                        {formatCurrency(toplamTutarKdvDahil)}{" "}
+                        {paraBirimi}
                       </div>
+
                       <div>
                         <strong>Son Teklif Tarihi:</strong>{" "}
                         {sonTeklifTarihiUtc
-                          ? new Date(sonTeklifTarihiUtc).toLocaleString(
-                              "tr-TR"
-                            )
+                          ? new Date(
+                              sonTeklifTarihiUtc
+                            ).toLocaleString("tr-TR")
                           : "-"}
                       </div>
                     </div>
@@ -808,18 +1055,29 @@ export default function SatinAlmaFiyatlandirPage() {
                   t?.TedarikciAdi ??
                   "Tedarikçi belirtilmemiş";
 
-                const malzemeAdi = t?.malzemeAdi ?? t?.MalzemeAdi ?? "-";
-                const birimFiyat = t?.birimFiyat ?? t?.BirimFiyat ?? 0;
-                const paraBirimi = t?.paraBirimi ?? t?.ParaBirimi ?? "TRY";
-                const adet = t?.adet ?? t?.Adet ?? 1;
-                
+                const malzemeAdi =
+                  t?.malzemeAdi ?? t?.MalzemeAdi ?? "-";
+
+                const birimFiyat =
+                  t?.birimFiyat ?? t?.BirimFiyat ?? 0;
+
+                const paraBirimi =
+                  t?.paraBirimi ?? t?.ParaBirimi ?? "TRY";
+
+                const adet =
+                  t?.adet ?? t?.Adet ?? 1;
 
                 const toplamTutarKdvDahil =
-                  t?.toplamTutarKdvDahil ?? t?.ToplamTutarKdvDahil ?? 0;
+                  t?.toplamTutarKdvDahil ??
+                  t?.ToplamTutarKdvDahil ??
+                  0;
 
-                const notText = t?.not ?? t?.Not ?? "";
+                const notText =
+                  t?.not ?? t?.Not ?? "";
+
                 const malzemeId =
-                  t?.satinAlmaMalzemeId ?? t?.SatinAlmaMalzemeId;
+                  t?.satinAlmaMalzemeId ??
+                  t?.SatinAlmaMalzemeId;
 
                 const isEnUygunKalem =
                   malzemeId &&
@@ -835,7 +1093,9 @@ export default function SatinAlmaFiyatlandirPage() {
                         ? "1px solid #16a34a"
                         : "1px solid #e5e7eb",
                       borderRadius: 10,
-                      backgroundColor: isEnUygunKalem ? "#f0fdf4" : "#ffffff",
+                      backgroundColor: isEnUygunKalem
+                        ? "#f0fdf4"
+                        : "#ffffff",
                       padding: "0.55rem 0.7rem",
                       fontSize: 12,
                       color: "#111827",
@@ -849,7 +1109,9 @@ export default function SatinAlmaFiyatlandirPage() {
                     <span
                       style={{
                         fontWeight: 900,
-                        color: isEnUygunKalem ? "#166534" : "#0f172a",
+                        color: isEnUygunKalem
+                          ? "#166534"
+                          : "#0f172a",
                       }}
                     >
                       {malzemeAdi}
@@ -860,8 +1122,8 @@ export default function SatinAlmaFiyatlandirPage() {
                     </span>
 
                     <span>
-                      <strong>Birim:</strong> {formatCurrency(birimFiyat)}{" "}
-                      {paraBirimi}
+                      <strong>Birim:</strong>{" "}
+                      {formatCurrency(birimFiyat)} {paraBirimi}
                     </span>
 
                     <span>
@@ -871,10 +1133,13 @@ export default function SatinAlmaFiyatlandirPage() {
                     <span
                       style={{
                         fontWeight: 900,
-                        color: isEnUygunKalem ? "#166534" : "#111827",
+                        color: isEnUygunKalem
+                          ? "#166534"
+                          : "#111827",
                       }}
                     >
-                      KDV Dahil: {formatCurrency(toplamTutarKdvDahil)}{" "}
+                      KDV Dahil:{" "}
+                      {formatCurrency(toplamTutarKdvDahil)}{" "}
                       {paraBirimi}
                     </span>
 
@@ -906,10 +1171,7 @@ export default function SatinAlmaFiyatlandirPage() {
         </div>
       )}
 
-
-
-
-
+ */}
 
 
       <div
@@ -926,19 +1188,30 @@ export default function SatinAlmaFiyatlandirPage() {
           style={{
             display: "block",
             fontWeight: 900,
-            marginBottom: "0.35rem",
+            marginBottom:
+              "0.35rem",
             color: "#0f172a",
           }}
         >
           Tedarikçi Adı / Firma Adı{" "}
-          <span style={{ color: "#b91c1c" }}>*</span>
+          <span
+            style={{
+              color: "#b91c1c",
+            }}
+          >
+            *
+          </span>
         </label>
 
         <input
           type="text"
           value={globalTedarikciAdi}
           onChange={(e) =>
-            setGlobalTedarikciAdi(e.target.value.toUpperCase("tr-TR"))
+            setGlobalTedarikciAdi(
+              e.target.value.toUpperCase(
+                "tr-TR"
+              )
+            )
           }
           placeholder="Örn: ABC ELEKTRİK A.Ş."
           style={{
@@ -946,14 +1219,21 @@ export default function SatinAlmaFiyatlandirPage() {
             padding: "0.6rem 0.7rem",
             fontSize: 14,
             borderRadius: 10,
-            border: "1px solid #cbd5e1",
+            border:
+              "1px solid #cbd5e1",
             color: "#0f172a",
-            textTransform: "uppercase",
+            textTransform:
+              "uppercase",
           }}
         />
       </div>
 
-      <div style={{ marginTop: 6, marginBottom: 25 }}>
+      <div
+        style={{
+          marginTop: 6,
+          marginBottom: 25,
+        }}
+      >
         <div
           className="text-center"
           style={{
@@ -966,26 +1246,45 @@ export default function SatinAlmaFiyatlandirPage() {
           MALZEMELER
         </div>
 
-        {malzemeler.length === 0 ? (
-          <div style={{ fontSize: 14 }}>Bu satın almada henüz malzeme yok.</div>
+        {malzemeler.length ===
+        0 ? (
+          <div
+            style={{
+              fontSize: 14,
+            }}
+          >
+            Bu satın almada henüz
+            malzeme yok.
+          </div>
         ) : (
-          <div style={{ display: "grid", gap: 30 }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 30,
+            }}
+          >
             {malzemeler.map((m) => {
-              const id = m.id ?? m.Id;
+              const id =
+                m.id ?? m.Id;
 
-              const formRow = teklifForm[id] || {
-                birimFiyat: "",
-                paraBirimi: "TRY",
-                kdvOraniYuzde: "20",
-                not: "",
-              };
+              const formRow =
+                teklifForm[id] || {
+                  birimFiyat: "",
+                  paraBirimi:
+                    "TRY",
+                  kdvOraniYuzde:
+                    "20",
+                  not: "",
+                };
 
               return (
                 <UrunCard
                   key={id}
                   urun={m}
                   formRow={formRow}
-                  onChange={handleInputChange}
+                  onChange={
+                    handleInputChange
+                  }
                 />
               );
             })}
@@ -997,24 +1296,38 @@ export default function SatinAlmaFiyatlandirPage() {
         style={{
           marginTop: 14,
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent:
+            "space-between",
           gap: 12,
-          alignItems: "flex-start",
+          alignItems:
+            "flex-start",
           flexWrap: "wrap",
         }}
       >
         <div>
           <button
             type="button"
-            onClick={() => setShowTotals((prev) => !prev)}
+            onClick={() =>
+              setShowTotals(
+                (prev) => !prev
+              )
+            }
             disabled={netTotal <= 0}
             style={{
-              padding: "0.55rem 1rem",
+              padding:
+                "0.55rem 1rem",
               borderRadius: 10,
-              border: "1px solid #16a34a",
-              backgroundColor: netTotal > 0 ? "#16a34a" : "#9ca3af",
+              border:
+                "1px solid #16a34a",
+              backgroundColor:
+                netTotal > 0
+                  ? "#16a34a"
+                  : "#9ca3af",
               color: "#ffffff",
-              cursor: netTotal > 0 ? "pointer" : "default",
+              cursor:
+                netTotal > 0
+                  ? "pointer"
+                  : "default",
               fontWeight: 900,
               fontSize: 13,
             }}
@@ -1025,75 +1338,134 @@ export default function SatinAlmaFiyatlandirPage() {
           </button>
 
           {netTotal <= 0 && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#6b7280" }}>
-              Toplamı görebilmek için en az bir ürün için geçerli birim fiyat
-              giriniz.
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: 11,
+                color: "#6b7280",
+              }}
+            >
+              Toplamı görebilmek için en
+              az bir ürün için geçerli
+              birim fiyat giriniz.
             </div>
           )}
         </div>
 
-        {showTotals && netTotal > 0 && (
-          <div
-            style={{
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              padding: "0.85rem 1rem",
-              backgroundColor: "#f8fafc",
-              minWidth: 280,
-              fontSize: 13,
-              color: "#0f172a",
-            }}
-          >
+        {showTotals &&
+          netTotal > 0 && (
             <div
               style={{
-                fontWeight: 900,
-                marginBottom: 8,
+                borderRadius: 12,
+                border:
+                  "1px solid #e5e7eb",
+                padding:
+                  "0.85rem 1rem",
+                backgroundColor:
+                  "#f8fafc",
+                minWidth: 280,
+                fontSize: 13,
                 color: "#0f172a",
               }}
             >
-              Toplam Özet (Satır bazlı KDV)
-            </div>
+              <div
+                style={{
+                  fontWeight: 900,
+                  marginBottom: 8,
+                  color: "#0f172a",
+                }}
+              >
+                Toplam Özet (Satır
+                bazlı KDV)
+              </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Net Toplam:</span>
-              <span>{formatCurrency(netTotal)}</span>
-            </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent:
+                    "space-between",
+                }}
+              >
+                <span>
+                  Net Toplam:
+                </span>
 
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Toplam KDV:</span>
-              <span>{formatCurrency(toplamKdv)}</span>
-            </div>
+                <span>
+                  {formatCurrency(
+                    netTotal
+                  )}
+                </span>
+              </div>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 8,
-                fontWeight: 900,
-              }}
-            >
-              <span>Genel Toplam (KDV Dahil):</span>
-              <span>{formatCurrency(genelToplam)}</span>
-            </div>
-          </div>
-        )}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent:
+                    "space-between",
+                }}
+              >
+                <span>
+                  Toplam KDV:
+                </span>
 
-        <div style={{ marginLeft: "auto" }}>
+                <span>
+                  {formatCurrency(
+                    toplamKdv
+                  )}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent:
+                    "space-between",
+                  marginTop: 8,
+                  fontWeight: 900,
+                }}
+              >
+                <span>
+                  Genel Toplam (KDV
+                  Dahil):
+                </span>
+
+                <span>
+                  {formatCurrency(
+                    genelToplam
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+
+        <div
+          style={{
+            marginLeft: "auto",
+          }}
+        >
           <button
             onClick={handleSubmit}
             disabled={sending}
             style={{
-              padding: "0.7rem 1.4rem",
+              padding:
+                "0.7rem 1.4rem",
               borderRadius: 12,
               border: "none",
-              backgroundColor: sending ? "#9ca3af" : "#2563eb",
+              backgroundColor:
+                sending
+                  ? "#9ca3af"
+                  : "#2563eb",
               color: "#ffffff",
-              cursor: sending ? "default" : "pointer",
+              cursor: sending
+                ? "default"
+                : "pointer",
               fontWeight: 900,
               fontSize: 14,
             }}
           >
-            {sending ? "Gönderiliyor..." : "Teklifi Gönder"}
+            {sending
+              ? "Gönderiliyor..."
+              : "Teklifi Gönder"}
           </button>
         </div>
       </div>
@@ -1103,35 +1475,41 @@ export default function SatinAlmaFiyatlandirPage() {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0,0,0,0.35)",
+            backgroundColor:
+              "rgba(0,0,0,0.35)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent:
+              "center",
             zIndex: 9999,
           }}
         >
           <div
             style={{
-              backgroundColor: "#ffffff",
+              backgroundColor:
+                "#ffffff",
               borderRadius: 12,
               padding: "1.5rem",
               maxWidth: 420,
               width: "92%",
               textAlign: "center",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+              boxShadow:
+                "0 8px 24px rgba(0,0,0,0.22)",
               fontSize: 14,
               color: "#0f172a",
             }}
           >
             <h2
               style={{
-                marginBottom: "0.5rem",
+                marginBottom:
+                  "0.5rem",
                 fontSize: 18,
                 fontWeight: 900,
               }}
             >
               Teşekkürler
             </h2>
+
             <p
               style={{
                 marginTop: 0,
@@ -1139,15 +1517,21 @@ export default function SatinAlmaFiyatlandirPage() {
                 color: "#111827",
               }}
             >
-              Teklifiniz başarıyla gönderildi.
+              Teklifiniz başarıyla
+              gönderildi.
             </p>
+
             <button
-              onClick={handleCloseModal}
+              onClick={
+                handleCloseModal
+              }
               style={{
-                padding: "0.6rem 1.3rem",
+                padding:
+                  "0.6rem 1.3rem",
                 borderRadius: 12,
                 border: "none",
-                backgroundColor: "#2563eb",
+                backgroundColor:
+                  "#2563eb",
                 color: "#ffffff",
                 cursor: "pointer",
                 fontWeight: 900,
