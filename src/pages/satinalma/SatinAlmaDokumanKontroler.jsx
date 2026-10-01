@@ -58,6 +58,20 @@ function getFileUrl(file) {
   return file?.url || file?.Url || "";
 }
 
+function getSiteId(site) {
+  return site?.id ?? site?.Id ?? null;
+}
+
+function getSiteName(site) {
+  return (
+    site?.ad ??
+    site?.Ad ??
+    site?.siteAdi ??
+    site?.SiteAdi ??
+    "-"
+  );
+}
+
 function SatinAlmaTalepCard({ data }) {
   if (!Array.isArray(data) || data.length === 0) {
     return (
@@ -72,13 +86,23 @@ function SatinAlmaTalepCard({ data }) {
       {data.map((item) => {
         const id = item?.id || item?.Id;
 
-        const talepEden = item?.talepEden || item?.TalepEden;
+        const talepEden =
+          item?.talepEden ||
+          item?.TalepEden;
 
-        const site = item?.site || item?.Site;
+        const site =
+          item?.site ||
+          item?.Site;
 
-        const yorumlar = item?.yorumlar || item?.Yorumlar || [];
+        const yorumlar =
+          item?.yorumlar ||
+          item?.Yorumlar ||
+          [];
 
-        const dosyalar = item?.dosyalar || item?.Dosyalar || [];
+        const dosyalar =
+          item?.dosyalar ||
+          item?.Dosyalar ||
+          [];
 
         return (
           <div
@@ -87,22 +111,33 @@ function SatinAlmaTalepCard({ data }) {
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
+
                 <div className="flex flex-wrap items-center gap-1">
                   <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-200">
-                    #{item?.seriNo || item?.SeriNo || id}
+                    #
+                    {item?.seriNo ||
+                      item?.SeriNo ||
+                      id}
                   </span>
 
                   <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">
-                    {item?.talepCinsi || item?.TalepCinsi || "Satın Alma"}
+                    {item?.talepCinsi ||
+                      item?.TalepCinsi ||
+                      "Satın Alma"}
                   </span>
 
                   <span className="text-[10px] text-zinc-500">
-                    {formatDate(item?.tarih || item?.Tarih)}
+                    {formatDate(
+                      item?.tarih ||
+                        item?.Tarih
+                    )}
                   </span>
                 </div>
 
                 <div className="mt-1 text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
-                  {site?.ad || site?.Ad || "Site yok"}
+                  {site?.ad ||
+                    site?.Ad ||
+                    "Site yok"}
                 </div>
 
                 <div className="mt-1 line-clamp-3 text-[11px] leading-snug text-zinc-700 dark:text-zinc-200">
@@ -112,6 +147,17 @@ function SatinAlmaTalepCard({ data }) {
                     item?.Aciklama ||
                     "-"}
                 </div>
+
+                {(item?.sonDosyaYuklemeTarihiUtc ||
+                  item?.SonDosyaYuklemeTarihiUtc) && (
+                  <div className="mt-1 text-[9px] text-zinc-400">
+                    Son dosya:{" "}
+                    {formatDate(
+                      item?.sonDosyaYuklemeTarihiUtc ||
+                        item?.SonDosyaYuklemeTarihiUtc
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="min-w-[110px] text-right text-[10px] text-zinc-500">
@@ -121,21 +167,30 @@ function SatinAlmaTalepCard({ data }) {
 
                 <div className="leading-tight">
                   {talepEden
-                    ? `${talepEden?.ad || talepEden?.Ad || ""} ${
-                        talepEden?.soyad || talepEden?.Soyad || ""
+                    ? `${
+                        talepEden?.ad ||
+                        talepEden?.Ad ||
+                        ""
+                      } ${
+                        talepEden?.soyad ||
+                        talepEden?.Soyad ||
+                        ""
                       }`
                     : "-"}
                 </div>
 
-                {(talepEden?.telefon || talepEden?.Telefon) && (
+                {(talepEden?.telefon ||
+                  talepEden?.Telefon) && (
                   <div className="mt-0.5">
-                    {talepEden?.telefon || talepEden?.Telefon}
+                    {talepEden?.telefon ||
+                      talepEden?.Telefon}
                   </div>
                 )}
               </div>
             </div>
 
             <div className="mt-2 grid gap-2 md:grid-cols-2">
+
               {/* BELGELER */}
               <div className="rounded-md border border-zinc-100 bg-zinc-50 p-1.5 dark:border-zinc-800 dark:bg-zinc-950/40">
                 <div className="mb-1 text-[10px] font-bold text-zinc-700 dark:text-zinc-200">
@@ -152,7 +207,11 @@ function SatinAlmaTalepCard({ data }) {
 
                     return (
                       <a
-                        key={d?.id || d?.Id}
+                        key={
+                          d?.id ||
+                          d?.Id ||
+                          url
+                        }
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -194,14 +253,24 @@ function SatinAlmaTalepCard({ data }) {
 
                       return (
                         <div
-                          key={y?.id || y?.Id}
+                          key={
+                            y?.id ||
+                            y?.Id
+                          }
                           className="rounded-md border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900"
                         >
                           <div className="flex justify-between gap-1 text-[9px] text-zinc-500">
+
                             <span className="font-semibold text-zinc-700 dark:text-zinc-200">
                               {yazan
-                                ? `${yazan?.ad || yazan?.Ad || ""} ${
-                                    yazan?.soyad || yazan?.Soyad || ""
+                                ? `${
+                                    yazan?.ad ||
+                                    yazan?.Ad ||
+                                    ""
+                                  } ${
+                                    yazan?.soyad ||
+                                    yazan?.Soyad ||
+                                    ""
                                   }`
                                 : "Personel"}
                             </span>
@@ -215,7 +284,9 @@ function SatinAlmaTalepCard({ data }) {
                           </div>
 
                           <div className="mt-0.5 break-words text-[10px] leading-snug text-zinc-700 dark:text-zinc-200">
-                            {y?.yorum || y?.Yorum || "-"}
+                            {y?.yorum ||
+                              y?.Yorum ||
+                              "-"}
                           </div>
                         </div>
                       );
@@ -240,31 +311,76 @@ export default function SatinAlmaTalepleriPage() {
 
   const defaults = getDefaultRange();
 
+  /*
+   * PERSONEL
+   */
   const [personel, setPersonel] = useState(null);
 
-  const [items, setItems] = useState([]);
+  /*
+   * SITE / PROJE
+   */
+  const [sites, setSites] = useState([]);
+  const [sitesLoading, setSitesLoading] = useState(true);
+  const [sitesError, setSitesError] = useState("");
 
+  const [siteId, setSiteId] = useState("");
+
+  /*
+   * LISTE
+   */
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  /*
+   * PAGINATION
+   */
   const [page, setPage] = useState(1);
-
   const [pageSize] = useState(30);
 
   const [totalPages, setTotalPages] = useState(1);
-
   const [totalCount, setTotalCount] = useState(0);
 
-  const [startDate, setStartDate] = useState(defaults.startDate);
+  /*
+   * TARİH
+   */
+  const [startDate, setStartDate] = useState(
+    defaults.startDate
+  );
 
-  const [endDate, setEndDate] = useState(defaults.endDate);
+  const [endDate, setEndDate] = useState(
+    defaults.endDate
+  );
 
+  /*
+   * ARAMA
+   */
   const [searchText, setSearchText] = useState("");
 
+  /*
+   * SEÇİLİ SITE
+   */
+  const selectedSite = useMemo(() => {
+    if (!siteId) return null;
+
+    return (
+      sites.find(
+        (site) =>
+          Number(getSiteId(site)) ===
+          Number(siteId)
+      ) || null
+    );
+  }, [sites, siteId]);
+
+  /*
+   * PERSONEL COOKIE
+   */
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     try {
-      const c = getClientCookie("PersonelUserInfo");
+      const c = getClientCookie(
+        "PersonelUserInfo"
+      );
 
       if (!c) {
         router.replace("/");
@@ -273,59 +389,183 @@ export default function SatinAlmaTalepleriPage() {
 
       const parsed = JSON.parse(c);
 
-      setPersonel(parsed?.personel ?? parsed);
+      setPersonel(
+        parsed?.personel ??
+          parsed
+      );
     } catch (e) {
-      console.error("PersonelUserInfo parse error:", e);
+      console.error(
+        "PersonelUserInfo parse error:",
+        e
+      );
 
       router.replace("/");
     }
   }, [router]);
 
+  // =========================================================
+  // SITE / PROJE LİSTESİNİ GETİR
+  // =========================================================
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSites() {
+      try {
+        setSitesLoading(true);
+        setSitesError("");
+
+        const siteResponse =
+          await getDataAsync(
+            "SiteAptEvControllerSet/sites"
+          );
+
+        if (cancelled) return;
+
+        setSites(
+          Array.isArray(siteResponse)
+            ? siteResponse
+            : []
+        );
+      } catch (error) {
+        console.error(
+          "SITES FETCH ERROR:",
+          error
+        );
+
+        if (!cancelled) {
+          setSites([]);
+          setSitesError(
+            "Proje / site listesi alınamadı."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setSitesLoading(false);
+        }
+      }
+    }
+
+    loadSites();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // =========================================================
+  // SATIN ALMA ENDPOINT
+  // =========================================================
+
   const endpoint = useMemo(() => {
     const qs = new URLSearchParams();
 
-    qs.set("page", String(page));
+    qs.set(
+      "page",
+      String(page)
+    );
 
-    qs.set("pageSize", String(pageSize));
+    qs.set(
+      "pageSize",
+      String(pageSize)
+    );
 
+    /*
+     * SITE / PROJE
+     */
+    if (siteId) {
+      qs.set(
+        "siteId",
+        String(siteId)
+      );
+    }
+
+    /*
+     * TARİH
+     */
     if (startDate) {
-      qs.set("startDate", startDate);
+      qs.set(
+        "startDate",
+        startDate
+      );
     }
 
     if (endDate) {
-      qs.set("endDate", endDate);
+      qs.set(
+        "endDate",
+        endDate
+      );
     }
 
+    /*
+     * ARAMA
+     */
     if (searchText.trim()) {
-      qs.set("q", searchText.trim());
+      qs.set(
+        "q",
+        searchText.trim()
+      );
     }
 
     return `satinalma/satin-alma-talepleri?${qs.toString()}`;
-  }, [page, pageSize, startDate, endDate, searchText]);
+  }, [
+    page,
+    pageSize,
+    siteId,
+    startDate,
+    endDate,
+    searchText,
+  ]);
+
+  // =========================================================
+  // BELGELERİ GETİR
+  // =========================================================
 
   async function loadItems() {
     setLoading(true);
 
     try {
-      const res = await getDataAsync(endpoint);
+      const res =
+        await getDataAsync(endpoint);
 
-      setItems(res?.items || res?.Items || []);
+      setItems(
+        res?.items ||
+          res?.Items ||
+          []
+      );
 
-      setTotalPages(res?.totalPages || res?.TotalPages || 1);
+      setTotalPages(
+        Number(
+          res?.totalPages ||
+            res?.TotalPages ||
+            1
+        ) || 1
+      );
 
-      setTotalCount(res?.totalCount || res?.TotalCount || 0);
+      setTotalCount(
+        Number(
+          res?.totalCount ||
+            res?.TotalCount ||
+            0
+        ) || 0
+      );
     } catch (e) {
-      console.error("Satın alma talepleri GET hata:", e);
+      console.error(
+        "Satın alma talepleri GET hata:",
+        e
+      );
 
       setItems([]);
-
       setTotalPages(1);
-
       setTotalCount(0);
     } finally {
       setLoading(false);
     }
   }
+
+  // =========================================================
+  // FİLTRE DEĞİŞİNCE YENİDEN GET
+  // =========================================================
 
   useEffect(() => {
     if (!personel) return;
@@ -335,12 +575,22 @@ export default function SatinAlmaTalepleriPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint, personel]);
 
+  // =========================================================
+  // FİLTRELERİ SIFIRLA
+  // =========================================================
+
   function resetDateFilters() {
     const d = getDefaultRange();
 
-    setStartDate(d.startDate);
+    setSiteId("");
 
-    setEndDate(d.endDate);
+    setStartDate(
+      d.startDate
+    );
+
+    setEndDate(
+      d.endDate
+    );
 
     setSearchText("");
 
@@ -349,9 +599,15 @@ export default function SatinAlmaTalepleriPage() {
 
   return (
     <div className="space-y-2 p-2">
-      {/* HEADER */}
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <div className="rounded-xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+
         <div className="flex flex-wrap items-center justify-between gap-2">
+
           <div>
             <div className="text-sm font-bold text-zinc-800 dark:text-zinc-100">
               Satın Alma Belgeleri
@@ -359,21 +615,90 @@ export default function SatinAlmaTalepleriPage() {
 
             <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
               {totalCount} kayıt • Sayfa {page}/{totalPages}
-              {loading ? " • Yükleniyor..." : ""}
+
+              {selectedSite
+                ? ` • ${getSiteName(selectedSite)}`
+                : ""}
+
+              {loading
+                ? " • Yükleniyor..."
+                : ""}
             </div>
           </div>
 
           <button
             type="button"
             onClick={loadItems}
-            className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200"
+            disabled={loading}
+            className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-50 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200"
           >
             Yenile
           </button>
         </div>
 
-        {/* FİLTRELER */}
-        <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-5">
+        {/* SITE GET HATASI */}
+
+        {sitesError ? (
+          <div className="mt-2 rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+            {sitesError}
+          </div>
+        ) : null}
+
+        {/* =================================================
+            FİLTRELER
+        ================================================= */}
+
+        <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-6">
+
+          {/* PROJE / SITE */}
+
+          <div className="col-span-2 flex flex-col gap-1 md:col-span-2">
+            <label className="text-[10px] text-zinc-500">
+              Proje / Site
+            </label>
+
+            <select
+              value={siteId}
+              disabled={sitesLoading}
+              onChange={(e) => {
+                setSiteId(
+                  e.target.value
+                );
+
+                /*
+                 * Site değiştiğinde
+                 * her zaman ilk sayfaya dön.
+                 */
+                setPage(1);
+              }}
+              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+            >
+              <option value="">
+                {sitesLoading
+                  ? "Projeler yükleniyor..."
+                  : "Tüm Projeler"}
+              </option>
+
+              {sites.map((site) => {
+                const id =
+                  getSiteId(site);
+
+                if (!id) return null;
+
+                return (
+                  <option
+                    key={id}
+                    value={id}
+                  >
+                    {getSiteName(site)}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* BAŞLANGIÇ */}
+
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-zinc-500">
               Başlangıç
@@ -383,12 +708,17 @@ export default function SatinAlmaTalepleriPage() {
               type="date"
               value={startDate}
               onChange={(e) => {
-                setStartDate(e.target.value);
+                setStartDate(
+                  e.target.value
+                );
+
                 setPage(1);
               }}
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
+
+          {/* BİTİŞ */}
 
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-zinc-500">
@@ -399,45 +729,54 @@ export default function SatinAlmaTalepleriPage() {
               type="date"
               value={endDate}
               onChange={(e) => {
-                setEndDate(e.target.value);
+                setEndDate(
+                  e.target.value
+                );
+
                 setPage(1);
               }}
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
 
+          {/* ARAMA */}
+
           <div className="col-span-2 flex flex-col gap-1">
             <label className="text-[10px] text-zinc-500">
-              Fatura No / Yorum / Seri No
+              Fatura No / Yorum / Seri No / Dosya
             </label>
 
             <input
               type="text"
               value={searchText}
               onChange={(e) => {
-                setSearchText(e.target.value);
+                setSearchText(
+                  e.target.value
+                );
+
                 setPage(1);
               }}
               placeholder="Ara..."
               className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
-
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={() => {
-                setPage(1);
-                loadItems();
-              }}
-              className="h-8 w-full rounded-md border border-sky-200 bg-sky-50 px-3 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200"
-            >
-              Filtrele
-            </button>
-          </div>
         </div>
 
-        <div className="mt-2 flex justify-end">
+        {/* ALT BUTONLAR */}
+
+        <div className="mt-2 flex flex-wrap justify-end gap-2">
+
+          <button
+            type="button"
+            onClick={() => {
+              setPage(1);
+              loadItems();
+            }}
+            className="h-8 rounded-md border border-sky-200 bg-sky-50 px-3 text-[11px] font-semibold text-sky-700 hover:bg-sky-100 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-200"
+          >
+            Filtrele
+          </button>
+
           <button
             type="button"
             onClick={resetDateFilters}
@@ -448,29 +787,60 @@ export default function SatinAlmaTalepleriPage() {
         </div>
       </div>
 
-      {/* PAGINATION */}
+      {/* =====================================================
+          PAGINATION
+      ===================================================== */}
+
       <div className="flex items-center justify-between gap-2">
+
         <div className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">
           Liste
+
+          {selectedSite ? (
+            <span className="ml-2 text-[10px] font-normal text-zinc-500">
+              {getSiteName(selectedSite)}
+            </span>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-1">
+
           <button
             type="button"
-            disabled={page <= 1}
+            disabled={
+              page <= 1 ||
+              loading
+            }
             onClick={() =>
-              setPage((p) => Math.max(1, p - 1))
+              setPage((p) =>
+                Math.max(
+                  1,
+                  p - 1
+                )
+              )
             }
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
             ◀ Önceki
           </button>
 
+          <span className="px-2 text-[10px] text-zinc-500">
+            {page} / {totalPages}
+          </span>
+
           <button
             type="button"
-            disabled={page >= totalPages}
+            disabled={
+              page >= totalPages ||
+              loading
+            }
             onClick={() =>
-              setPage((p) => Math.min(totalPages, p + 1))
+              setPage((p) =>
+                Math.min(
+                  totalPages,
+                  p + 1
+                )
+              )
             }
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
@@ -479,13 +849,18 @@ export default function SatinAlmaTalepleriPage() {
         </div>
       </div>
 
-      {/* LIST */}
+      {/* =====================================================
+          LISTE
+      ===================================================== */}
+
       {loading ? (
         <div className="rounded-lg border border-zinc-200 bg-white p-3 text-[12px] text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
           Yükleniyor...
         </div>
       ) : (
-        <SatinAlmaTalepCard data={items} />
+        <SatinAlmaTalepCard
+          data={items}
+        />
       )}
     </div>
   );
