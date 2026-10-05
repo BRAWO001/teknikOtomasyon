@@ -3,6 +3,7 @@ export const PERSONEL_OPTIONS = [
   "Burcu Kuş",
   "Cem Eren",
   "Çağlar Şenol",
+  "Fırat Öztürk",
   "Özer Aydın",
   "IBAN Hesap Eos",
 ].sort((a, b) => a.localeCompare(b, "tr"));
