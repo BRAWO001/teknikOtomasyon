@@ -375,18 +375,13 @@ export default function DetayliTaleplerRaporuPage() {
           <div className="flex flex-wrap items-center justify-start gap-1.5 lg:justify-end">
             <button
               type="button"
-              onClick={() =>
-                router.push("/satinalma/onayBekleyen")
-              }
+              onClick={() => router.push("/satinalma/onayBekleyen")}
               className="cursor-pointer rounded-md border border-yellow-300 bg-yellow-200 px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:bg-yellow-300 dark:border-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-100 dark:hover:bg-yellow-900/60"
             >
               Onayımı Bekleyen Talepler
             </button>
 
-            <SonYorumOzetMiniPanel
-              take={50}
-              stickyTop={8}
-            />
+            <SonYorumOzetMiniPanel take={50} stickyTop={8} />
 
             <button
               type="button"
@@ -423,9 +418,6 @@ export default function DetayliTaleplerRaporuPage() {
           </div>
         </div>
 
-
-
-
         {/* Filtreler */}
         <div className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
           {/* Site */}
@@ -444,24 +436,27 @@ export default function DetayliTaleplerRaporuPage() {
             >
               <option value="">Tümü</option>
 
-              {sites.map((site) => {
-                const currentSiteId =
-                  site.id ?? site.Id;
+              {[...sites]
+                .sort((a, b) => {
+                  const nameA = a.ad ?? a.Ad ?? "";
+                  const nameB = b.ad ?? b.Ad ?? "";
 
-                const currentSiteName =
-                  site.ad ??
-                  site.Ad ??
-                  `Site #${currentSiteId}`;
+                  return nameA.localeCompare(nameB, "tr", {
+                    sensitivity: "base",
+                  });
+                })
+                .map((site) => {
+                  const currentSiteId = site.id ?? site.Id;
 
-                return (
-                  <option
-                    key={currentSiteId}
-                    value={currentSiteId}
-                  >
-                    {currentSiteName}
-                  </option>
-                );
-              })}
+                  const currentSiteName =
+                    site.ad ?? site.Ad ?? `Site #${currentSiteId}`;
+
+                  return (
+                    <option key={currentSiteId} value={currentSiteId}>
+                      {currentSiteName}
+                    </option>
+                  );
+                })}
             </select>
           </div>
 
@@ -482,16 +477,12 @@ export default function DetayliTaleplerRaporuPage() {
               <option value="">Tümü</option>
 
               {TALEP_CINSI_OPTIONS.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
-          </div>  
-
+          </div>
 
           {/* Satın alma durumu */}
           <div className="min-w-0 flex flex-col gap-0.5">
@@ -508,10 +499,7 @@ export default function DetayliTaleplerRaporuPage() {
               className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               {SATIN_ALMA_DURUM_OPTIONS.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
@@ -533,10 +521,7 @@ export default function DetayliTaleplerRaporuPage() {
               className="h-7 w-full min-w-0 rounded-md border border-zinc-300 bg-white px-1.5 text-[11px] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
             >
               {TAMAMLANMA_DURUM_OPTIONS.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
@@ -633,9 +618,6 @@ export default function DetayliTaleplerRaporuPage() {
             />
           </div>
         </div>
-
-
-
       </div>
 
       {/* Liste başlığı ve sayfalama */}
@@ -657,9 +639,7 @@ export default function DetayliTaleplerRaporuPage() {
             type="button"
             disabled={loading || page <= 1}
             onClick={() =>
-              setPage((currentPage) =>
-                Math.max(1, currentPage - 1)
-              )
+              setPage((currentPage) => Math.max(1, currentPage - 1))
             }
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >
@@ -672,17 +652,9 @@ export default function DetayliTaleplerRaporuPage() {
 
           <button
             type="button"
-            disabled={
-              loading ||
-              page >= totalPages
-            }
+            disabled={loading || page >= totalPages}
             onClick={() =>
-              setPage((currentPage) =>
-                Math.min(
-                  totalPages,
-                  currentPage + 1
-                )
-              )
+              setPage((currentPage) => Math.min(totalPages, currentPage + 1))
             }
             className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
           >

@@ -13,6 +13,9 @@ const TUR_OPTIONS = [
   { value: "Sozlesme", label: "Sözleşme" },
   { value: "Ihtarname", label: "İhtarname" },
   { value: "Tedarikçi / Dış İşlem", label: "Tedarikçi / Dış İşlem" },
+  { value: "Faturalar", label: "Faturalar" },
+  { value: "Raporlar", label: "Raporlar" },
+
 ];
 
 
@@ -245,15 +248,24 @@ export default function ProjeDosyaUploadBlock({ uploadAndAttach }) {
             <option value="" disabled>
               Tür seçiniz...
             </option>
-            {TUR_OPTIONS.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
+
+            {[...TUR_OPTIONS]
+              .sort((a, b) =>
+                a.label.localeCompare(b.label, "tr", {
+                  sensitivity: "base",
+                }),
+              )
+              .map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
           </select>
 
           {fieldErrors.tur && (
-            <div className="mt-1 text-[10px] text-red-600">{fieldErrors.tur}</div>
+            <div className="mt-1 text-[10px] text-red-600">
+              {fieldErrors.tur}
+            </div>
           )}
         </div>
       </div>
@@ -324,22 +336,26 @@ export default function ProjeDosyaUploadBlock({ uploadAndAttach }) {
               : "border-zinc-300 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
           }`}
       >
-        <div className=" mb-1 font-semibold">GÖRSELİ  SÜRÜKLEYİP BIRAKINIZ  </div>
-        <span className="font-extralight " > Görsel sayısı fazla ise <strong className="font-extrabold" > Pdf </strong> formatında tarayıp yükleyiniz </span>
+        <div className=" mb-1 font-semibold">GÖRSELİ SÜRÜKLEYİP BIRAKINIZ </div>
+        <span className="font-extralight ">
+          {" "}
+          Görsel sayısı fazla ise{" "}
+          <strong className="font-extrabold"> Pdf </strong> formatında tarayıp
+          yükleyiniz{" "}
+        </span>
 
         {imagePreviewUrl && (
-  <div className="mt-3 flex justify-center">
-    <div className="mx-auto overflow-hidden rounded-lg border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-950">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={imagePreviewUrl}
-        alt="preview"
-        className="h-28 w-28 object-cover"
-      />
-    </div>
-  </div>
-)}
-
+          <div className="mt-3 flex justify-center">
+            <div className="mx-auto overflow-hidden rounded-lg border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-950">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imagePreviewUrl}
+                alt="preview"
+                className="h-28 w-28 object-cover"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Dosya seç + Görsel seç + Temizle + Yükle */}
@@ -389,8 +405,8 @@ export default function ProjeDosyaUploadBlock({ uploadAndAttach }) {
       {/* ✅ Yükle validation: seçim yoksa uyarı burada görünür */}
       {!canUpload && !uploading && (
         <div className="mt-2 text-[10px] text-zinc-500 dark:text-zinc-400">
-          Yüklemek için: <b>Tür</b> seç, <b>Başlık</b> + <b>Açıklama</b> doldur ve{" "}
-          <b>dosya/görsel</b> seç.
+          Yüklemek için: <b>Tür</b> seç, <b>Başlık</b> + <b>Açıklama</b> doldur
+          ve <b>dosya/görsel</b> seç.
         </div>
       )}
 

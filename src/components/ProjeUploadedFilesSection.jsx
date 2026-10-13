@@ -7,6 +7,9 @@ const TUR_OPTIONS = [
   { value: "Sozlesme", label: "Sözleşme" },
   { value: "Ihtarname", label: "İhtarname" },
   { value: "Tedarikçi / Dış İşlem", label: "Tedarikçi / Dış İşlem" },
+  { value: "Faturalar", label: "Faturalar" },
+  { value: "Raporlar", label: "Raporlar" },
+
 ];
 
 function extOf(nameOrUrl = "") {
@@ -212,11 +215,18 @@ export default function ProjeUploadedFilesSection({
             className="rounded-lg border border-zinc-300 bg-white px-2 py-1 text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
           >
             <option value="ALL">Tümü</option>
-            {TUR_OPTIONS.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
+
+            {[...TUR_OPTIONS]
+              .sort((a, b) =>
+                a.label.localeCompare(b.label, "tr", {
+                  sensitivity: "base",
+                }),
+              )
+              .map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
           </select>
 
           <input

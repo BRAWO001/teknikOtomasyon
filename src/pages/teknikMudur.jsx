@@ -144,6 +144,12 @@ export default function TeknikMudurPage() {
   const handleYoneticiRaporu = () => {
     router.push("/yoneticiRaporu");
   };
+  const handleBelgeYonetimi = () => {
+    router.push("/MudurBelgeGoruntuleme");
+  };
+
+
+
   const handleIsEmriKasa = () => {
     router.push("/kasaKayitlari");
   };
@@ -489,6 +495,22 @@ export default function TeknikMudurPage() {
                       <path d="M9 17v-5M12 17v-8M15 17v-3M4 4h16v16H4z" />
                     </svg>
                     İş Emirleri
+                  </button>
+
+                  <button
+                    onClick={handleBelgeYonetimi}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-rose-200 bg-gradient-to-r from-rose-50 to-red-50 text-rose-800 shadow-sm hover:from-rose-100 hover:to-red-100 dark:border-rose-900/60 dark:from-rose-950/35 dark:to-red-950/35 dark:text-rose-200`}
+                  >
+                    <svg
+                      className={`${ui.icon} text-rose-600 dark:text-rose-300`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M9 12h6M9 16h6M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+                    </svg>
+                    Belge Yönetimi  
                   </button>
                   <button
                     onClick={handleIsEmriKasa}

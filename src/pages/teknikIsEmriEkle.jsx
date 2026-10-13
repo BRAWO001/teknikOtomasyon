@@ -293,11 +293,18 @@ export default function TeknikIsEmriEkle() {
                 onChange={(e) => onSiteChange(e.target.value)}
               >
                 <option value="">Seçiniz</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.ad}
-                  </option>
-                ))}
+
+                {[...(sites || [])]
+                  .sort((a, b) =>
+                    (a.ad || "").localeCompare(b.ad || "", "tr", {
+                      sensitivity: "base",
+                    }),
+                  )
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.ad}
+                    </option>
+                  ))}
               </select>
             </Field>
 
@@ -312,8 +319,8 @@ export default function TeknikIsEmriEkle() {
                   {!form.siteId
                     ? "Önce site seç"
                     : siteDetailLoading
-                    ? "Yükleniyor..."
-                    : "Seçiniz"}
+                      ? "Yükleniyor..."
+                      : "Seçiniz"}
                 </option>
                 {apts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -515,11 +522,7 @@ export default function TeknikIsEmriEkle() {
               </button>
             )}
           </div>
-
-          
         </form>
-
-      
       </div>
     </div>
   );

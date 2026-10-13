@@ -237,13 +237,15 @@ export default function ProjeGorevlileriPage() {
   };
 
   // ✅ Modal açmadan önce site seçili mi kontrol
-  const openDosyaModal = () => {
-    if (!selectedSiteId) {
-      setPilotInfo("Önce bir site seçmelisiniz (SiteId bulunamadı).");
-      return;
-    }
-    setIsDosyaModalOpen(true);
-  };
+
+const openDosyaModal = () => {
+  if (!selectedSiteId) {
+    setPilotInfo("Önce bir site seçmelisiniz (SiteId bulunamadı).");
+    return;
+  }
+
+  router.push("/ProjeBelgeleri");
+};
 
   const SectionCard = ({
     sectionKey,
