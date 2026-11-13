@@ -164,6 +164,9 @@ export default function TeknikMudurPage() {
   const handlePersonelTakvim = () => {
     router.push("/personelTakvim");
   };
+  const handleDenetimler = () => {
+    router.push("/Denetim");
+  };
 
   // Talep raporu
   const handleTalepRaporu = () => {
@@ -574,6 +577,21 @@ export default function TeknikMudurPage() {
                       <path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
                     </svg>
                     Personel Takvimi
+                  </button>
+                  <button
+                    onClick={handleDenetimler}
+                    className={`group w-full justify-center cursor-pointer ${ui.btnBase} ${ui.btnSm} border border-cyan-200 bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-800 shadow-sm hover:from-cyan-100 hover:to-blue-100 dark:border-cyan-900/60 dark:from-cyan-950/35 dark:to-blue-950/35 dark:text-cyan-200`}
+                  >
+                    <svg
+                      className={`${ui.icon} text-cyan-600 dark:text-cyan-300`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
+                    </svg>
+                    Denetimler
                   </button>
 
                   <button
