@@ -418,18 +418,6 @@ export default function ProjeBelgeleriPage() {
 
     <div className="flex flex-wrap items-center gap-1.5">
 
-      {/* API ÜZERİNDEN BELGE ARAMA */}
-      <input
-        type="search"
-        value={fileSearch}
-        onChange={(e) => {
-          setFileSearch(e.target.value);
-          setPage(1);
-        }}
-        placeholder="Belge adı, başlık, açıklama, tür..."
-        className="h-9 w-48 max-w-full rounded-lg border border-zinc-200 bg-white px-2 text-xs outline-none focus:border-emerald-500 dark:border-zinc-700 dark:bg-zinc-950 sm:w-60"
-      />
-
       <button
         type="button"
         onClick={() =>
@@ -494,6 +482,11 @@ export default function ProjeBelgeleriPage() {
     files={files}
     loadingFiles={loadingFiles}
     filesError={filesError}
+    searchValue={fileSearch}
+    onSearchChange={(value) => {
+      setFileSearch(value);
+      setPage(1);
+    }}
   />
 
   {/* ALT SAYFALAMA */}

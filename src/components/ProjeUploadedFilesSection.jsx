@@ -138,38 +138,22 @@ export default function ProjeUploadedFilesSection({
   files,
   loadingFiles,
   filesError,
+  searchValue = "",
+  onSearchChange,
 }) {
   const totalCount = files?.length || 0;
 
   const [turFilter, setTurFilter] = useState("ALL");
-  const [q, setQ] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
 
   const filteredFiles = useMemo(() => {
     const list = Array.isArray(files) ? files : [];
-    const query = (q || "").trim().toLowerCase();
 
     const filtered = list.filter((f) => {
       const tur = (f.tur || f.Tur || "Genel").trim();
       if (turFilter !== "ALL" && tur !== turFilter) return false;
 
-      if (!query) return true;
-
-      const url = (f.url || f.Url || "").toLowerCase();
-      const name = (f.dosyaAdi || f.DosyaAdi || url || "").toLowerCase();
-      const baslik = (f.belgeBasligi || f.BelgeBasligi || "").toLowerCase();
-      const aciklama = (
-        f.belgeAciklamasi ||
-        f.BelgeAciklamasi ||
-        ""
-      ).toLowerCase();
-
-      return (
-        name.includes(query) ||
-        baslik.includes(query) ||
-        aciklama.includes(query) ||
-        url.includes(query)
-      );
+      return true;
     });
 
     filtered.sort((a, b) => {
@@ -185,7 +169,7 @@ export default function ProjeUploadedFilesSection({
     });
 
     return filtered;
-  }, [files, turFilter, q]);
+  }, [files, turFilter]);
 
   const shownCount = filteredFiles.length;
 
@@ -230,9 +214,10 @@ export default function ProjeUploadedFilesSection({
           </select>
 
           <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Ara: başlık, açıklama, dosya adı..."
+            type="search"
+            value={searchValue}
+            onChange={(e) => onSearchChange?.(e.target.value)}
+            placeholder="Tüm belgelerde ara: başlık, açıklama, dosya adı..."
             className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-1 text-[11px] text-zinc-700 outline-none focus:border-zinc-500 sm:w-64 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
           />
         </div>
