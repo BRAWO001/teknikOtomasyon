@@ -58,6 +58,14 @@ const MENU_ITEMS = [
     icon: "document",
   },
   {
+    id: "vekaletIslemleri",
+    title: "Vekâlet İşlemleri",
+    description: "Toplantılar için vekâlet oluşturun ve işlemlerinizi yönetin.",
+    href: "/VekaletIslemleri/vekaletVer",
+    color: "violet",
+    icon: "vekalet",
+  },
+  {
     id: "hesaplar",
     title: "Hesaplar",
     description: "Hesap bilgilerinizi kontrol edin.",
@@ -232,6 +240,18 @@ function Icon({ name, className = "h-6 w-6" }) {
         <path d="M9 13h6" />
         <path d="M9 17h6" />
         <path d="M9 9h1" />
+      </svg>
+    );
+  }
+
+  if (name === "vekalet") {
+    return (
+      <svg {...commonProps}>
+        <path d="M8 3h8l4 4v14H4V3h4z" />
+        <path d="M16 3v5h4" />
+        <path d="M8 12h8" />
+        <path d="M8 16h5" />
+        <path d="m15 18 2 2 4-4" />
       </svg>
     );
   }
